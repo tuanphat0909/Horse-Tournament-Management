@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Activity, BrainCircuit, Users, ShieldCheck, Smartphone } from 'lucide-react';
+import { Activity, Target, Users, ClipboardList, Flag } from 'lucide-react';
 
 export const FeaturesSection = () => {
   return (
@@ -14,14 +14,14 @@ export const FeaturesSection = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <motion.div 
+        <motion.div
           className="text-center mb-24"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
           <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">Engineered for <span className="text-gradient-gold italic">Excellence</span></h2>
-          <p className="text-muted max-w-2xl mx-auto text-lg">The most advanced technological suite built specifically for the demands of elite equestrian sports.</p>
+          <p className="text-muted max-w-2xl mx-auto text-lg">A comprehensive suite built specifically for every participant in the horse racing ecosystem.</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -38,7 +38,7 @@ export const FeaturesSection = () => {
                 <Activity className="w-6 h-6 text-gold" />
               </div>
               <h3 className="text-2xl font-serif text-white mb-3">Live Tournament Tracking</h3>
-              <p className="text-sm text-body leading-relaxed">Millisecond-precise live updates across all active championships. Monitor horse positions, track conditions, and race assignments seamlessly.</p>
+              <p className="text-sm text-body leading-relaxed">Real-time updates across all active championships. Monitor horse positions, race schedules, and live rankings for every round seamlessly.</p>
             </div>
             <div className="relative w-full md:w-[55%] h-64 md:h-auto overflow-hidden">
                <div className="absolute inset-0 bg-gradient-to-r from-[rgba(32,54,90,0.95)] via-transparent to-transparent z-10 hidden md:block" />
@@ -47,7 +47,7 @@ export const FeaturesSection = () => {
             </div>
           </motion.div>
 
-          {/* Card 2: AI Predictive Analytics */}
+          {/* Card 2: Race Prediction System */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -57,14 +57,14 @@ export const FeaturesSection = () => {
           >
             <div className="p-8 pb-4 z-10 relative">
               <div className="w-12 h-12 rounded-xl bg-navy/80 border border-glass-border flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(201,168,76,0.2)]">
-                <BrainCircuit className="w-6 h-6 text-gold" />
+                <Target className="w-6 h-6 text-gold" />
               </div>
-              <h3 className="text-xl font-serif text-white mb-3">AI Predictive Analytics</h3>
-              <p className="text-sm text-body leading-relaxed">Advanced models forecasting race outcomes based on historical performance.</p>
+              <h3 className="text-xl font-serif text-white mb-3">Race Prediction System</h3>
+              <p className="text-sm text-body leading-relaxed">Spectators can predict race outcomes, track prediction results, and receive reward notifications for accurate forecasts.</p>
             </div>
             <div className="flex-1 relative w-full mt-4">
               <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent z-10 pointer-events-none" />
-              <img src="/feature-ai.png" alt="AI Analytics Chart" className="w-full h-48 object-cover object-top opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" />
+              <img src="/feature-ai.png" alt="Prediction System" className="w-full h-48 object-cover object-top opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" />
             </div>
           </motion.div>
 
@@ -81,7 +81,7 @@ export const FeaturesSection = () => {
                 <Users className="w-6 h-6 text-gold" />
               </div>
               <h3 className="text-xl font-serif text-white mb-3">Role-based Dashboards</h3>
-              <p className="text-sm text-body leading-relaxed">Customized management experiences for Owners, Jockeys, and Referees.</p>
+              <p className="text-sm text-body leading-relaxed">Tailored management experiences for Horse Owners, Jockeys, Referees, Spectators, and Admins.</p>
             </div>
             <div className="flex-1 relative w-full mt-4">
               <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent z-10 pointer-events-none" />
@@ -89,7 +89,7 @@ export const FeaturesSection = () => {
             </div>
           </motion.div>
 
-          {/* Card 4: Mobile-First Experience */}
+          {/* Card 4: Horse & Tournament Registration */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -99,19 +99,19 @@ export const FeaturesSection = () => {
           >
             <div className="p-10 flex-1 z-10 flex flex-col justify-center">
               <div className="w-12 h-12 rounded-xl bg-navy/80 border border-glass-border flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(201,168,76,0.2)]">
-                <Smartphone className="w-6 h-6 text-gold" />
+                <ClipboardList className="w-6 h-6 text-gold" />
               </div>
-              <h3 className="text-2xl font-serif text-white mb-3">Mobile-First Experience</h3>
-              <p className="text-sm text-body leading-relaxed">Flawless execution on any device. Manage stables, enter tournaments, and view live results directly from the stands or on the go.</p>
+              <h3 className="text-2xl font-serif text-white mb-3">Horse & Tournament Registration</h3>
+              <p className="text-sm text-body leading-relaxed">Horse owners register horses, assign jockeys, and manage participation. Admins approve entries, schedule races, and oversee the full tournament lifecycle.</p>
             </div>
             <div className="relative w-full md:w-[55%] h-64 md:h-auto overflow-hidden bg-navy/30">
                <div className="absolute inset-0 bg-gradient-to-l from-[rgba(32,54,90,0.95)] via-transparent to-transparent z-10 hidden md:block" />
                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(32,54,90,0.95)] via-transparent to-transparent z-10 md:hidden" />
-               <img src="/feature-mobile.png" alt="Mobile App Experience" className="w-full h-full object-cover object-center opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" />
+               <img src="/feature-mobile.png" alt="Registration Management" className="w-full h-full object-cover object-center opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" />
             </div>
           </motion.div>
-          
-          {/* Card 5: Instant Referee Updates */}
+
+          {/* Card 5: Referee Oversight System */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -122,13 +122,13 @@ export const FeaturesSection = () => {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gold/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
             <div className="relative z-10 w-full max-w-3xl mx-auto flex flex-col items-center">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-900/40 border border-green-500/30 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(34,197,94,0.15)] group-hover:shadow-[0_0_50px_rgba(34,197,94,0.3)] group-hover:scale-110 transition-all duration-500">
-                  <ShieldCheck className="w-8 h-8 text-green-400" />
+                  <Flag className="w-8 h-8 text-green-400" />
                 </div>
-                <h3 className="text-2xl font-serif text-white mb-4 group-hover:text-champagne transition-colors">Instant Referee Updates</h3>
-                <p className="text-base text-body leading-relaxed mb-8 max-w-2xl">Secure, immutable race results verified instantly on-chain. Approvals are pushed via a dedicated secure workflow ensuring complete integrity of the tournament results before public release.</p>
+                <h3 className="text-2xl font-serif text-white mb-4 group-hover:text-champagne transition-colors">Referee Oversight System</h3>
+                <p className="text-base text-body leading-relaxed mb-8 max-w-2xl">Referees verify horse eligibility before each race, record violations, confirm official results, and file detailed race reports. Results are only published after referee approval.</p>
                 <div className="flex justify-center items-center gap-3 px-4 py-2 rounded-full bg-green-950/40 border border-green-500/20">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                  <span className="text-xs font-mono text-green-400 uppercase tracking-widest font-bold">Blockchain Verified</span>
+                  <span className="text-xs font-mono text-green-400 uppercase tracking-widest font-bold">Official Verification</span>
                 </div>
             </div>
           </motion.div>

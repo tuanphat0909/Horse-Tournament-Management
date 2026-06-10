@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const CTASection = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-32 relative overflow-hidden border-t border-glass-border">
       {/* Intense Glowing Background */}
@@ -27,7 +29,10 @@ export const CTASection = () => {
             Don't just participate in the sport. Dominate it with the world's most advanced equestrian platform.
           </p>
           
-          <button className="btn-gold px-12 py-5 rounded-lg flex items-center gap-3 text-sm mx-auto shadow-[0_0_40px_rgba(201,168,76,0.4)] hover:shadow-[0_0_60px_rgba(201,168,76,0.6)]">
+          <button
+            onClick={() => navigate('/register')}
+            className="btn-gold px-12 py-5 rounded-lg flex items-center gap-3 text-sm mx-auto shadow-[0_0_40px_rgba(201,168,76,0.4)] hover:shadow-[0_0_60px_rgba(201,168,76,0.6)]"
+          >
             Create Your Account <ArrowRight className="w-5 h-5" />
           </button>
         </motion.div>

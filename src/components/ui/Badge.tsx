@@ -1,5 +1,3 @@
-
-
 type BadgeStatus = 'Approved' | 'Pending' | 'Rejected' | 'Active' | 'Draft' | 'Live';
 
 interface BadgeProps {

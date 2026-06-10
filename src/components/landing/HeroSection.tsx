@@ -1,7 +1,9 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Play } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const HeroSection = () => {
+  const navigate = useNavigate();
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 1000], [0, 200]);
   const y2 = useTransform(scrollY, [0, 1000], [0, -100]);
@@ -53,7 +55,7 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            Experience the pinnacle of equestrian sports management. A cinematic, AI-driven platform for elite tournaments, owners, and champions.
+            Experience the pinnacle of equestrian sports management. A comprehensive platform for tournament organizers, horse owners, jockeys, referees, and spectators.
           </motion.p>
 
           <motion.div 
@@ -62,14 +64,11 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
           >
-            <button className="btn-gold px-8 py-4 rounded-lg flex items-center gap-2 text-sm shadow-[0_0_20px_rgba(201,168,76,0.3)]">
+            <button
+              onClick={() => navigate('/login')}
+              className="btn-gold px-8 py-4 rounded-lg flex items-center gap-2 text-sm shadow-[0_0_20px_rgba(201,168,76,0.3)]"
+            >
               Explore Platform <ArrowRight className="w-4 h-4" />
-            </button>
-            <button className="flex items-center gap-3 text-body hover:text-gold transition-colors font-medium group">
-              <div className="w-12 h-12 rounded-full glass-panel flex items-center justify-center group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(201,168,76,0.3)] transition-all">
-                <Play className="w-4 h-4 ml-1 fill-current" />
-              </div>
-              Watch Showreel
             </button>
           </motion.div>
 
@@ -129,27 +128,29 @@ export const HeroSection = () => {
             </button>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             style={{ y: y2 }}
             className="absolute -left-4 bottom-32 w-64 glass-panel rounded-2xl p-5 z-20 animate-[float_8s_ease-in-out_infinite_reverse]"
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gold to-yellow-700 p-px">
-                <div className="w-full h-full bg-navy rounded-full flex items-center justify-center font-serif text-lg font-bold text-white">AI</div>
+                <div className="w-full h-full bg-navy rounded-full flex items-center justify-center font-serif text-lg font-bold text-white">#1</div>
               </div>
               <div>
-                <div className="text-sm font-bold text-white">Win Probability</div>
-                <div className="text-xs text-muted">Updating live</div>
+                <div className="text-sm font-bold text-white">Leaderboard</div>
+                <div className="text-xs text-muted">Updated live</div>
               </div>
             </div>
-            <div className="h-2 bg-navy rounded-full overflow-hidden shadow-inner">
-              <div className="h-full bg-gold w-[74%] rounded-full relative">
-                <div className="absolute inset-0 bg-white/20 blur-sm" />
-              </div>
-            </div>
-            <div className="mt-2 flex justify-between items-center text-xs">
-              <span className="font-bold text-gold">74%</span>
-              <span className="text-muted">Thunderstrike</span>
+            <div className="space-y-2">
+              {[
+                { name: "Thunderstrike", pts: "1,240 pts" },
+                { name: "Desert Wind", pts: "1,185 pts" },
+              ].map((h, i) => (
+                <div key={i} className="flex justify-between items-center text-xs px-2 py-1.5 rounded bg-navy/60 border border-glass-border">
+                  <span className="text-white font-medium">{h.name}</span>
+                  <span className="text-gold font-bold">{h.pts}</span>
+                </div>
+              ))}
             </div>
           </motion.div>
         </div>

@@ -1,11 +1,10 @@
 import { Globe, Mail, MessageCircle } from 'lucide-react';
 
-export const Footer = () => {
+export function Footer() {
   return (
     <footer className="bg-[#040810] border-t border-gold/20 pt-20 pb-10 relative overflow-hidden">
-      {/* Subtle top glow */}
       <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-gold to-transparent opacity-50 shadow-[0_0_20px_rgba(201,168,76,1)]" />
-      
+
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16 relative z-10">
         <div className="md:col-span-1">
           <div className="flex items-center gap-2 mb-4">
@@ -29,7 +28,7 @@ export const Footer = () => {
             </a>
           </div>
         </div>
-        
+
         <div>
           <h4 className="text-white font-bold mb-6">Platform</h4>
           <ul className="space-y-3 text-sm text-muted">
@@ -59,7 +58,7 @@ export const Footer = () => {
           </ul>
         </div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-glass-border flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted relative z-10">
         <div>&copy; {new Date().getFullYear()} Equestria Racing Platform. All rights reserved.</div>
         <div className="flex items-center gap-2">
@@ -68,4 +67,4 @@ export const Footer = () => {
       </div>
     </footer>
   );
-};
+}

@@ -1,19 +1,15 @@
 import { motion } from 'framer-motion';
 import {
   Trophy, Activity, Calendar, ChevronRight, TrendingUp,
-  Star, Clock, ShieldCheck, LogOut, MapPin, Users,
-  Target, Award, BarChart3, Zap, Home, Flag,
-  Settings, Bell, Search, Compass, LayoutDashboard
+  Star, Clock, ShieldCheck, MapPin, Users,
+  Target, Award, BarChart3, Zap, Flag,
 } from 'lucide-react';
-import type { RouteView } from '../App';
-
-interface DashboardProps {
-  navigateTo: (view: RouteView) => void;
-}
+import { Sidebar } from '../components/layout/Sidebar';
+import { Topbar } from '../components/layout/Topbar';
 
 const child = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.35 } }
+  show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
 };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 
@@ -25,8 +21,6 @@ const IMG = {
   horse4: 'https://images.unsplash.com/photo-1508761373-adce5aef3023?auto=format&fit=crop&q=80&w=400',
   horse5: 'https://images.unsplash.com/photo-1560206536-9cfd35e5ead5?auto=format&fit=crop&q=80&w=400',
   track: 'https://images.unsplash.com/photo-1529042288765-3e6f15f11e95?auto=format&fit=crop&q=80&w=1400',
-  dubai: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&q=80&w=600',
-  avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100',
 };
 
 const SPARKS = [
@@ -36,96 +30,17 @@ const SPARKS = [
   'M0,12 L14,16 L28,10 L42,14 L56,8 L70,12 L84,5 L100,2',
 ];
 
-const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: 'Dashboard', active: true },
-  { icon: Flag, label: 'My Horses', active: false },
-  { icon: Trophy, label: 'Tournaments', active: false },
-  { icon: Calendar, label: 'Schedule', active: false },
-  { icon: BarChart3, label: 'Analytics', active: false },
-  { icon: Compass, label: 'Explore', active: false },
-  { icon: Settings, label: 'Settings', active: false },
-];
-
-export function Dashboard({ navigateTo }: DashboardProps) {
+export function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#0B1628] text-body font-sans flex">
+      <Sidebar />
 
-      {/* ═══ LEFT SIDEBAR ═══ */}
-      <aside className="w-[280px] shrink-0 h-screen sticky top-0 border-r border-glass-border bg-[#0A1220] flex flex-col z-40">
-        {/* Logo */}
-        <div className="px-6 h-16 flex items-center gap-2.5 border-b border-glass-border shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center border border-gold/30">
-            <svg viewBox="0 0 24 24" fill="var(--color-gold)" className="w-4 h-4">
-              <path d="M12 2C9 2 8 5 8 5L6 6V10L8 12V18L6 20H8V22H10V20H14V22H16V20H18L16 18V12L18 10V6L16 5C16 5 15 2 12 2Z" />
-            </svg>
-          </div>
-          <span className="font-serif text-lg font-bold text-champagne tracking-wider">EQUESTRIA</span>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <div className="text-[10px] uppercase tracking-[0.15em] text-muted/50 font-bold px-3 mb-2">Main</div>
-          {NAV_ITEMS.map((item, i) => (
-            <button
-              key={i}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 transition-all duration-200 ${
-                item.active
-                  ? 'bg-gold/10 text-champagne border border-gold/20'
-                  : 'text-muted hover:text-white hover:bg-white/[0.04] border border-transparent'
-              }`}
-            >
-              <item.icon size={18} className={item.active ? 'text-gold' : ''} />
-              {item.label}
-            </button>
-          ))}
-
-          <div className="text-[10px] uppercase tracking-[0.15em] text-muted/50 font-bold px-3 mt-6 mb-2">Quick Actions</div>
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-white hover:bg-white/[0.04] transition-all border border-transparent">
-            <Zap size={18} /> Register Horse
-          </button>
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-white hover:bg-white/[0.04] transition-all border border-transparent">
-            <Bell size={18} /> Notifications
-            <span className="ml-auto text-[10px] bg-gold/20 text-gold font-bold px-2 py-0.5 rounded-full">3</span>
-          </button>
-        </nav>
-
-        {/* User Profile */}
-        <div className="px-4 py-4 border-t border-glass-border shrink-0">
-          <div className="flex items-center gap-3">
-            <img src={IMG.avatar} alt="Profile" className="w-9 h-9 rounded-lg object-cover border border-glass-border bg-surface" />
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-white truncate">Alexander Sterling</div>
-              <div className="text-[11px] text-gold font-medium">Elite Owner</div>
-            </div>
-            <button onClick={() => navigateTo('home')} className="text-muted hover:text-white transition-colors p-1" title="Sign Out">
-              <LogOut size={16} />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* ═══ MAIN CONTENT ═══ */}
       <div className="flex-1 min-w-0 overflow-y-auto">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 h-16 border-b border-glass-border bg-[#0B1628]/90 backdrop-blur-xl flex items-center px-8 justify-between">
-          <div className="flex items-center gap-3 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-80">
-            <Search size={16} className="text-muted" />
-            <input type="text" placeholder="Search horses, races, tournaments..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="relative text-muted hover:text-white transition-colors p-2">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-gold" />
-            </button>
-            <div className="text-sm text-muted">
-              <span className="text-white font-medium">Season 2026</span> • Q3
-            </div>
-          </div>
-        </header>
+        <Topbar />
 
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          {/* ═══ ROW 1: COMPACT HERO ═══ */}
+          {/* ROW 1: HERO */}
           <motion.div
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -133,14 +48,15 @@ export function Dashboard({ navigateTo }: DashboardProps) {
             className="glass-panel rounded-2xl overflow-hidden flex"
             style={{ height: '220px' }}
           >
-            {/* Left Content */}
             <div className="flex-1 p-8 flex flex-col justify-center relative">
               <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 20px, rgba(201,168,76,0.3) 20px, rgba(201,168,76,0.3) 21px)' }} />
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold uppercase tracking-widest mb-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Season Active
                 </div>
-                <h1 className="text-2xl font-serif text-white mb-1.5">Welcome back, <span className="italic text-champagne">Alexander</span></h1>
+                <h1 className="text-2xl font-serif text-white mb-1.5">
+                  Welcome back, <span className="italic text-champagne">Alexander</span>
+                </h1>
                 <p className="text-sm text-muted mb-5">2 horses running today • Season rank #3 • 68% win rate</p>
                 <div className="flex gap-3">
                   <button className="btn-gold px-5 py-2 rounded-lg text-xs flex items-center gap-1.5 font-bold">
@@ -152,11 +68,9 @@ export function Dashboard({ navigateTo }: DashboardProps) {
                 </div>
               </div>
             </div>
-            {/* Right Image */}
             <div className="w-[40%] relative overflow-hidden hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-r from-[#0F1E35] via-[#0F1E35]/60 to-transparent z-10" />
               <img src={IMG.hero} alt="" className="w-full h-full object-cover" />
-              {/* Season summary overlay */}
               <div className="absolute bottom-4 right-4 z-20 bg-navy/80 backdrop-blur-md rounded-lg px-4 py-3 border border-glass-border">
                 <div className="flex gap-5">
                   {[{ l: 'Earnings', v: '$1.2M' }, { l: 'Wins', v: '21' }, { l: 'Rank', v: '#3' }].map((s, i) => (
@@ -170,7 +84,7 @@ export function Dashboard({ navigateTo }: DashboardProps) {
             </div>
           </motion.div>
 
-          {/* ═══ ROW 2: STATISTICS GRID ═══ */}
+          {/* ROW 2: STATS */}
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-4 gap-4">
             {[
               { title: 'My Horses', value: '12', trend: '+12%', icon: Star, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', spark: SPARKS[0] },
@@ -193,7 +107,12 @@ export function Dashboard({ navigateTo }: DashboardProps) {
                   <div className="text-[11px] text-muted/70 font-medium">{m.title}</div>
                 </div>
                 <svg className="absolute bottom-0 left-0 w-full h-10 opacity-10 group-hover:opacity-25 transition-opacity" viewBox="0 0 100 20" preserveAspectRatio="none">
-                  <defs><linearGradient id={`sf-${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--color-gold)" stopOpacity="0.6" /><stop offset="100%" stopColor="var(--color-gold)" stopOpacity="0" /></linearGradient></defs>
+                  <defs>
+                    <linearGradient id={`sf-${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-gold)" stopOpacity="0.6" />
+                      <stop offset="100%" stopColor="var(--color-gold)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
                   <path d={`${m.spark} L100,20 L0,20 Z`} fill={`url(#sf-${i})`} />
                   <path d={m.spark} fill="none" stroke="var(--color-gold)" strokeWidth="0.4" />
                 </svg>
@@ -201,16 +120,16 @@ export function Dashboard({ navigateTo }: DashboardProps) {
             ))}
           </motion.div>
 
-          {/* ═══ ROW 3: HORSES + UPCOMING RACES ═══ */}
+          {/* ROW 3: HORSES + RACES */}
           <div className="grid grid-cols-[1fr_380px] gap-6" style={{ minHeight: '420px' }}>
-
-            {/* Recent Horses */}
+            {/* Horses */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }} className="glass-panel rounded-xl p-6 flex flex-col">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-serif text-white">My Horses</h2>
-                <button className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium">View All <ChevronRight size={14} /></button>
+                <button className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium">
+                  View All <ChevronRight size={14} />
+                </button>
               </div>
-
               <div className="flex-1 space-y-1.5 overflow-y-auto">
                 {[
                   { name: 'Thunderstrike', breed: 'Thoroughbred', age: '3y', perf: 98, health: 100, next: 'Dubai World Cup', img: IMG.horse1 },
@@ -219,7 +138,7 @@ export function Dashboard({ navigateTo }: DashboardProps) {
                   { name: 'Golden Hoof', breed: 'Quarter Horse', age: '5y', perf: 92, health: 88, next: 'Royal Ascot', img: IMG.horse4 },
                   { name: 'Silver Arrow', breed: 'Appaloosa', age: '3y', perf: 87, health: 96, next: 'Prix Arc', img: IMG.horse5 },
                 ].map((h, i) => (
-                  <div key={i} className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-gold/15 transition-all group cursor-pointer relative">
+                  <div key={i} className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-gold/15 transition-all group cursor-pointer">
                     <img src={h.img} alt={h.name} className="w-11 h-11 rounded-lg object-cover bg-surface border border-glass-border shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-white group-hover:text-champagne transition-colors truncate">{h.name}</div>
@@ -250,9 +169,10 @@ export function Dashboard({ navigateTo }: DashboardProps) {
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }} className="glass-panel rounded-xl p-6 flex flex-col">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-serif text-white">Upcoming Races</h2>
-                <button className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium">Schedule <ChevronRight size={14} /></button>
+                <button className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium">
+                  Schedule <ChevronRight size={14} />
+                </button>
               </div>
-
               <div className="flex-1 space-y-3">
                 {[
                   { name: 'Dubai World Cup', date: 'Tomorrow, 14:00', loc: 'Meydan, Dubai', prize: '$12M', countdown: '2d 14h', horses: 2 },
@@ -280,7 +200,7 @@ export function Dashboard({ navigateTo }: DashboardProps) {
             </motion.div>
           </div>
 
-          {/* ═══ ROW 4: TOURNAMENT SHOWCASE ═══ */}
+          {/* ROW 4: TOURNAMENT SHOWCASE */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -311,7 +231,6 @@ export function Dashboard({ navigateTo }: DashboardProps) {
                 </div>
               </div>
 
-              {/* Right Panel */}
               <div className="bg-navy/70 backdrop-blur-xl rounded-xl p-6 border border-glass-border w-[300px] shrink-0 hidden md:flex flex-col items-center">
                 <div className="text-[10px] uppercase tracking-wider text-muted font-bold mb-1.5">Closes In</div>
                 <div className="text-2xl font-serif text-white font-bold mb-4 tracking-wider">
@@ -341,10 +260,9 @@ export function Dashboard({ navigateTo }: DashboardProps) {
             </div>
           </motion.div>
 
-          {/* ═══ ROW 5: ANALYTICS + ACTIVITY ═══ */}
+          {/* ROW 5: ANALYTICS + ACTIVITY */}
           <div className="grid grid-cols-2 gap-6">
-
-            {/* Performance Analytics */}
+            {/* Performance */}
             <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="glass-panel rounded-xl p-6">
               <h2 className="text-lg font-serif text-white mb-5">Season Performance</h2>
               <div className="grid grid-cols-2 gap-4">
@@ -373,7 +291,7 @@ export function Dashboard({ navigateTo }: DashboardProps) {
               </div>
             </motion.div>
 
-            {/* Recent Activity */}
+            {/* Activity */}
             <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1, duration: 0.4 }} className="glass-panel rounded-xl p-6">
               <h2 className="text-lg font-serif text-white mb-5">Recent Activity</h2>
               <div className="space-y-3">

@@ -16,13 +16,13 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             className="peer appearance-none w-4 h-4 border border-gold/40 rounded-[3px] bg-transparent checked:bg-gold checked:border-gold transition-colors focus:outline-none focus:ring-2 focus:ring-gold/20"
             {...props}
           />
-          <svg 
+          <svg
             className="absolute w-3 h-3 text-navy opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="3" 
-            strokeLinecap="round" 
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
             strokeLinejoin="round"
           >
             <polyline points="20 6 9 17 4 12"></polyline>

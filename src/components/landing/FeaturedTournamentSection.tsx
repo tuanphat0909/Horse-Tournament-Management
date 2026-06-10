@@ -66,8 +66,8 @@ export const FeaturedTournamentSection = () => {
                       <div className="text-[10px] uppercase text-muted tracking-wider font-bold">Days Left</div>
                    </div>
                    <div className="bg-navy/60 p-4 rounded-xl border border-glass-border text-center hover:border-gold/30 transition-colors">
-                      <div className="text-3xl font-serif text-champagne mb-1">18</div>
-                      <div className="text-[10px] uppercase text-muted tracking-wider font-bold">Live Streams</div>
+                      <div className="text-3xl font-serif text-champagne mb-1">6</div>
+                      <div className="text-[10px] uppercase text-muted tracking-wider font-bold">Race Rounds</div>
                    </div>
                 </div>
                 

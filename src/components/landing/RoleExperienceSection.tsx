@@ -5,7 +5,7 @@ const roles = [
   { id: 'owner', label: 'Horse Owner', desc: 'Manage your stables, register for premium tournaments, and track performance metrics across seasons.' },
   { id: 'jockey', label: 'Jockey', desc: 'View your upcoming race assignments, study track conditions, and analyze your win probabilities.' },
   { id: 'referee', label: 'Referee', desc: 'Input official times, manage disputes, and finalize race results with secure verification.' },
-  { id: 'spectator', label: 'Spectator', desc: 'Follow your favorite horses, view live streams, and access deep statistical analysis.' }
+  { id: 'spectator', label: 'Spectator', desc: 'View tournament schedules, follow live race results and rankings, submit predictions, and receive reward notifications for correct forecasts.' }
 ];
 
 export const RoleExperienceSection = () => {
