@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Trophy, TrendingUp, Flag, Award, Star, BarChart3 } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const HISTORY = [
   { id: 1, horse: 'Thunderstrike', race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', date: '15/06/2026', pos: 1, time: '2:05.4', prize: '₫21.000.000' },
@@ -30,10 +31,12 @@ export function JockeyStatsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div>
-            <h1 className="text-2xl font-serif text-white">Thống kê cá nhân</h1>
-            <p className="text-sm text-muted mt-1">Thành tích thi đấu tổng hợp mùa giải 2026</p>
-          </div>
+          <PageHero
+            title="Thành tích"
+            subtitle="Thống kê và hiệu suất thi đấu"
+            imageUrl="/images/hero-jockey.jpg"
+            imagePosition="center 25%"
+          />
 
           {/* Overview stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

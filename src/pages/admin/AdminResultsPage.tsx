@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Megaphone, Eye, CheckCircle, Trophy, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const PENDING_RESULTS = [
   {
@@ -51,13 +52,12 @@ export function AdminResultsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Công bố kết quả</h1>
-              <p className="text-sm text-muted mt-1">{PENDING_RESULTS.length} kết quả đang chờ công bố</p>
-            </div>
-          </div>
+          <PageHero
+            title="Kết quả & Công bố"
+            subtitle="Xác nhận và công bố kết quả chính thức"
+            imageUrl="/images/hero-admin.jpg"
+            imagePosition="center center"
+          />
 
           {/* Pending Publication */}
           <div>

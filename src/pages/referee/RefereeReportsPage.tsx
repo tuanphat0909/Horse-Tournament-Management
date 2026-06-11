@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FileText, Plus, CheckCircle, Clock, Send } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type Status = 'draft' | 'submitted';
 
@@ -28,15 +29,17 @@ export function RefereeReportsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Báo cáo của tôi</h1>
-              <p className="text-sm text-muted mt-1">{REPORTS.length} báo cáo • {REPORTS.filter(r => r.status === 'draft').length} bản nháp</p>
-            </div>
-            <button onClick={() => setShowAdd(true)} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
-              <Plus size={14} /> Tạo báo cáo
-            </button>
-          </div>
+          <PageHero
+            title="Báo cáo"
+            subtitle="Lịch sử báo cáo và tài liệu trọng tài"
+            imageUrl="/images/hero-referee.jpg"
+            imagePosition="right 52%"
+            actions={
+              <button onClick={() => setShowAdd(true)} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                <Plus size={14} /> Tạo báo cáo
+              </button>
+            }
+          />
 
           <div className="grid grid-cols-[1fr_380px] gap-6">
             <div className="space-y-3">

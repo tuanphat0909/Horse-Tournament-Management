@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Trophy, Calendar, Users, DollarSign, Edit2, Trash2, Eye, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type StatusFilter = 'all' | 'upcoming' | 'active' | 'completed';
 
@@ -37,16 +38,17 @@ export function AdminTournamentsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Quản lý giải đấu</h1>
-              <p className="text-sm text-muted mt-1">{TOURNAMENTS.length} giải đấu • {TOURNAMENTS.filter(t => t.status === 'active').length} đang diễn ra</p>
-            </div>
-            <button onClick={() => setShowModal(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
-              <Plus size={16} /> Tạo giải đấu
-            </button>
-          </div>
+          <PageHero
+            title="Quản lý giải đấu"
+            subtitle="Tạo và quản lý các giải đấu"
+            imageUrl="/images/hero-admin.jpg"
+            imagePosition="center center"
+            actions={
+              <button onClick={() => setShowModal(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
+                <Plus size={16} /> Tạo giải đấu
+              </button>
+            }
+          />
 
           {/* Status Filters */}
           <div className="flex items-center gap-2">

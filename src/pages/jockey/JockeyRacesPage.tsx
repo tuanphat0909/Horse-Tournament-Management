@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Flag, Calendar, MapPin, Trophy, ShieldCheck, ChevronRight } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const MY_RACES = [
   { id: 1, race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', date: '15/06/2026', time: '08:00', horse: 'Thunderstrike', breed: 'Thoroughbred', owner: 'Nguyễn Văn An', location: 'Trường đua Phú Thọ', distance: '2.000m', status: 'completed', result: 1 },
@@ -26,10 +27,12 @@ export function JockeyRacesPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div>
-            <h1 className="text-2xl font-serif text-white">Cuộc đua của tôi</h1>
-            <p className="text-sm text-muted mt-1">Danh sách các cuộc đua được phân công</p>
-          </div>
+          <PageHero
+            title="Cuộc đua của tôi"
+            subtitle="Lịch sử và kết quả cuộc đua"
+            imageUrl="/images/hero-jockey.jpg"
+            imagePosition="center 25%"
+          />
 
           <div className="space-y-4">
             {MY_RACES.map((r, i) => {

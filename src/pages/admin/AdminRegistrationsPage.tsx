@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Eye, Search, Clock, Filter } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type TabType = 'pending' | 'approved' | 'rejected';
 
@@ -42,19 +43,12 @@ export function AdminRegistrationsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Duyệt đăng ký</h1>
-              <p className="text-sm text-muted mt-1">
-                {REGISTRATIONS.filter(r => r.status === 'pending').length} đăng ký đang chờ xử lý
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <Filter size={14} />
-              <span>Lọc theo giải đấu</span>
-            </div>
-          </div>
+          <PageHero
+            title="Duyệt đăng ký"
+            subtitle="Xét duyệt đăng ký tham gia thi đấu"
+            imageUrl="/images/hero-admin.jpg"
+            imagePosition="center center"
+          />
 
           {/* Tabs */}
           <div className="flex items-center gap-2 border-b border-glass-border pb-0">

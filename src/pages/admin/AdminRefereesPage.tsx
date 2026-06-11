@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { UserCheck, Calendar, Flag, ChevronDown, CheckCircle, AlertCircle } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const REFEREES = [
   { id: 1, name: 'Lê Hoàng Nam', email: 'lhnam@email.com', races: 12, rating: 4.9, available: true },
@@ -45,13 +46,12 @@ export function AdminRefereesPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Phân công trọng tài</h1>
-              <p className="text-sm text-muted mt-1">{RACES_NEEDING_REFEREE.length} cuộc đua chưa có trọng tài</p>
-            </div>
-          </div>
+          <PageHero
+            title="Quản lý trọng tài"
+            subtitle="Phân công trọng tài cho các cuộc đua"
+            imageUrl="/images/hero-admin.jpg"
+            imagePosition="center center"
+          />
 
           <div className="grid grid-cols-[1fr_320px] gap-6">
             {/* Left: Race Assignment */}

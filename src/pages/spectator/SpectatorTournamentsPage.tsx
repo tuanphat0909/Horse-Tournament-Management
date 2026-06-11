@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Calendar, Users, DollarSign, Search, ChevronRight, Eye } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const TOURNAMENTS = [
   { id: 1, name: 'Giải Đua Mùa Xuân 2026', start: '01/06/2026', end: '30/06/2026', horses: 42, jockeys: 18, prize: '₫850.000.000', status: 'active', rounds: 6, currentRound: 3, location: 'Trường đua Phú Thọ', desc: 'Giải đua truyền thống mở màn mùa giải 2026, quy tụ các ngựa xuất sắc nhất từ khắp cả nước.' },
@@ -27,15 +28,16 @@ export function SpectatorTournamentsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Giải đấu</h1>
-              <p className="text-sm text-muted mt-1">Theo dõi các giải đua đang diễn ra và sắp tới</p>
-            </div>
-            <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-64">
-              <Search size={14} className="text-muted shrink-0" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm giải đấu..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
-            </div>
+          <PageHero
+            title="Giải đấu"
+            subtitle="Tất cả các giải đấu đang diễn ra"
+            imageUrl="/images/hero-spectator.jpg"
+            imagePosition="center 50%"
+          />
+
+          <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-64">
+            <Search size={14} className="text-muted shrink-0" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm giải đấu..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
           </div>
 
           <div className="space-y-4">

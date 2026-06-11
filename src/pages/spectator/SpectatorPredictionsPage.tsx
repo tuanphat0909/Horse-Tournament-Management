@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, Plus, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type PredResult = 'correct' | 'incorrect' | 'pending';
 type Tab = PredResult | 'all';
@@ -47,15 +48,17 @@ export function SpectatorPredictionsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Dự đoán của tôi</h1>
-              <p className="text-sm text-muted mt-1">{counts.pending} dự đoán đang chờ kết quả</p>
-            </div>
-            <button onClick={() => setShowAdd(true)} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
-              <Plus size={14} /> Thêm dự đoán
-            </button>
-          </div>
+          <PageHero
+            title="Dự đoán của tôi"
+            subtitle="Dự đoán kết quả và nhận thưởng"
+            imageUrl="/images/hero-spectator.jpg"
+            imagePosition="center 50%"
+            actions={
+              <button onClick={() => setShowAdd(true)} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                <Plus size={14} /> Thêm dự đoán
+              </button>
+            }
+          />
 
           {/* Summary */}
           <div className="grid grid-cols-3 gap-4">

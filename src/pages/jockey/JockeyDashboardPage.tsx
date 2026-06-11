@@ -17,8 +17,16 @@ export function JockeyDashboardPage() {
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
           {/* Hero */}
-          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-2xl p-8" style={{ minHeight: '160px' }}>
-            <div className="relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl overflow-hidden relative border border-white/[0.06] shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+            style={{
+              minHeight: '220px',
+              background: `linear-gradient(to right, rgba(11,22,40,0.97) 0%, rgba(11,22,40,0.7) 40%, rgba(11,22,40,0.15) 100%), url('/images/hero-jockey.jpg') center 25% / cover no-repeat`,
+            }}
+          >
+            <div className="relative z-10 p-8 flex flex-col items-start justify-center" style={{ minHeight: '220px' }}>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> 2 cuộc đua tuần này
               </div>

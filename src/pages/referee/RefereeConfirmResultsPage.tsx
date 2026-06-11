@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle, ChevronDown, Flag, Clock } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type Status = 'pending' | 'confirmed';
 
@@ -51,10 +52,12 @@ export function RefereeConfirmResultsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div>
-            <h1 className="text-2xl font-serif text-white">Xác nhận kết quả</h1>
-            <p className="text-sm text-muted mt-1">{RACES.filter(r => r.status === 'pending').length} cuộc đua chờ xác nhận kết quả</p>
-          </div>
+          <PageHero
+            title="Xác nhận kết quả"
+            subtitle="Xác nhận và công bố kết quả chính thức"
+            imageUrl="/images/hero-referee.jpg"
+            imagePosition="right 52%"
+          />
 
           <div className="space-y-4">
             {RACES.map((race, i) => {

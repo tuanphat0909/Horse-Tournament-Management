@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ShieldCheck, XCircle, Search, ChevronDown } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type Status = 'pending' | 'approved' | 'rejected';
 
@@ -43,15 +44,16 @@ export function RefereeHorseCheckPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Kiểm tra sức khỏe ngựa</h1>
-              <p className="text-sm text-muted mt-1">{counts.pending} ngựa đang chờ kiểm tra</p>
-            </div>
-            <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-64">
-              <Search size={14} className="text-muted shrink-0" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm ngựa / chủ ngựa..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
-            </div>
+          <PageHero
+            title="Kiểm tra ngựa"
+            subtitle="Xem xét và phê duyệt hồ sơ ngựa"
+            imageUrl="/images/hero-referee.jpg"
+            imagePosition="right 52%"
+          />
+
+          <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-64">
+            <Search size={14} className="text-muted shrink-0" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm ngựa / chủ ngựa..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
           </div>
 
           <div className="flex items-center gap-1 border-b border-glass-border">

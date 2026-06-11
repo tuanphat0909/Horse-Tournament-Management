@@ -14,13 +14,11 @@ const child = {
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 
 const IMG = {
-  hero: 'https://images.unsplash.com/photo-1529042288765-3e6f15f11e95?auto=format&fit=crop&q=80&w=800',
-  horse1: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&q=80&w=400',
-  horse2: 'https://images.unsplash.com/photo-1534773728080-33d4cabc79d7?auto=format&fit=crop&q=80&w=400',
-  horse3: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&q=80&w=400',
-  horse4: 'https://images.unsplash.com/photo-1508761373-adce5aef3023?auto=format&fit=crop&q=80&w=400',
-  horse5: 'https://images.unsplash.com/photo-1560206536-9cfd35e5ead5?auto=format&fit=crop&q=80&w=400',
-  track: 'https://images.unsplash.com/photo-1529042288765-3e6f15f11e95?auto=format&fit=crop&q=80&w=1400',
+  horse1: '/images/hero-jockey.jpg',
+  horse2: '/images/hero-referee.jpg',
+  horse3: '/images/hero-owner.jpg',
+  horse4: '/images/hero-spectator.jpg',
+  horse5: '/images/hero-admin.jpg',
 };
 
 const SPARKS = [
@@ -45,12 +43,14 @@ export function DashboardPage() {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="glass-panel rounded-2xl overflow-hidden flex"
-            style={{ height: '220px' }}
+            className="rounded-2xl overflow-hidden relative border border-white/[0.06] shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+            style={{
+              minHeight: '220px',
+              background: `linear-gradient(to right, rgba(11,22,40,0.97) 0%, rgba(11,22,40,0.7) 40%, rgba(11,22,40,0.15) 100%), url('/images/hero-admin.jpg') center center / cover no-repeat`,
+            }}
           >
-            <div className="flex-1 p-8 flex flex-col justify-center relative">
-              <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 20px, rgba(201,168,76,0.3) 20px, rgba(201,168,76,0.3) 21px)' }} />
-              <div className="relative z-10">
+            <div className="relative z-10 p-8 flex items-center justify-between" style={{ minHeight: '220px' }}>
+              <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold uppercase tracking-widest mb-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Season Active
                 </div>
@@ -67,15 +67,12 @@ export function DashboardPage() {
                   </button>
                 </div>
               </div>
-            </div>
-            <div className="w-[40%] relative overflow-hidden hidden lg:block">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0F1E35] via-[#0F1E35]/60 to-transparent z-10" />
-              <img src={IMG.hero} alt="" className="w-full h-full object-cover" />
-              <div className="absolute bottom-4 right-4 z-20 bg-navy/80 backdrop-blur-md rounded-lg px-4 py-3 border border-glass-border">
-                <div className="flex gap-5">
+              <div className="hidden lg:block bg-navy/70 backdrop-blur-md rounded-xl px-6 py-4 border border-gold/15 shrink-0">
+                <div className="text-[9px] text-gold uppercase tracking-widest font-bold mb-3">Season 2026</div>
+                <div className="flex gap-6">
                   {[{ l: 'Earnings', v: '$1.2M' }, { l: 'Wins', v: '21' }, { l: 'Rank', v: '#3' }].map((s, i) => (
                     <div key={i} className="text-center">
-                      <div className="text-base font-serif font-bold text-white">{s.v}</div>
+                      <div className="text-lg font-serif font-bold text-white">{s.v}</div>
                       <div className="text-[10px] text-muted uppercase tracking-wider">{s.l}</div>
                     </div>
                   ))}

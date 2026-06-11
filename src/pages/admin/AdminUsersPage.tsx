@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, Plus, MoreHorizontal, CheckCircle, XCircle, Edit2, Users } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type RoleFilter = 'all' | 'owner' | 'jockey' | 'referee' | 'spectator' | 'admin';
 
@@ -52,16 +53,17 @@ export function AdminUsersPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Quản lý tài khoản</h1>
-              <p className="text-sm text-muted mt-1">{USERS.length} người dùng trong hệ thống</p>
-            </div>
-            <button className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
-              <Plus size={16} /> Thêm người dùng
-            </button>
-          </div>
+          <PageHero
+            title="Quản lý người dùng"
+            subtitle="Tất cả tài khoản trong hệ thống"
+            imageUrl="/images/hero-admin.jpg"
+            imagePosition="center center"
+            actions={
+              <button className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
+                <Plus size={16} /> Thêm người dùng
+              </button>
+            }
+          />
 
           {/* Role Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

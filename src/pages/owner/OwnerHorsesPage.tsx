@@ -3,13 +3,14 @@ import { motion } from 'framer-motion';
 import { Plus, ShieldCheck, ChevronRight, Edit2, Trash2, Eye, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const HORSES = [
-  { id: 1, name: 'Thunderstrike', breed: 'Thoroughbred', age: 3, color: 'Nâu đỏ', weight: 480, health: 100, perf: 98, status: 'racing', jockey: 'Trần Đức Minh', img: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&q=80&w=400' },
-  { id: 2, name: 'Desert Wind', breed: 'Arabian', age: 4, color: 'Xám bạc', weight: 460, health: 95, perf: 94, status: 'racing', jockey: 'Hoàng Thị Lan', img: 'https://images.unsplash.com/photo-1534773728080-33d4cabc79d7?auto=format&fit=crop&q=80&w=400' },
-  { id: 3, name: 'Midnight Run', breed: 'Thoroughbred', age: 2, color: 'Đen', weight: 440, health: 98, perf: 89, status: 'registered', jockey: null, img: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&q=80&w=400' },
-  { id: 4, name: 'Golden Hoof', breed: 'Quarter Horse', age: 5, color: 'Vàng', weight: 510, health: 88, perf: 92, status: 'resting', jockey: null, img: 'https://images.unsplash.com/photo-1508761373-adce5aef3023?auto=format&fit=crop&q=80&w=400' },
-  { id: 5, name: 'Silver Arrow', breed: 'Appaloosa', age: 3, color: 'Trắng đốm', weight: 450, health: 96, perf: 87, status: 'registered', jockey: 'Ngô Minh Khoa', img: 'https://images.unsplash.com/photo-1560206536-9cfd35e5ead5?auto=format&fit=crop&q=80&w=400' },
+  { id: 1, name: 'Thunderstrike', breed: 'Thoroughbred', age: 3, color: 'Nâu đỏ', weight: 480, health: 100, perf: 98, status: 'racing', jockey: 'Trần Đức Minh', img: '/images/hero-jockey.jpg' },
+  { id: 2, name: 'Desert Wind', breed: 'Arabian', age: 4, color: 'Xám bạc', weight: 460, health: 95, perf: 94, status: 'racing', jockey: 'Hoàng Thị Lan', img: '/images/hero-owner.jpg' },
+  { id: 3, name: 'Midnight Run', breed: 'Thoroughbred', age: 2, color: 'Đen', weight: 440, health: 98, perf: 89, status: 'registered', jockey: null, img: '/images/hero-referee.jpg' },
+  { id: 4, name: 'Golden Hoof', breed: 'Quarter Horse', age: 5, color: 'Vàng', weight: 510, health: 88, perf: 92, status: 'resting', jockey: null, img: '/images/hero-spectator.jpg' },
+  { id: 5, name: 'Silver Arrow', breed: 'Appaloosa', age: 3, color: 'Trắng đốm', weight: 450, health: 96, perf: 87, status: 'registered', jockey: 'Ngô Minh Khoa', img: '/images/hero-admin.jpg' },
 ];
 
 const STATUS_CONFIG = {
@@ -30,15 +31,17 @@ export function OwnerHorsesPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Ngựa của tôi</h1>
-              <p className="text-sm text-muted mt-1">{HORSES.length} ngựa đang quản lý</p>
-            </div>
-            <button onClick={() => setShowModal(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
-              <Plus size={16} /> Thêm ngựa
-            </button>
-          </div>
+          <PageHero
+            title="Quản lý ngựa"
+            subtitle="Danh sách ngựa trong chuồng của bạn"
+            imageUrl="/images/hero-owner.jpg"
+            imagePosition="center 58%"
+            actions={
+              <button onClick={() => setShowModal(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
+                <Plus size={16} /> Thêm ngựa
+              </button>
+            }
+          />
 
           {/* Search */}
           <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-72">

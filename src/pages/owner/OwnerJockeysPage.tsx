@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, CheckCircle, XCircle, Clock, Star, Send } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const JOCKEYS = [
   { id: 1, name: 'Trần Đức Minh', wins: 45, races: 68, winRate: 66, rating: 4.9, status: 'confirmed', horse: 'Thunderstrike', race: 'Vòng 4 - Bán Kết' },
@@ -32,15 +33,17 @@ export function OwnerJockeysPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Quản lý Jockey</h1>
-              <p className="text-sm text-muted mt-1">Thuê và quản lý jockey cho các ngựa thi đấu</p>
-            </div>
-            <button onClick={() => setShowInvite(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
-              <Plus size={16} /> Mời Jockey
-            </button>
-          </div>
+          <PageHero
+            title="Nài ngựa"
+            subtitle="Danh sách nài ngựa hợp tác"
+            imageUrl="/images/hero-owner.jpg"
+            imagePosition="center 58%"
+            actions={
+              <button onClick={() => setShowInvite(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
+                <Plus size={16} /> Mời Jockey
+              </button>
+            }
+          />
 
           {/* Active Assignments */}
           <div>

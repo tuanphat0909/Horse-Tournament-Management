@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Calendar, Users, Flag, Clock, Edit2, Eye, ChevronDown } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const TOURNAMENTS = [
   { id: 1, name: 'Giải Đua Mùa Xuân 2026' },
@@ -53,16 +54,17 @@ export function AdminRacesPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Lịch đua</h1>
-              <p className="text-sm text-muted mt-1">Quản lý các vòng đua và cuộc đua theo giải</p>
-            </div>
-            <button onClick={() => setShowModal(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
-              <Plus size={16} /> Thêm cuộc đua
-            </button>
-          </div>
+          <PageHero
+            title="Quản lý cuộc đua"
+            subtitle="Lập lịch và theo dõi các vòng đua"
+            imageUrl="/images/hero-admin.jpg"
+            imagePosition="center center"
+            actions={
+              <button onClick={() => setShowModal(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
+                <Plus size={16} /> Thêm cuộc đua
+              </button>
+            }
+          />
 
           {/* Tournament Selector */}
           <div className="relative w-fit">

@@ -41,19 +41,40 @@ export function AdminDashboardPage() {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="glass-panel rounded-2xl overflow-hidden"
-            style={{ minHeight: '160px' }}
+            className="rounded-2xl overflow-hidden relative border border-white/[0.06] shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+            style={{
+              minHeight: '220px',
+              background: `linear-gradient(to right, rgba(11,22,40,0.97) 0%, rgba(11,22,40,0.7) 40%, rgba(11,22,40,0.15) 100%), url('/images/hero-admin.jpg') center center / cover no-repeat`,
+            }}
           >
-            <div className="p-8 flex flex-col justify-center relative">
-              <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 20px, rgba(201,168,76,0.3) 20px, rgba(201,168,76,0.3) 21px)' }} />
-              <div className="relative z-10">
+            <div className="relative z-10 p-8 flex items-center justify-between" style={{ minHeight: '220px' }}>
+              <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold uppercase tracking-widest mb-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Hệ thống đang hoạt động
                 </div>
                 <h1 className="text-2xl font-serif text-white mb-1.5">
                   Chào mừng, <span className="italic text-champagne">Admin</span>
                 </h1>
-                <p className="text-sm text-muted">Tổng quan hệ thống • Mùa giải 2026 Q3 • 24 đăng ký đang chờ duyệt</p>
+                <p className="text-sm text-muted mb-5">Tổng quan hệ thống • Mùa giải 2026 Q3 • 24 đăng ký đang chờ duyệt</p>
+                <div className="flex gap-3">
+                  <button onClick={() => navigate('/admin/registrations')} className="btn-gold px-5 py-2 rounded-lg text-xs flex items-center gap-1.5 font-bold">
+                    Xem đăng ký <ChevronRight size={13} />
+                  </button>
+                  <button onClick={() => navigate('/admin/races')} className="px-5 py-2 rounded-lg text-xs text-champagne border border-gold/25 bg-gold/5 hover:bg-gold/10 transition-colors font-medium">
+                    Quản lý cuộc đua
+                  </button>
+                </div>
+              </div>
+              <div className="hidden lg:block bg-navy/70 backdrop-blur-md rounded-xl px-6 py-4 border border-gold/15 shrink-0">
+                <div className="text-[9px] text-gold uppercase tracking-widest font-bold mb-3">Thống kê hệ thống</div>
+                <div className="flex gap-6">
+                  {[{ l: 'Người dùng', v: '156' }, { l: 'Giải đấu', v: '8' }, { l: 'Hôm nay', v: '5 đua' }].map((s, i) => (
+                    <div key={i} className="text-center">
+                      <div className="text-lg font-serif font-bold text-white">{s.v}</div>
+                      <div className="text-[10px] text-muted uppercase tracking-wider">{s.l}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>

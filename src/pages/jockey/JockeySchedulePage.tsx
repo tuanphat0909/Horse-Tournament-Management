@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, Trophy, ChevronRight } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const SCHEDULE = [
   { id: 1, date: '20/06/2026', day: 'Thứ Bảy', time: '09:00', horse: 'Thunderstrike', breed: 'Thoroughbred', race: 'Vòng 4 - Bán Kết', tournament: 'Giải Xuân 2026', location: 'Trường đua Phú Thọ', distance: '1.800m', status: 'upcoming' },
@@ -25,10 +26,12 @@ export function JockeySchedulePage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div>
-            <h1 className="text-2xl font-serif text-white">Lịch thi đấu</h1>
-            <p className="text-sm text-muted mt-1">{SCHEDULE.length} cuộc đua sắp tới</p>
-          </div>
+          <PageHero
+            title="Lịch thi đấu"
+            subtitle="Lịch đua sắp tới của bạn"
+            imageUrl="/images/hero-jockey.jpg"
+            imagePosition="center 25%"
+          />
 
           <div className="space-y-8">
             {DAY_GROUPS.map(date => {

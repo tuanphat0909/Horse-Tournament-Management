@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Activity, Trophy, Clock, ChevronDown } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 const LIVE_RACE = {
   name: 'Vòng 3 - Chặng Sức Bền (Nhóm 2)', tournament: 'Giải Xuân 2026', distance: '2.000m',
@@ -51,10 +52,12 @@ export function SpectatorLiveResultsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div>
-            <h1 className="text-2xl font-serif text-white">Kết quả cuộc đua</h1>
-            <p className="text-sm text-muted mt-1">Theo dõi trực tiếp và lịch sử kết quả</p>
-          </div>
+          <PageHero
+            title="Kết quả trực tiếp"
+            subtitle="Theo dõi cuộc đua đang diễn ra"
+            imageUrl="/images/hero-spectator.jpg"
+            imagePosition="center 50%"
+          />
 
           {/* Live race */}
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-2xl border border-red-500/20 overflow-hidden">

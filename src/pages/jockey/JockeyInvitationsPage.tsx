@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Clock, Calendar, Trophy, User } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type Tab = 'pending' | 'accepted' | 'rejected';
 
@@ -28,10 +29,12 @@ export function JockeyInvitationsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div>
-            <h1 className="text-2xl font-serif text-white">Lời mời điều khiển ngựa</h1>
-            <p className="text-sm text-muted mt-1">{TAB_COUNTS.pending} lời mời đang chờ phản hồi</p>
-          </div>
+          <PageHero
+            title="Lời mời thi đấu"
+            subtitle="Quản lý lời mời từ các chủ ngựa"
+            imageUrl="/images/hero-jockey.jpg"
+            imagePosition="center 25%"
+          />
 
           <div className="flex items-center gap-1 border-b border-glass-border pb-0">
             {([['pending', 'Chờ phản hồi', 'text-yellow-400 border-yellow-400'], ['accepted', 'Đã nhận', 'text-emerald-400 border-emerald-400'], ['rejected', 'Đã từ chối', 'text-red-400 border-red-400']] as [Tab, string, string][]).map(([t, label, activeClass]) => (

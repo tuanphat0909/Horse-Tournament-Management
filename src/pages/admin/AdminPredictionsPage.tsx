@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Target, CheckCircle, XCircle, Trophy, TrendingUp, DollarSign, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type TabType = 'all' | 'correct' | 'incorrect' | 'pending';
 
@@ -47,13 +48,12 @@ export function AdminPredictionsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Quản lý dự đoán</h1>
-              <p className="text-sm text-muted mt-1">Theo dõi và xử lý thưởng dự đoán kết quả của khán giả</p>
-            </div>
-          </div>
+          <PageHero
+            title="Quản lý dự đoán"
+            subtitle="Theo dõi và xét duyệt dự đoán khán giả"
+            imageUrl="/images/hero-admin.jpg"
+            imagePosition="center center"
+          />
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

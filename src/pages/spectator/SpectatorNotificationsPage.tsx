@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Bell, Trophy, Activity, CheckCircle, Sparkles, Info } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
+import { PageHero } from '../../components/layout/PageHero';
 
 type NotiType = 'result' | 'prediction' | 'tournament' | 'prize' | 'system';
 
@@ -32,17 +33,19 @@ export function SpectatorNotificationsPage() {
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-serif text-white">Thông báo</h1>
-              <p className="text-sm text-muted mt-1">{unread} thông báo chưa đọc</p>
-            </div>
-            {unread > 0 && (
-              <button className="px-4 py-2 rounded-lg text-xs text-muted border border-glass-border hover:text-white hover:bg-white/5 transition-colors">
-                Đánh dấu tất cả đã đọc
-              </button>
-            )}
-          </div>
+          <PageHero
+            title="Thông báo"
+            subtitle="Thông báo và cập nhật mới nhất"
+            imageUrl="/images/hero-spectator.jpg"
+            imagePosition="center 50%"
+            actions={
+              unread > 0 ? (
+                <button className="px-4 py-2 rounded-lg text-xs text-muted border border-glass-border hover:text-white hover:bg-white/5 transition-colors">
+                  Đánh dấu tất cả đã đọc
+                </button>
+              ) : undefined
+            }
+          />
 
           <div className="space-y-2">
             {NOTIFICATIONS.map((n, i) => {

@@ -26,19 +26,29 @@ export function SpectatorDashboardPage() {
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
           {/* Hero */}
-          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-2xl p-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/25 text-red-400 text-[10px] font-bold uppercase tracking-widest mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> 1 cuộc đua đang diễn ra
-            </div>
-            <h1 className="text-2xl font-serif text-white mb-1.5">Chào mừng, <span className="italic text-champagne">Hoàng Minh Tuấn</span></h1>
-            <p className="text-sm text-muted mb-5">2 cuộc đua sắp tới • 3 dự đoán đang chờ kết quả • 1 thông báo mới</p>
-            <div className="flex gap-3">
-              <button onClick={() => navigate('/spectator/live')} className="btn-gold px-5 py-2 rounded-lg text-xs flex items-center gap-1.5 font-bold">
-                Xem kết quả trực tiếp <Eye size={13} />
-              </button>
-              <button onClick={() => navigate('/spectator/predictions')} className="px-5 py-2 rounded-lg text-xs text-champagne border border-gold/25 bg-gold/5 hover:bg-gold/10 transition-colors font-medium">
-                Dự đoán của tôi
-              </button>
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl overflow-hidden relative border border-white/[0.06] shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+            style={{
+              minHeight: '220px',
+              background: `linear-gradient(to right, rgba(11,22,40,0.97) 0%, rgba(11,22,40,0.7) 40%, rgba(11,22,40,0.15) 100%), url('/images/hero-spectator.jpg') center 50% / cover no-repeat`,
+            }}
+          >
+            <div className="relative z-10 p-8 flex flex-col items-start justify-center" style={{ minHeight: '220px' }}>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/25 text-red-400 text-[10px] font-bold uppercase tracking-widest mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> 1 cuộc đua đang diễn ra
+              </div>
+              <h1 className="text-2xl font-serif text-white mb-1.5">Chào mừng, <span className="italic text-champagne">Hoàng Minh Tuấn</span></h1>
+              <p className="text-sm text-muted mb-5">2 cuộc đua sắp tới • 3 dự đoán đang chờ kết quả • 1 thông báo mới</p>
+              <div className="flex gap-3">
+                <button onClick={() => navigate('/spectator/live')} className="btn-gold px-5 py-2 rounded-lg text-xs flex items-center gap-1.5 font-bold">
+                  Xem kết quả trực tiếp <Eye size={13} />
+                </button>
+                <button onClick={() => navigate('/spectator/predictions')} className="px-5 py-2 rounded-lg text-xs text-champagne border border-gold/25 bg-gold/5 hover:bg-gold/10 transition-colors font-medium">
+                  Dự đoán của tôi
+                </button>
+              </div>
             </div>
           </motion.div>
 
