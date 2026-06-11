@@ -50,7 +50,27 @@
       "WebFetch(domain:hisaus.org)",
       "WebFetch(domain:sulphurhorseregistry.com)",
       "WebFetch(domain:commons.wikimedia.org)",
-      "WebFetch(domain:upload.wikimedia.org)"
+      "WebFetch(domain:upload.wikimedia.org)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(claude mcp *)",
+      "WebFetch(domain:lh3.googleusercontent.com)",
+      "mcp__stitch__list_design_systems",
+      "mcp__stitch__get_project",
+      "mcp__stitch__list_screens",
+      "mcp__stitch__edit_screens",
+      "WebFetch(domain:contribution.usercontent.google.com)",
+      "Bash(curl -sL \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzZiNzM0ODJjNzRkNTQxOTRhYjlkODk0ZjQyNDczNDNiEgsSBxDn7dHuhg4YAZIBIwoKcHJvamVjdF9pZBIVQhM4MDU0NDAyMzUwMDAyMzExNTA4&filename=&opi=96797242\" -o \"C:/Users/Asus/Downloads/stitch_login.html\")",
+      "Bash(curl -sL \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzc5YmQyMjE4ZjFkZTQ3YzRiZDIxZTJlMzAwMmVhZTdhEgsSBxDn7dHuhg4YAZIBIwoKcHJvamVjdF9pZBIVQhM4MDU0NDAyMzUwMDAyMzExNTA4&filename=&opi=96797242\" -o \"C:/Users/Asus/Downloads/stitch_register.html\")",
+      "Bash(curl -sL -A \"Mozilla/5.0\" \"https://lh3.googleusercontent.com/aida/AP1WRLtTiawSW4crqcvJblZZEfkyg6gX9hG_T-nm8DBT5Hbg2Pj3KLr_SwKyNzEfp1TGV5EO7T79aFq1-Ql2EiTWoUei8s7yHmo5xGfZyt4Z3N6GsAbkhFjMxMDGMn_oH3ldg3MmDhz1O7fkl_FAxxc5ZHkXzPBvGKZiXURt39_--Vl2Fs0EaQT8GT9AapUj6ktcUMCAuT0RagVwe3tynw7MHDXAmq8EtRh0KepOxfJkXPr76nLrW515qsqK1mU\" -o \"C:/Users/Asus/Downloads/stitch_login_new.png\")",
+      "Bash(curl -sL -A \"Mozilla/5.0\" \"https://lh3.googleusercontent.com/aida/AP1WRLu0B-DY54x6qYe8DhgEkA_YBzO3NKFF9XHudZ6cW5H7owJvlXGqPpdlE3JFWwDi3baEdFNpI0DY2xUojK77jQyc9c-NPOnOPYG9StdsLDpHaaMpKp0qtcUkd8pYAkOaolSoFvXVswhlZlMmUCf0wpdIBBuX9ZRyOISdUoyakIlOEnEHRExg5iVbtTNUD9qUjY3RpkllMg1meXc3redWKUEBLShDRqy1UtME9UBkvQISbucVcUlNcpfh9Zg\" -o \"C:/Users/Asus/Downloads/stitch_register_new.png\")",
+      "PowerShell(Invoke-WebRequest -Uri \"https://lh3.googleusercontent.com/aida/AP1WRLu0B-DY54x6qYe8DhgEkA_YBzO3NKFF9XHudZ6cW5H7owJvlXGqPpdlE3JFWwDi3baEdFNpI0DY2xUojK77jQyc9c-NPOnOPYG9StdsLDpHaaMpKp0qtcUkd8pYAkOaolSoFvXVswhlZlMmUCf0wpdIBBuX9ZRyOISdUoyakIlOEnEHRExg5iVbtTNUD9qUjY3RpkllMg1meXc3redWKUEBLShDRqy1UtME9UBkvQISbucVcUlNcpfh9Zg\" -OutFile \"C:\\\\Users\\\\Asus\\\\Downloads\\\\stitch_register_new.png\")",
+      "PowerShell(Invoke-WebRequest -Uri \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzZiNzM0ODJjNzRkNTQxOTRhYjlkODk0ZjQyNDczNDNiEgsSBxDn7dHuhg4YAZIBIwoKcHJvamVjdF9pZBIVQhM4MDU0NDAyMzUwMDAyMzExNTA4&filename=&opi=96797242\" -OutFile \"C:\\\\Users\\\\Asus\\\\Downloads\\\\stitch_login.html\" -UseBasicParsing; Write-Host \"size: $\\(\\(Get-Item 'C:\\\\Users\\\\Asus\\\\Downloads\\\\stitch_login.html'\\).Length\\)\")",
+      "PowerShell(Invoke-WebRequest -Uri \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzc5YmQyMjE4ZjFkZTQ3YzRiZDIxZTJlMzAwMmVhZTdhEgsSBxDn7dHuhg4YAZIBIwoKcHJvamVjdF9pZBIVQhM4MDU0NDAyMzUwMDAyMzExNTA4&filename=&opi=96797242\" -OutFile \"C:\\\\Users\\\\Asus\\\\Downloads\\\\stitch_register.html\" -UseBasicParsing; Write-Host \"size: $\\(\\(Get-Item 'C:\\\\Users\\\\Asus\\\\Downloads\\\\stitch_register.html'\\).Length\\)\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Asus\\.claude",
+      "C:\\Users\\Asus\\Downloads"
     ]
   }
 }

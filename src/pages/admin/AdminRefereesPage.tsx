@@ -40,15 +40,15 @@ export function AdminRefereesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1628] text-body font-sans flex">
+    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
-      <div className="flex-1 min-w-0 overflow-y-auto">
+      <div className="flex-1 min-w-0 overflow-y-auto relative">
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6 relative z-10">
 
           <PageHero
-            title="Quản lý trọng tài"
-            subtitle="Phân công trọng tài cho các cuộc đua"
+            title="Referee Management"
+            subtitle="Assign referees to races"
             imageUrl="/images/hero-admin.jpg"
             imagePosition="center center"
           />
@@ -60,7 +60,7 @@ export function AdminRefereesPage() {
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl overflow-hidden">
                 <div className="p-5 border-b border-glass-border flex items-center gap-2">
                   <AlertCircle size={16} className="text-yellow-400" />
-                  <h2 className="text-base font-serif text-white">Chưa phân công</h2>
+                  <h2 className="text-base font-serif text-white">Unassigned</h2>
                   <span className="ml-auto px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 text-[11px] font-bold border border-yellow-500/20">
                     {RACES_NEEDING_REFEREE.length}
                   </span>
@@ -87,7 +87,7 @@ export function AdminRefereesPage() {
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium border border-emerald-500/20">
                                 <CheckCircle size={12} /> {assignedName}
                               </span>
-                              <button onClick={() => setAssignments(prev => ({ ...prev, [race.id]: null }))} className="text-xs text-muted hover:text-red-400 transition-colors">Hủy</button>
+                              <button onClick={() => setAssignments(prev => ({ ...prev, [race.id]: null }))} className="text-xs text-muted hover:text-red-400 transition-colors">Cancel</button>
                             </div>
                           ) : (
                             <div className="relative">
@@ -95,7 +95,7 @@ export function AdminRefereesPage() {
                                 onClick={() => setDropdownOpen(dropdownOpen === race.id ? null : race.id)}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gold/30 bg-gold/5 text-champagne text-xs font-medium hover:bg-gold/10 transition-colors"
                               >
-                                <UserCheck size={13} /> Phân công <ChevronDown size={12} className={`transition-transform ${dropdownOpen === race.id ? 'rotate-180' : ''}`} />
+                                <UserCheck size={13} /> Assign <ChevronDown size={12} className={`transition-transform ${dropdownOpen === race.id ? 'rotate-180' : ''}`} />
                               </button>
                               {dropdownOpen === race.id && (
                                 <div className="absolute right-0 top-full mt-1 z-20 glass-panel border border-glass-border rounded-xl overflow-hidden shadow-2xl w-52">
@@ -106,7 +106,7 @@ export function AdminRefereesPage() {
                                       className="w-full text-left px-4 py-3 text-sm hover:bg-white/5 transition-colors border-b border-glass-border/50 last:border-0"
                                     >
                                       <div className="text-white font-medium">{ref.name}</div>
-                                      <div className="text-xs text-muted">⭐ {ref.rating} • {ref.races} cuộc đua</div>
+                                      <div className="text-xs text-muted">⭐ {ref.rating} • {ref.races} races</div>
                                     </button>
                                   ))}
                                 </div>
@@ -124,7 +124,7 @@ export function AdminRefereesPage() {
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-panel rounded-xl overflow-hidden">
                 <div className="p-5 border-b border-glass-border flex items-center gap-2">
                   <CheckCircle size={16} className="text-emerald-400" />
-                  <h2 className="text-base font-serif text-white">Đã phân công</h2>
+                  <h2 className="text-base font-serif text-white">Assigned</h2>
                   <span className="ml-auto px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-bold border border-emerald-500/20">{ASSIGNED_RACES.length}</span>
                 </div>
                 <div className="divide-y divide-glass-border/50">
@@ -146,7 +146,7 @@ export function AdminRefereesPage() {
 
             {/* Right: Referee List */}
             <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="glass-panel rounded-xl p-5 h-fit">
-              <h2 className="text-base font-serif text-white mb-4">Danh sách trọng tài</h2>
+              <h2 className="text-base font-serif text-white mb-4">Referee List</h2>
               <div className="space-y-3">
                 {REFEREES.map(ref => (
                   <div key={ref.id} className="p-4 rounded-xl bg-white/[0.02] border border-glass-border hover:border-gold/20 transition-all">
@@ -159,12 +159,12 @@ export function AdminRefereesPage() {
                         <div className="text-xs text-muted">{ref.email}</div>
                       </div>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ref.available ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
-                        {ref.available ? 'Sẵn sàng' : 'Bận'}
+                        {ref.available ? 'Available' : 'Busy'}
                       </span>
                     </div>
                     <div className="flex justify-between text-xs text-muted">
                       <span>⭐ {ref.rating}/5.0</span>
-                      <span>{ref.races} cuộc đua đã làm</span>
+                      <span>{ref.races} races completed</span>
                     </div>
                   </div>
                 ))}

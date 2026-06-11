@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Flag, Trophy, Calendar, BarChart3,
   Bell, LogOut, Users, ClipboardList,
   ShieldCheck, FileText, Target, Star, Activity,
-  Megaphone, UserCheck, AlertTriangle,
+  Megaphone, UserCheck, AlertTriangle, Wallet,
 } from 'lucide-react';
 import { getMockUser, clearMockUser } from '../../utils/mockAuth';
 
@@ -16,53 +16,54 @@ interface NavItem {
 const NAV_BY_ROLE: Record<string, NavItem[]> = {
   admin: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: Users, label: 'Tài khoản', path: '/admin/users' },
-    { icon: Trophy, label: 'Giải đấu', path: '/admin/tournaments' },
-    { icon: Calendar, label: 'Lịch đua', path: '/admin/races' },
-    { icon: ClipboardList, label: 'Duyệt đăng ký', path: '/admin/registrations' },
-    { icon: UserCheck, label: 'Phân công trọng tài', path: '/admin/referees' },
-    { icon: Megaphone, label: 'Công bố kết quả', path: '/admin/results' },
-    { icon: AlertTriangle, label: 'Xử lý vi phạm', path: '/admin/violations' },
-    { icon: Target, label: 'Dự đoán', path: '/admin/predictions' },
+    { icon: Users, label: 'Accounts', path: '/admin/users' },
+    { icon: Trophy, label: 'Tournaments', path: '/admin/tournaments' },
+    { icon: Calendar, label: 'Race Schedule', path: '/admin/races' },
+    { icon: ClipboardList, label: 'Registrations', path: '/admin/registrations' },
+    { icon: UserCheck, label: 'Assign Referees', path: '/admin/referees' },
+    { icon: Megaphone, label: 'Publish Results', path: '/admin/results' },
+    { icon: AlertTriangle, label: 'Violations', path: '/admin/violations' },
+    { icon: Target, label: 'Predictions', path: '/admin/predictions' },
   ],
   owner: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/owner/dashboard' },
-    { icon: Flag, label: 'Ngựa của tôi', path: '/owner/horses' },
-    { icon: Trophy, label: 'Giải đấu', path: '/owner/tournaments' },
-    { icon: ClipboardList, label: 'Đăng ký đua', path: '/owner/registrations' },
+    { icon: Flag, label: 'My Horses', path: '/owner/horses' },
+    { icon: Trophy, label: 'Tournaments', path: '/owner/tournaments' },
+    { icon: ClipboardList, label: 'Race Entry', path: '/owner/registrations' },
     { icon: Users, label: 'Jockey', path: '/owner/jockeys' },
-    { icon: BarChart3, label: 'Kết quả & Thưởng', path: '/owner/results' },
+    { icon: BarChart3, label: 'Results & Prizes', path: '/owner/results' },
   ],
   jockey: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/jockey/dashboard' },
-    { icon: Bell, label: 'Lời mời', path: '/jockey/invitations' },
-    { icon: Flag, label: 'Cuộc đua của tôi', path: '/jockey/races' },
-    { icon: Calendar, label: 'Lịch thi đấu', path: '/jockey/schedule' },
-    { icon: Star, label: 'Thành tích', path: '/jockey/stats' },
-    { icon: AlertTriangle, label: 'Vi phạm của tôi', path: '/jockey/violations' },
+    { icon: Bell, label: 'Invitations', path: '/jockey/invitations' },
+    { icon: Flag, label: 'My Races', path: '/jockey/races' },
+    { icon: Calendar, label: 'Schedule', path: '/jockey/schedule' },
+    { icon: Star, label: 'Achievements', path: '/jockey/stats' },
+    { icon: AlertTriangle, label: 'My Violations', path: '/jockey/violations' },
   ],
   referee: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/referee/dashboard' },
-    { icon: ShieldCheck, label: 'Kiểm tra ngựa', path: '/referee/horse-check' },
-    { icon: Activity, label: 'Ghi vi phạm', path: '/referee/violations' },
-    { icon: Flag, label: 'Xác nhận kết quả', path: '/referee/confirm-results' },
-    { icon: FileText, label: 'Biên bản', path: '/referee/reports' },
+    { icon: ShieldCheck, label: 'Horse Inspection', path: '/referee/horse-check' },
+    { icon: Activity, label: 'Record Violations', path: '/referee/violations' },
+    { icon: Flag, label: 'Confirm Results', path: '/referee/confirm-results' },
+    { icon: FileText, label: 'Reports', path: '/referee/reports' },
   ],
   spectator: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/spectator/dashboard' },
-    { icon: Trophy, label: 'Giải đấu & Lịch đua', path: '/spectator/tournaments' },
-    { icon: Activity, label: 'Kết quả Live', path: '/spectator/live' },
-    { icon: Target, label: 'Dự đoán của tôi', path: '/spectator/predictions' },
-    { icon: Bell, label: 'Thông báo', path: '/spectator/notifications' },
+    { icon: Wallet, label: 'My Wallet', path: '/spectator/wallet' },
+    { icon: Trophy, label: 'Tournaments & Schedule', path: '/spectator/tournaments' },
+    { icon: Activity, label: 'Live Results', path: '/spectator/live' },
+    { icon: Target, label: 'My Predictions', path: '/spectator/predictions' },
+    { icon: Bell, label: 'Notifications', path: '/spectator/notifications' },
   ],
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: 'Quản trị viên',
-  owner: 'Chủ ngựa',
+  admin: 'Administrator',
+  owner: 'Horse Owner',
   jockey: 'Jockey',
-  referee: 'Trọng tài',
-  spectator: 'Khán giả',
+  referee: 'Referee',
+  spectator: 'Spectator',
 };
 
 export function Sidebar() {
@@ -124,7 +125,7 @@ export function Sidebar() {
           <button
             onClick={handleLogout}
             className="text-muted hover:text-white transition-colors p-1"
-            title="Đăng xuất"
+            title="Sign Out"
           >
             <LogOut size={16} />
           </button>

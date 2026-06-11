@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Trophy, Bell, BarChart3, Eye, ChevronRight, TrendingUp, Activity, Sparkles } from 'lucide-react';
+import { Trophy, Bell, BarChart3, Eye, ChevronRight, TrendingUp, Activity, Sparkles, Wallet } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { useNavigate } from 'react-router-dom';
@@ -19,11 +19,11 @@ const UPCOMING = [
 export function SpectatorDashboardPage() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-[#0B1628] text-body font-sans flex">
+    <div className="min-h-screen text-body font-sans flex" style={{ backgroundColor: '#0b101e' }}>
       <Sidebar />
-      <div className="flex-1 min-w-0 overflow-y-auto">
+      <div className="flex-1 min-w-0 overflow-y-auto relative">
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
           {/* Hero */}
           <motion.div
@@ -53,11 +53,12 @@ export function SpectatorDashboardPage() {
           </motion.div>
 
           {/* Stats */}
-          <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-4 gap-4">
+          <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-5 gap-4">
             {[
+              { title: 'Số dư', value: '3,500', trend: '≈ $35.00', icon: Wallet, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/spectator/wallet' },
               { title: 'Đang diễn ra', value: '1', trend: 'Live ngay', icon: Activity, color: 'text-red-400', bg: 'from-red-500/15 to-red-900/20', path: '/spectator/live' },
-              { title: 'Giải đấu', value: '3', trend: 'Đang theo dõi', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/spectator/tournaments' },
-              { title: 'Dự đoán', value: '8', trend: '3 chờ kết quả', icon: BarChart3, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/spectator/predictions' },
+              { title: 'Giải đấu', value: '3', trend: 'Đang theo dõi', icon: Trophy, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/spectator/tournaments' },
+              { title: 'Dự đoán', value: '7', trend: '3 chờ kết quả', icon: BarChart3, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/spectator/predictions' },
               { title: 'Thông báo', value: '1', trend: 'Chưa đọc', icon: Bell, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', path: '/spectator/notifications' },
             ].map((m, i) => (
               <motion.div key={i} variants={child} onClick={() => navigate(m.path)}
@@ -121,10 +122,10 @@ export function SpectatorDashboardPage() {
               </div>
               <div className="space-y-3">
                 {[
-                  { horse: 'Thunderstrike', race: 'Vòng 3', result: 'correct', prize: '₫50.000' },
-                  { horse: 'Desert Wind', race: 'Vòng 3', result: 'correct', prize: '₫30.000' },
-                  { horse: 'Storm Rider', race: 'Vòng 4', result: 'pending', prize: '—' },
-                  { horse: 'Golden Flash', race: 'Vòng 4', result: 'pending', prize: '—' },
+                  { horse: 'Thunderstrike', race: 'Vòng 3', result: 'correct', prize: '+1,000 coins' },
+                  { horse: 'Desert Wind', race: 'Vòng 2', result: 'correct', prize: '+1,200 coins' },
+                  { horse: 'Storm Rider', race: 'Vòng 4', result: 'pending', prize: '-500 coins' },
+                  { horse: 'Silver Arrow', race: 'Vòng 4', result: 'pending', prize: '-300 coins' },
                 ].map((p, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-glass-border">
                     <div>

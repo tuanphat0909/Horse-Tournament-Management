@@ -3,26 +3,33 @@ import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
 
 const roles = [
-  { id: 'owner', label: 'Horse Owner', icon: '🐴' },
-  { id: 'jockey', label: 'Jockey', icon: '🏇' },
-  { id: 'referee', label: 'Referee', icon: '⚖️' },
-  { id: 'spectator', label: 'Spectator', icon: '👁️' },
-  { id: 'admin', label: 'Admin', icon: '🛡️' },
+  { id: 'owner', label: 'Horse\nOwner', emoji: '🐎' },
+  { id: 'jockey', label: 'Jockey', emoji: '🏇' },
+  { id: 'referee', label: 'Referee', emoji: '⚖️' },
+  { id: 'spectator', label: 'Spectator', emoji: '👁️' },
+  { id: 'admin', label: 'Admin', emoji: '🛡️' },
 ];
 
 const staggerContainer: Variants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
+};
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45 } },
 };
 
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
+function CornerOrnament() {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8">
+      <path d="M0 40V0H40" stroke="#d4af37" strokeOpacity="0.6" strokeWidth="1" />
+      <path d="M4 36V4H36" stroke="#d4af37" strokeOpacity="0.3" strokeWidth="1" />
+      <circle cx="4" cy="4" r="1.5" fill="#d4af37" />
+    </svg>
+  );
+}
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -30,124 +37,284 @@ export function RegisterPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen flex w-full bg-navy overflow-hidden font-sans text-body">
-      {/* LEFT PANEL */}
-      <motion.div
-        className="hidden md:flex w-[40%] bg-sidebar relative flex-col items-center justify-center p-12 overflow-hidden border-r border-gold/10"
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6 }}
+    <div
+      className="min-h-screen flex flex-col relative overflow-hidden"
+      style={{
+        backgroundColor: '#0b101e',
+        backgroundImage:
+          'radial-gradient(ellipse at 0% 100%, rgba(212,175,55,0.15) 0%, transparent 50%), radial-gradient(ellipse at 100% 0%, rgba(212,175,55,0.1) 0%, transparent 40%)',
+        fontFamily: '"Inter", sans-serif',
+        color: '#e2e8f0',
+      }}
+    >
+      {/* Subtle background wave lines — same as Login */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-30"
+        preserveAspectRatio="none"
+        viewBox="0 0 100 100"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#0B1628] to-[#08111E] pointer-events-none" />
+        <path d="M0,50 Q25,20 50,50 T100,50" fill="none" stroke="#d4af37" strokeWidth="0.1" />
+        <path d="M0,60 Q35,10 60,60 T100,60" fill="none" stroke="#d4af37" strokeWidth="0.1" opacity="0.8" />
+        <path d="M0,40 Q15,80 40,40 T100,40" fill="none" stroke="#d4af37" strokeWidth="0.1" opacity="0.6" />
+        <path d="M0,70 Q45,30 70,70 T100,70" fill="none" stroke="#d4af37" strokeWidth="0.1" opacity="0.4" />
+        <path d="M0,80 Q50,90 80,40 T100,80" fill="none" stroke="#d4af37" strokeWidth="0.1" opacity="0.5" />
+        <path d="M-10,110 C30,70 60,10 110,-10" fill="none" stroke="#d4af37" strokeWidth="0.2" opacity="0.3" />
+        <path d="M-10,90 C40,50 80,30 110,10" fill="none" stroke="#d4af37" strokeWidth="0.1" opacity="0.2" />
+      </svg>
 
+      {/* Logo */}
+      <header className="absolute top-0 left-0 w-full px-12 py-8 z-20">
         <div
+          className="tracking-widest font-semibold cursor-pointer"
+          style={{ fontFamily: '"Playfair Display", serif', color: '#d4af37', fontSize: '26px' }}
           onClick={() => navigate('/')}
-          className="absolute top-12 left-12 font-serif text-xl font-bold text-champagne z-10 cursor-pointer hover:scale-105 transition-transform"
         >
           EQUESTRIA
         </div>
+      </header>
 
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl italic text-champagne leading-tight mb-8">
-            "Join the Legacy."
-          </h2>
-          <div className="w-20 h-px bg-gold/50 mb-8" />
-          <p className="text-muted text-[13px] tracking-wide mb-12 uppercase">
-            Start Your Journey to Greatness
-          </p>
-          <div className="flex gap-4">
-            {['Global', 'Elite', 'Secure'].map((stat, i) => (
-              <div key={i} className="px-4 py-1.5 rounded-full border border-gold/30 text-gold text-xs font-semibold bg-gold/5">
-                {stat}
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* RIGHT PANEL */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-y-auto">
-        <motion.div
-          className="w-full max-w-[380px] py-12"
-          variants={staggerContainer}
-          initial="hidden"
-          animate="show"
+      {/* Main */}
+      <main className="flex-grow flex items-center justify-center relative z-10 px-6 py-12 lg:px-16 w-full max-w-[1600px] mx-auto">
+        {/* Vertical divider */}
+        <div
+          className="absolute hidden lg:flex flex-col items-center pointer-events-none z-0"
+          style={{ left: '50%', transform: 'translateX(-50%)', top: '10%', bottom: '10%' }}
         >
-          <motion.div variants={fadeUp} className="flex flex-col items-center mb-6">
-            <h1 className="font-serif text-2xl font-bold text-champagne mb-4">EQUESTRIA</h1>
-            <div className="w-12 h-px bg-gold/40 mb-4" />
-            <p className="text-muted text-sm">Create your premium account</p>
-          </motion.div>
+          <div style={{ width: '1px', flex: 1, background: 'linear-gradient(to bottom, transparent, rgba(212,175,55,0.35) 30%, rgba(212,175,55,0.35) 70%, transparent)' }} />
+          <svg viewBox="0 0 24 24" style={{ width: '22px', height: '22px', flexShrink: 0, margin: '10px 0' }}>
+            <path d="M12,0 L24,12 L12,24 L0,12 Z" fill="#d4af37" fillOpacity="0.6"/>
+            <path d="M12,4 L20,12 L12,20 L4,12 Z" fill="none" stroke="#d4af37" strokeOpacity="0.35" strokeWidth="0.8"/>
+          </svg>
+          <div style={{ width: '1px', height: '60px', background: 'rgba(212,175,55,0.25)', flexShrink: 0 }} />
+          <svg viewBox="0 0 16 16" style={{ width: '14px', height: '14px', flexShrink: 0, margin: '8px 0' }}>
+            <path d="M8,0 L16,8 L8,16 L0,8 Z" fill="none" stroke="#d4af37" strokeOpacity="0.45" strokeWidth="1"/>
+            <circle cx="8" cy="8" r="2" fill="#d4af37" fillOpacity="0.5"/>
+          </svg>
+          <div style={{ width: '1px', height: '60px', background: 'rgba(212,175,55,0.25)', flexShrink: 0 }} />
+          <svg viewBox="0 0 24 24" style={{ width: '22px', height: '22px', flexShrink: 0, margin: '10px 0' }}>
+            <path d="M12,0 L24,12 L12,24 L0,12 Z" fill="#d4af37" fillOpacity="0.6"/>
+            <path d="M12,4 L20,12 L12,20 L4,12 Z" fill="none" stroke="#d4af37" strokeOpacity="0.35" strokeWidth="0.8"/>
+          </svg>
+          <div style={{ width: '1px', flex: 1, background: 'linear-gradient(to bottom, rgba(212,175,55,0.35), transparent)' }} />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center w-full">
 
-          <div className="w-full">
-            <motion.div variants={fadeUp}>
-              <Input label="Full Name" type="text" placeholder="John Doe" />
-            </motion.div>
+          {/* Left: Branding */}
+          <motion.section
+            className="hidden lg:flex flex-col items-center justify-center text-center px-8"
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7 }}
+          >
+            <div className="mb-10">
+              <h1
+                className="italic font-medium mb-6 leading-tight"
+                style={{ fontFamily: '"Playfair Display", serif', color: '#e9c46a', fontSize: '56px', lineHeight: '1.15' }}
+              >
+                "Join the Legacy."
+              </h1>
+              <p className="tracking-[0.22em] uppercase font-semibold" style={{ color: '#94a3b8', fontSize: '13px' }}>
+                Start Your Journey to Greatness
+              </p>
+            </div>
+            <div className="flex gap-3">
+              {['Global', 'Elite', 'Secure'].map((s) => (
+                <span
+                  key={s}
+                  className="px-5 py-2 rounded-full font-medium tracking-wide"
+                  style={{ border: '1px solid rgba(212,175,55,0.2)', color: '#d4af37', background: 'rgba(30,41,59,0.3)', fontSize: '13px' }}
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </motion.section>
 
-            <motion.div variants={fadeUp}>
-              <Input label="Email Address" type="email" placeholder="champion@equestria.com" />
-            </motion.div>
+          {/* Right: Register form */}
+          <section className="w-full flex justify-center">
+            {/* Gradient border wrapper */}
+            <div className="w-full max-w-md" style={{
+              padding: '1px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.55) 0%, rgba(212,175,55,0.08) 40%, rgba(212,175,55,0.45) 100%)',
+              boxShadow: '0 0 30px rgba(212,175,55,0.12), 0 0 60px rgba(212,175,55,0.06)',
+            }}>
+            <motion.div
+              className="rounded-2xl p-10 relative overflow-hidden"
+              style={{
+                background: 'rgba(15,23,42,0.5)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                borderRadius: '15px',
+                boxShadow: 'inset 0 1px 0 rgba(212,175,55,0.1), 0 25px 50px -12px rgba(0,0,0,0.6)',
+              }}
+              variants={staggerContainer}
+              initial="hidden"
+              animate="show"
+            >
+              {/* Corners */}
+              <div className="absolute top-3 left-3 pointer-events-none"><CornerOrnament /></div>
+              <div className="absolute top-3 right-3 pointer-events-none scale-x-[-1]"><CornerOrnament /></div>
+              <div className="absolute bottom-3 left-3 pointer-events-none scale-y-[-1]"><CornerOrnament /></div>
+              <div className="absolute bottom-3 right-3 pointer-events-none scale-x-[-1] scale-y-[-1]"><CornerOrnament /></div>
 
-            <motion.div variants={fadeUp}>
-              <Input
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                rightIcon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                onRightIconClick={() => setShowPassword(!showPassword)}
-              />
-            </motion.div>
+              {/* Header */}
+              <motion.div variants={fadeUp} className="text-center mb-7 relative z-10">
+                <h2
+                  className="text-2xl tracking-widest mb-2"
+                  style={{ fontFamily: '"Playfair Display", serif', color: '#d4af37' }}
+                >
+                  EQUESTRIA
+                </h2>
+                <p className="text-sm" style={{ color: '#94a3b8' }}>Create your premium account</p>
+              </motion.div>
 
-            <motion.div variants={fadeUp} className="mb-6 mt-4">
-              <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-                Select Your Role
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                {roles.map((role, i) => (
+              <div className="space-y-4 relative z-10">
+                {/* Full Name */}
+                <motion.div variants={fadeUp}>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>
+                    Full Name
+                  </label>
+                  <input
+                    className="w-full rounded-md px-4 py-3 text-sm outline-none transition-all duration-300"
+                    style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
+                    type="text"
+                    placeholder="John Doe"
+                    onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
+                    onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                  />
+                </motion.div>
+
+                {/* Email */}
+                <motion.div variants={fadeUp}>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>
+                    Email Address
+                  </label>
+                  <input
+                    className="w-full rounded-md px-4 py-3 text-sm outline-none transition-all duration-300"
+                    style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
+                    type="email"
+                    placeholder="champion@equestria.com"
+                    onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
+                    onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                  />
+                </motion.div>
+
+                {/* Password */}
+                <motion.div variants={fadeUp}>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      className="w-full rounded-md px-4 py-3 pr-10 text-sm outline-none transition-all duration-300"
+                      style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
+                      onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                    />
+                    <button
+                      className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      style={{ color: '#94a3b8' }}
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </motion.div>
+
+                {/* Role selector */}
+                <motion.div variants={fadeUp}>
+                  <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#94a3b8' }}>
+                    Select Your Role
+                  </label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {roles.map((role) => (
+                      <button
+                        key={role.id}
+                        type="button"
+                        onClick={() => setSelectedRole(role.id)}
+                        className="flex flex-col items-center justify-center p-2 rounded-lg gap-1.5 transition-all duration-300"
+                        style={{
+                          border: selectedRole === role.id ? '1px solid #d4af37' : '1px solid rgba(148,163,184,0.2)',
+                          background: selectedRole === role.id ? 'rgba(212,175,55,0.1)' : 'transparent',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedRole !== role.id) (e.currentTarget.style.borderColor = 'rgba(212,175,55,0.5)');
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedRole !== role.id) (e.currentTarget.style.borderColor = 'rgba(148,163,184,0.2)');
+                        }}
+                      >
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ background: 'rgba(30,41,59,0.4)' }}
+                        >
+                          <span className="text-sm">{role.emoji}</span>
+                        </div>
+                        <span
+                          className="text-[9px] text-center leading-tight"
+                          style={{ color: selectedRole === role.id ? '#e2e8f0' : '#94a3b8' }}
+                        >
+                          {role.label.split('\n').map((line, i, arr) => (
+                            <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                          ))}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Submit */}
+                <motion.div variants={fadeUp}>
                   <button
-                    key={role.id}
+                    className="w-full font-bold text-sm tracking-wider uppercase py-3.5 rounded-md flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_0_20px_rgba(212,175,55,0.4)]"
+                    style={{ background: 'linear-gradient(135deg,#e9c46a 0%,#d4af37 50%,#aa8c2c 100%)', color: '#0b101e' }}
                     type="button"
-                    onClick={() => setSelectedRole(role.id)}
-                    className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-200 ${
-                      i === 4 ? 'col-span-2 md:col-span-1' : ''
-                    } ${
-                      selectedRole === role.id
-                        ? 'border-gold bg-gold/5 text-gold shadow-[0_0_15px_rgba(201,168,76,0.15)]'
-                        : 'border-border bg-surface hover:border-gold/50 text-muted hover:text-body'
-                    }`}
+                    onClick={() => navigate('/login')}
                   >
-                    <span className="text-xl mb-1.5">{role.icon}</span>
-                    <span className="text-[11px] leading-tight text-center">{role.label}</span>
+                    Register
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M14 5l7 7m0 0l-7 7m7-7H3" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                    </svg>
                   </button>
-                ))}
+                </motion.div>
+
+                {/* Divider */}
+                <motion.div variants={fadeUp} className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t" style={{ borderColor: 'rgba(212,175,55,0.2)' }} />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span
+                      className="px-3 text-xs uppercase tracking-wider font-semibold"
+                      style={{ color: '#94a3b8' }}
+                    >
+                      or
+                    </span>
+                  </div>
+                </motion.div>
+
+                {/* Login link */}
+                <motion.div variants={fadeUp} className="text-center text-xs" style={{ color: '#94a3b8' }}>
+                  Already have an account?{' '}
+                  <a
+                    href="#"
+                    className="font-medium transition-colors"
+                    style={{ color: '#d4af37' }}
+                    onClick={(e) => { e.preventDefault(); navigate('/login'); }}
+                  >
+                    Sign in here
+                  </a>
+                </motion.div>
               </div>
             </motion.div>
-
-            <motion.div variants={fadeUp}>
-              <Button type="button" className="w-full" onClick={() => navigate('/dashboard')}>
-                REGISTER →
-              </Button>
-            </motion.div>
-          </div>
-
-          <motion.div variants={fadeUp} className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-muted text-xs uppercase tracking-wider">or</span>
-            <div className="flex-1 h-px bg-border" />
-          </motion.div>
-
-          <motion.div variants={fadeUp} className="text-center text-xs text-muted">
-            Already have an account?{' '}
-            <a
-              href="#"
-              onClick={(e) => { e.preventDefault(); navigate('/login'); }}
-              className="text-gold hover:text-champagne transition-colors focus:outline-none focus:underline"
-            >
-              Sign in here
-            </a>
-          </motion.div>
-        </motion.div>
-      </div>
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 }

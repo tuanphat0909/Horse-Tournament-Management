@@ -8,13 +8,13 @@ import { PageHero } from '../../components/layout/PageHero';
 type TabType = 'all' | 'correct' | 'incorrect' | 'pending';
 
 const PREDICTIONS = [
-  { id: 1, spectator: 'Phạm Thu Hà', race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: 'Thunderstrike', correct: true, reward: '₫500.000', paid: true, submittedAt: '09/06/2026' },
-  { id: 2, spectator: 'Bùi Thị Mai', race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Desert Wind', actual: 'Thunderstrike', correct: false, reward: '—', paid: false, submittedAt: '09/06/2026' },
-  { id: 3, spectator: 'Ngô Minh Khoa', race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: 'Thunderstrike', correct: true, reward: '₫500.000', paid: false, submittedAt: '09/06/2026' },
-  { id: 4, spectator: 'Phạm Thu Hà', race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predicted: 'Desert Wind', actual: 'Desert Wind', correct: true, reward: '₫500.000', paid: true, submittedAt: '11/06/2026' },
-  { id: 5, spectator: 'Lê Thị Hoa', race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predicted: 'Silver Arrow', actual: 'Desert Wind', correct: false, reward: '—', paid: false, submittedAt: '11/06/2026' },
-  { id: 6, spectator: 'Bùi Thị Mai', race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: null, correct: null, reward: '?', paid: false, submittedAt: '14/06/2026' },
-  { id: 7, spectator: 'Phạm Thu Hà', race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predicted: 'Golden Flash', actual: null, correct: null, reward: '?', paid: false, submittedAt: '14/06/2026' },
+  { id: 1, spectator: 'Phạm Thu Hà',   race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: 'Thunderstrike', correct: true,  reward: '+1,000 coins', paid: true,  submittedAt: '09/06/2026' },
+  { id: 2, spectator: 'Bùi Thị Mai',   race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Desert Wind',   actual: 'Thunderstrike', correct: false, reward: '—',            paid: false, submittedAt: '09/06/2026' },
+  { id: 3, spectator: 'Ngô Minh Khoa', race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: 'Thunderstrike', correct: true,  reward: '+500 coins',  paid: false, submittedAt: '09/06/2026' },
+  { id: 4, spectator: 'Phạm Thu Hà',   race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predicted: 'Desert Wind',   actual: 'Desert Wind',   correct: true,  reward: '+1,200 coins', paid: true,  submittedAt: '11/06/2026' },
+  { id: 5, spectator: 'Lê Thị Hoa',    race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predicted: 'Silver Arrow',  actual: 'Desert Wind',   correct: false, reward: '—',            paid: false, submittedAt: '11/06/2026' },
+  { id: 6, spectator: 'Bùi Thị Mai',   race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: null, correct: null,  reward: '?', paid: false, submittedAt: '14/06/2026' },
+  { id: 7, spectator: 'Phạm Thu Hà',   race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predicted: 'Golden Flash',  actual: null, correct: null,  reward: '?', paid: false, submittedAt: '14/06/2026' },
 ];
 
 const STATS = [
@@ -42,11 +42,11 @@ export function AdminPredictionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1628] text-body font-sans flex">
+    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
-      <div className="flex-1 min-w-0 overflow-y-auto">
+      <div className="flex-1 min-w-0 overflow-y-auto relative">
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6 relative z-10">
 
           <PageHero
             title="Quản lý dự đoán"

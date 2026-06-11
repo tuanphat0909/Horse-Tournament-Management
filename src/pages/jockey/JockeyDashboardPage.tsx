@@ -10,11 +10,11 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 export function JockeyDashboardPage() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-[#0B1628] text-body font-sans flex">
+    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
-      <div className="flex-1 min-w-0 overflow-y-auto">
+      <div className="flex-1 min-w-0 overflow-y-auto relative">
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
           {/* Hero */}
           <motion.div

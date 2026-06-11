@@ -44,6 +44,7 @@ import { SpectatorTournamentsPage } from '../pages/spectator/SpectatorTournament
 import { SpectatorLiveResultsPage } from '../pages/spectator/SpectatorLiveResultsPage';
 import { SpectatorPredictionsPage } from '../pages/spectator/SpectatorPredictionsPage';
 import { SpectatorNotificationsPage } from '../pages/spectator/SpectatorNotificationsPage';
+import { SpectatorWalletPage } from '../pages/spectator/SpectatorWalletPage';
 
 import { PrivateRoute } from './PrivateRoute';
 
@@ -97,6 +98,7 @@ export function AppRoutes() {
       <Route path="/spectator/live" element={<PrivateRoute><SpectatorLiveResultsPage /></PrivateRoute>} />
       <Route path="/spectator/predictions" element={<PrivateRoute><SpectatorPredictionsPage /></PrivateRoute>} />
       <Route path="/spectator/notifications" element={<PrivateRoute><SpectatorNotificationsPage /></PrivateRoute>} />
+      <Route path="/spectator/wallet" element={<PrivateRoute><SpectatorWalletPage /></PrivateRoute>} />
     </Routes>
   );
 }

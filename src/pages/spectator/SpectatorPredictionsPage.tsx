@@ -9,13 +9,13 @@ type PredResult = 'correct' | 'incorrect' | 'pending';
 type Tab = PredResult | 'all';
 
 const PREDICTIONS = [
-  { id: 1, horse: 'Thunderstrike', race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: 1, amount: '₫100.000', prize: '₫500.000', result: 'correct' as PredResult, date: '14/06/2026' },
-  { id: 2, horse: 'Desert Wind', race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: 2, amount: '₫50.000', prize: '—', result: 'incorrect' as PredResult, date: '14/06/2026' },
-  { id: 3, horse: 'Storm Rider', race: 'Vòng 4 - Bán Kết', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: null, amount: '₫200.000', prize: '—', result: 'pending' as PredResult, date: '18/06/2026' },
-  { id: 4, horse: 'Silver Arrow', race: 'Vòng 4 - Bán Kết', tournament: 'Giải Xuân 2026', predictedPos: 2, actualPos: null, amount: '₫150.000', prize: '—', result: 'pending' as PredResult, date: '18/06/2026' },
-  { id: 5, horse: 'Thunderstrike', race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: 2, amount: '₫80.000', prize: '—', result: 'incorrect' as PredResult, date: '11/06/2026' },
-  { id: 6, horse: 'Desert Wind', race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: 1, amount: '₫120.000', prize: '₫600.000', result: 'correct' as PredResult, date: '11/06/2026' },
-  { id: 7, horse: 'Golden Flash', race: 'Vòng 4 - Bán Kết', tournament: 'Giải Xuân 2026', predictedPos: 3, actualPos: null, amount: '₫60.000', prize: '—', result: 'pending' as PredResult, date: '18/06/2026' },
+  { id: 1, horse: 'Thunderstrike', race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: 1, amount: '200 coins', prize: '+1,000 coins', result: 'correct' as PredResult, date: '14/06/2026' },
+  { id: 2, horse: 'Desert Wind',   race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: 2, amount: '100 coins', prize: '—', result: 'incorrect' as PredResult, date: '14/06/2026' },
+  { id: 3, horse: 'Storm Rider',   race: 'Vòng 4 - Bán Kết',       tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: null, amount: '500 coins', prize: '—', result: 'pending' as PredResult, date: '18/06/2026' },
+  { id: 4, horse: 'Silver Arrow',  race: 'Vòng 4 - Bán Kết',       tournament: 'Giải Xuân 2026', predictedPos: 2, actualPos: null, amount: '300 coins', prize: '—', result: 'pending' as PredResult, date: '18/06/2026' },
+  { id: 5, horse: 'Thunderstrike', race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: 2, amount: '200 coins', prize: '—', result: 'incorrect' as PredResult, date: '11/06/2026' },
+  { id: 6, horse: 'Desert Wind',   race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predictedPos: 1, actualPos: 1, amount: '250 coins', prize: '+1,200 coins', result: 'correct' as PredResult, date: '11/06/2026' },
+  { id: 7, horse: 'Golden Flash',  race: 'Vòng 4 - Bán Kết',       tournament: 'Giải Xuân 2026', predictedPos: 3, actualPos: null, amount: '120 coins', prize: '—', result: 'pending' as PredResult, date: '18/06/2026' },
 ];
 
 const RESULT_CONFIG: Record<PredResult, { label: string; color: string; icon: typeof Clock }> = {
@@ -38,15 +38,15 @@ export function SpectatorPredictionsPage() {
     incorrect: PREDICTIONS.filter(p => p.result === 'incorrect').length,
   };
 
-  const totalWon = '₫1.100.000';
+  const totalWon = '2,200 coins';
   const accuracy = `${Math.round((counts.correct / (counts.correct + counts.incorrect)) * 100)}%`;
 
   return (
-    <div className="min-h-screen bg-[#0B1628] text-body font-sans flex">
+    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
-      <div className="flex-1 min-w-0 overflow-y-auto">
+      <div className="flex-1 relative min-w-0 overflow-y-auto">
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
           <PageHero
             title="Dự đoán của tôi"
@@ -154,8 +154,8 @@ export function SpectatorPredictionsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-muted font-medium mb-1.5">Số tiền cược (VNĐ)</label>
-                    <input type="number" placeholder="100000" className="w-full bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors" />
+                    <label className="block text-xs text-muted font-medium mb-1.5">Số coins cược <span className="text-muted/60">(Số dư: 3,500 coins)</span></label>
+                    <input type="number" placeholder="100" min="10" className="w-full bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 mt-6">

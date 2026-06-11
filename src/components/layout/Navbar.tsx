@@ -31,7 +31,7 @@ export function Navbar() {
               <path d="M12 2C9 2 8 5 8 5L6 6V10L8 12V18L6 20H8V22H10V20H14V22H16V20H18L16 18V12L18 10V6L16 5C16 5 15 2 12 2Z" />
             </svg>
           </div>
-          <span className="font-serif text-2xl font-bold text-champagne tracking-wider">Chưa có tên</span>
+          <span className="font-serif text-2xl font-bold text-champagne tracking-wider">EQUESTRIA</span>
         </div>
 
         {/* Center Links */}
