@@ -206,7 +206,7 @@ export function DashboardPage() {
             className="rounded-2xl overflow-hidden relative group border border-gold/20 hover:border-gold/40 transition-colors duration-500"
             style={{ height: '280px' }}
           >
-            <img src={IMG.track} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 bg-surface" />
+            <img src={IMG.horse1} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 bg-surface" />
             <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/90 to-navy/30" />
             <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-navy/20" />
 

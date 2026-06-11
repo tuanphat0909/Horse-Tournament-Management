@@ -57,7 +57,7 @@ export function JockeyViolationsPage() {
   const [appealing, setAppealing] = useState<number | null>(null);
   const [appealText, setAppealText] = useState('');
 
-  const pending = MY_VIOLATIONS.filter(v => v.status === 'pending_appeal').length;
+  const _pending = MY_VIOLATIONS.filter(v => v.status === 'pending_appeal').length; void _pending;
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>

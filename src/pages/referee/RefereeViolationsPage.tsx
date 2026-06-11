@@ -74,7 +74,7 @@ export function RefereeViolationsPage() {
   const decided = VIOLATIONS.filter(v => v.status === 'confirmed' || v.status === 'rejected');
   const displayed = tab === 'active' ? active : decided;
 
-  const needsDecision = active.filter(v => v.status === 'appealed').length;
+  const _needsDecision = active.filter(v => v.status === 'appealed').length; void _needsDecision;
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>

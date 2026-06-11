@@ -240,7 +240,7 @@ const SpectatorPreview = () => (
   </div>
 );
 
-const PREVIEWS: Record<string, () => JSX.Element> = {
+const PREVIEWS: Record<string, () => React.ReactElement> = {
   owner: OwnerPreview,
   jockey: JockeyPreview,
   referee: RefereePreview,
