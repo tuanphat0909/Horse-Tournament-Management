@@ -4,7 +4,9 @@ import { Sparkles, Plus, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
+import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getMyBets, placeBet } from '../../api/spectatorService';
+import { getRaceSchedule } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 
 type BetStatus = 'correct' | 'incorrect' | 'pending';
@@ -29,6 +31,7 @@ const INPUT = 'w-full bg-[#0B1628] border border-glass-border rounded-lg px-3 py
 
 export function SpectatorPredictionsPage() {
   const [bets, setBets] = useState<any[]>([]);
+  const [races, setRaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('all');
@@ -50,7 +53,12 @@ export function SpectatorPredictionsPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    getRaceSchedule()
+      .then(d => setRaces(d?.result ?? (Array.isArray(d) ? d : [])))
+      .catch(() => setRaces([]));
+  }, []);
 
   async function handlePlaceBet() {
     setSubmitError(''); setSubmitSuccess('');
@@ -93,6 +101,7 @@ export function SpectatorPredictionsPage() {
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 relative min-w-0 overflow-y-auto">
+        <PageAmbience accent="purple" />
         <Topbar />
         <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
@@ -119,7 +128,8 @@ export function SpectatorPredictionsPage() {
             ].map((s, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
                 className="glass-panel rounded-xl p-5 relative overflow-hidden">
-                <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br ${s.bg} blur-[30px] opacity-60`} />
+                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br ${s.bg} blur-[30px] opacity-60 pointer-events-none`} />
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.bg} border border-white/[0.08] flex items-center justify-center ${s.color} mb-3 relative z-10`}>
                   <s.icon size={16} />
                 </div>
@@ -150,9 +160,11 @@ export function SpectatorPredictionsPage() {
                 const Icon = cfg.icon;
                 return (
                   <motion.div key={b.id ?? i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                    className="glass-panel rounded-xl p-5 border border-glass-border hover:border-gold/20 transition-all">
-                    <div className="flex items-start gap-4">
-                      <div className="text-2xl shrink-0">🐴</div>
+                    className="glass-panel rounded-xl p-5 border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all relative overflow-hidden group">
+                    <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
+                    <div className="relative z-10 flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gold/10 border border-gold/25 flex items-center justify-center text-2xl shrink-0">🐴</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="text-base font-serif font-bold text-white">{b.horseName ?? `Ngựa #${b.horseId}`}</span>
@@ -176,7 +188,14 @@ export function SpectatorPredictionsPage() {
                   </motion.div>
                 );
               })}
-              {filtered.length === 0 && <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm">Không có cược nào</div>}
+              {filtered.length === 0 && (
+                <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
+                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                  <div className="text-4xl opacity-40 mb-3">🎯</div>
+                  <div className="text-muted text-sm">Không có cược nào</div>
+                  <div className="mx-auto mt-4 w-24 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+                </div>
+              )}
             </div>
           )}
 
@@ -184,14 +203,25 @@ export function SpectatorPredictionsPage() {
           {showAdd && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-7 w-full max-w-md border border-glass-border">
-                <h3 className="text-lg font-serif text-white mb-5">Đặt cược mới</h3>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Sparkles size={15} className="text-gold" /></div>
+                  <h3 className="text-lg font-serif text-white">Đặt cược mới</h3>
+                  <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+                </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs text-muted font-medium mb-1.5">ID Cuộc đua *</label>
-                    <input type="number" value={form.raceId} onChange={e => setForm(p => ({...p, raceId: e.target.value}))} placeholder="Nhập ID cuộc đua" className={INPUT} />
+                    <label className="block text-xs text-muted font-medium mb-1.5">Cuộc đua *</label>
+                    <select value={form.raceId} onChange={e => setForm(p => ({...p, raceId: e.target.value}))} className={INPUT}>
+                      <option value="">-- Chọn cuộc đua --</option>
+                      {races.map(r => (
+                        <option key={r.id} value={r.id}>{(r.name ?? `Cuộc đua #${r.id}`)}{r.raceDate ? ` — ${r.raceDate}` : ''}</option>
+                      ))}
+                    </select>
+                    {races.length === 0 && <p className="text-[10px] text-muted/60 mt-1">Chưa có cuộc đua nào trong lịch.</p>}
                   </div>
+                  {/* TODO: cần BE bổ sung GET danh sách ngựa theo cuộc đua để thay ô nhập tay bằng dropdown */}
                   <div>
-                    <label className="block text-xs text-muted font-medium mb-1.5">ID Ngựa cược *</label>
+                    <label className="block text-xs text-muted font-medium mb-1.5">ID Ngựa cược * <span className="text-muted/50">— nhập ID (BE chưa có API danh sách ngựa theo cuộc đua)</span></label>
                     <input type="number" value={form.horseId} onChange={e => setForm(p => ({...p, horseId: e.target.value}))} placeholder="Nhập ID ngựa" className={INPUT} />
                   </div>
                   <div>

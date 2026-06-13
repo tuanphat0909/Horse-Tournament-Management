@@ -1,50 +1,37 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Target, CheckCircle, XCircle, Trophy, TrendingUp, DollarSign, Search } from 'lucide-react';
+import { Target, CheckCircle, TrendingUp, DollarSign, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
+import { PageAmbience } from '../../components/layout/PageAmbience';
 
 type TabType = 'all' | 'correct' | 'incorrect' | 'pending';
 
-const PREDICTIONS = [
-  { id: 1, spectator: 'Phạm Thu Hà',   race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: 'Thunderstrike', correct: true,  reward: '+1,000 coins', paid: true,  submittedAt: '09/06/2026' },
-  { id: 2, spectator: 'Bùi Thị Mai',   race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Desert Wind',   actual: 'Thunderstrike', correct: false, reward: '—',            paid: false, submittedAt: '09/06/2026' },
-  { id: 3, spectator: 'Ngô Minh Khoa', race: 'Vòng 1 - Chặng Mở Đầu', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: 'Thunderstrike', correct: true,  reward: '+500 coins',  paid: false, submittedAt: '09/06/2026' },
-  { id: 4, spectator: 'Phạm Thu Hà',   race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predicted: 'Desert Wind',   actual: 'Desert Wind',   correct: true,  reward: '+1,200 coins', paid: true,  submittedAt: '11/06/2026' },
-  { id: 5, spectator: 'Lê Thị Hoa',    race: 'Vòng 2 - Chặng Tốc Độ', tournament: 'Giải Xuân 2026', predicted: 'Silver Arrow',  actual: 'Desert Wind',   correct: false, reward: '—',            paid: false, submittedAt: '11/06/2026' },
-  { id: 6, spectator: 'Bùi Thị Mai',   race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predicted: 'Thunderstrike', actual: null, correct: null,  reward: '?', paid: false, submittedAt: '14/06/2026' },
-  { id: 7, spectator: 'Phạm Thu Hà',   race: 'Vòng 3 - Chặng Sức Bền', tournament: 'Giải Xuân 2026', predicted: 'Golden Flash',  actual: null, correct: null,  reward: '?', paid: false, submittedAt: '14/06/2026' },
+// TODO: BE chưa có API thống kê dự đoán — số liệu hiển thị '—'
+const STATS = [
+  { label: 'Tổng dự đoán', value: '—', icon: Target, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20' },
+  { label: 'Dự đoán đúng', value: '—', icon: CheckCircle, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20' },
+  { label: 'Đã trả thưởng', value: '—', icon: DollarSign, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20' },
+  { label: 'Tỉ lệ chính xác', value: '—', icon: TrendingUp, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20' },
 ];
 
-const STATS = [
-  { label: 'Tổng dự đoán', value: PREDICTIONS.length, icon: Target, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20' },
-  { label: 'Dự đoán đúng', value: PREDICTIONS.filter(p => p.correct === true).length, icon: CheckCircle, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20' },
-  { label: 'Đã trả thưởng', value: PREDICTIONS.filter(p => p.paid).length, icon: DollarSign, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20' },
-  { label: 'Tỉ lệ chính xác', value: `${Math.round(PREDICTIONS.filter(p => p.correct === true).length / PREDICTIONS.filter(p => p.correct !== null).length * 100)}%`, icon: TrendingUp, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20' },
-];
+const TAB_CONFIG = {
+  all: { label: 'Tất cả', count: 0 },
+  pending: { label: 'Chưa có kết quả', count: 0 },
+  correct: { label: 'Đúng', count: 0 },
+  incorrect: { label: 'Sai', count: 0 },
+};
 
 export function AdminPredictionsPage() {
   const [tab, setTab] = useState<TabType>('all');
   const [search, setSearch] = useState('');
 
-  const filtered = PREDICTIONS.filter(p => {
-    const matchTab = tab === 'all' || (tab === 'correct' && p.correct === true) || (tab === 'incorrect' && p.correct === false) || (tab === 'pending' && p.correct === null);
-    const matchSearch = p.spectator.toLowerCase().includes(search.toLowerCase()) || p.predicted.toLowerCase().includes(search.toLowerCase());
-    return matchTab && matchSearch;
-  });
-
-  const TAB_CONFIG = {
-    all: { label: 'Tất cả', count: PREDICTIONS.length },
-    pending: { label: 'Chưa có kết quả', count: PREDICTIONS.filter(p => p.correct === null).length },
-    correct: { label: 'Đúng', count: PREDICTIONS.filter(p => p.correct === true).length },
-    incorrect: { label: 'Sai', count: PREDICTIONS.filter(p => p.correct === false).length },
-  };
-
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 min-w-0 overflow-y-auto relative">
+        <PageAmbience accent="gold" />
         <Topbar />
         <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6 relative z-10">
 
@@ -98,69 +85,11 @@ export function AdminPredictionsPage() {
             </div>
           </div>
 
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-glass-border bg-navy-light/30">
-                  {['Khán giả', 'Cuộc đua', 'Dự đoán', 'Kết quả thực tế', 'Đánh giá', 'Thưởng', 'Thanh toán'].map(h => (
-                    <th key={h} className="text-left text-[11px] uppercase tracking-wider text-muted font-bold px-5 py-3.5">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p, i) => (
-                  <motion.tr
-                    key={p.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="border-b border-glass-border/50 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center font-serif font-bold text-cyan-300 text-sm shrink-0">
-                          {p.spectator[0]}
-                        </div>
-                        <span className="text-sm font-medium text-white">{p.spectator}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="text-sm text-white">{p.race}</div>
-                      <div className="text-xs text-muted">{p.submittedAt}</div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="flex items-center gap-1.5 text-sm text-champagne font-medium">
-                        <Trophy size={13} className="text-gold/60" /> {p.predicted}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-white">{p.actual ?? <span className="text-muted italic">Chờ kết quả</span>}</td>
-                    <td className="px-5 py-4">
-                      {p.correct === null ? (
-                        <span className="text-[11px] text-muted italic">—</span>
-                      ) : p.correct ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400 text-xs font-bold"><CheckCircle size={13} /> Đúng</span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-red-400 text-xs font-bold"><XCircle size={13} /> Sai</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-gold font-bold">{p.reward}</td>
-                    <td className="px-5 py-4">
-                      {p.correct && !p.paid && (
-                        <button className="px-3 py-1 rounded bg-gold/15 text-gold text-xs font-bold border border-gold/20 hover:bg-gold/25 transition-colors">
-                          Trả thưởng
-                        </button>
-                      )}
-                      {p.paid && (
-                        <span className="text-xs text-emerald-400 font-medium flex items-center gap-1"><CheckCircle size={12} /> Đã trả</span>
-                      )}
-                      {p.correct === false && !p.paid && (
-                        <span className="text-xs text-muted">—</span>
-                      )}
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+          {/* TODO: BE chưa có API danh sách dự đoán */}
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
+            <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+            <div className="text-4xl opacity-40 mb-3">🎯</div>
+            <div className="text-muted text-sm">Chưa có dữ liệu</div>
           </motion.div>
 
         </main>

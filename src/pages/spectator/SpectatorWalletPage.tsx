@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Wallet, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown,
-  Clock, CheckCircle, Plus, Minus, DollarSign, Coins,
+  Clock, CheckCircle, Plus, Minus, DollarSign, Coins, History,
 } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
+import { PageAmbience } from '../../components/layout/PageAmbience';
 import { deposit, withdraw, getBalance, getWalletHistory } from '../../api/spectatorService';
 import { parseApiError } from '../../api/authService';
 
@@ -111,6 +112,7 @@ export function SpectatorWalletPage() {
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="relative flex-1 min-w-0 overflow-y-auto">
+        <PageAmbience accent="purple" />
         <Topbar />
         <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
@@ -131,7 +133,9 @@ export function SpectatorWalletPage() {
           {/* Balance + stats */}
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-3 gap-4">
             <motion.div variants={child} className="col-span-1 glass-panel rounded-2xl p-6 relative overflow-hidden border border-gold/15">
-              <div className="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-gradient-to-br from-gold/20 to-amber-900/10 blur-[40px]" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-gradient-to-br from-gold/20 to-amber-900/10 blur-[40px] pointer-events-none" />
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
@@ -158,7 +162,8 @@ export function SpectatorWalletPage() {
               { label: 'Cược đang chờ', value: transactions.filter(t => (t.status ?? '').toLowerCase() === 'pending').length, icon: Clock, color: 'text-yellow-400', bg: 'from-yellow-500/15 to-yellow-900/20' },
             ].map((s, i) => (
               <motion.div key={i} variants={child} className="glass-panel rounded-xl p-5 relative overflow-hidden">
-                <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${s.bg} blur-[30px] opacity-60`} />
+                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${s.bg} blur-[30px] opacity-60 pointer-events-none`} />
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.bg} border border-white/[0.08] flex items-center justify-center ${s.color} mb-3 relative z-10`}>
                   <s.icon size={16} />
                 </div>
@@ -174,12 +179,15 @@ export function SpectatorWalletPage() {
             {/* Left: Deposit + Withdraw */}
             <div className="space-y-4">
               {/* Deposit */}
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-5">
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel rounded-xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
+                <div className="relative z-10 flex items-center gap-3 mb-5">
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                     <Plus size={15} className="text-emerald-400" />
                   </div>
                   <h2 className="text-base font-serif text-white">Nạp tiền</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
                 </div>
 
                 <div className="mb-4">
@@ -224,12 +232,15 @@ export function SpectatorWalletPage() {
               </motion.div>
 
               {/* Withdraw */}
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glass-panel rounded-xl p-6">
-                <div className="flex items-center gap-2 mb-5">
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glass-panel rounded-xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
+                <div className="relative z-10 flex items-center gap-3 mb-5">
                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                     <Minus size={15} className="text-blue-400" />
                   </div>
                   <h2 className="text-base font-serif text-white">Rút tiền</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
                 </div>
 
                 <div className="relative mb-4">
@@ -250,10 +261,14 @@ export function SpectatorWalletPage() {
             </div>
 
             {/* Transaction history */}
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-panel rounded-xl p-6">
-              <div className="flex items-center justify-between mb-5">
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-panel rounded-xl p-6 relative overflow-hidden">
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
+              <div className="relative z-10 flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><History size={15} className="text-gold" /></div>
                 <h2 className="text-base font-serif text-white">Lịch sử giao dịch</h2>
-                <div className="flex items-center gap-1">
+                <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+                <div className="flex items-center gap-1 shrink-0">
                   {([['all', 'Tất cả'], ['deposit', 'Nạp'], ['withdraw', 'Rút'], ['win', 'Thắng'], ['loss', 'Thua'], ['bet', 'Cược']] as [TxType | 'all', string][]).map(([f, label]) => (
                     <button key={f} onClick={() => setTxFilter(f)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${txFilter === f ? 'bg-gold/15 text-gold border border-gold/30' : 'text-muted hover:text-white'}`}>
@@ -279,7 +294,7 @@ export function SpectatorWalletPage() {
                     const isPos = amt > 0;
                     return (
                       <motion.div key={tx.id ?? i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                        className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-glass-border hover:border-white/10 transition-all">
+                        className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all group">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.color}`}>
                           <TxIcon size={15} />
                         </div>
@@ -299,7 +314,11 @@ export function SpectatorWalletPage() {
                     );
                   })}
                   {filtered.length === 0 && (
-                    <div className="text-center py-12 text-muted text-sm">Không có giao dịch</div>
+                    <div className="text-center py-12">
+                      <div className="text-4xl opacity-40 mb-3">💰</div>
+                      <div className="text-muted text-sm">Không có giao dịch</div>
+                      <div className="mx-auto mt-4 w-24 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+                    </div>
                   )}
                 </div>
               )}

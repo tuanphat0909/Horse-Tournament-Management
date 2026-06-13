@@ -4,6 +4,7 @@ import { Plus, ShieldCheck, Edit2, Trash2, Eye, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
+import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getMyHorses, createHorse, getHorse, updateHorse, deleteHorse } from '../../api/ownerService';
 import { parseApiError } from '../../api/authService';
 
@@ -120,6 +121,7 @@ export function OwnerHorsesPage() {
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 min-w-0 overflow-y-auto relative">
+        <PageAmbience accent="emerald" />
         <Topbar />
         <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
@@ -135,8 +137,8 @@ export function OwnerHorsesPage() {
             }
           />
 
-          <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-72">
-            <Search size={15} className="text-muted shrink-0" />
+          <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border focus-within:border-gold/40 rounded-lg px-3 py-2 w-72 transition-colors">
+            <Search size={15} className="text-gold/60 shrink-0" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm tên ngựa..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
           </div>
 
@@ -147,15 +149,26 @@ export function OwnerHorsesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {filtered.map((h, i) => (
                 <motion.div key={h.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                  className="glass-panel rounded-2xl overflow-hidden border border-glass-border hover:border-gold/25 transition-all group">
+                  className="glass-panel rounded-2xl overflow-hidden border border-glass-border hover:border-gold/25 transition-all group relative">
+                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent z-10 pointer-events-none" />
                   <div className="relative h-36 overflow-hidden bg-gradient-to-br from-gold/10 to-navy/80 flex items-center justify-center">
-                    <span className="text-5xl">🐴</span>
+                    <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #C9A84C 1px, transparent 0)', backgroundSize: '18px 18px' }} />
+                    <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-br from-emerald-500/15 to-transparent blur-[30px] pointer-events-none" />
+                    <div className="w-20 h-20 rounded-full bg-gold/10 border border-gold/25 ring-1 ring-gold/30 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <span className="text-5xl drop-shadow-[0_2px_8px_rgba(201,168,76,0.35)]">🐴</span>
+                    </div>
+                    <div className="absolute top-3 left-3 w-7 h-7 rounded-full bg-navy/70 backdrop-blur-sm border border-gold/25 flex items-center justify-center font-serif font-bold text-champagne text-xs">{i + 1}</div>
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
                   </div>
-                  <div className="p-5">
+                  <div className="p-5 relative">
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="text-lg font-serif text-white group-hover:text-champagne transition-colors">{h.name}</h3>
-                        <p className="text-xs text-muted">{h.breed} • {h.age} tuổi • {h.gender === 'Male' ? 'Đực' : 'Cái'}</p>
+                        <p className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-muted">{h.breed}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-champagne">{h.age} tuổi</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-muted">{h.gender === 'Male' ? 'Đực' : 'Cái'}</span>
+                        </p>
                       </div>
                       <div className="flex gap-1.5">
                         <button onClick={() => openView(h.id)} className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"><Eye size={13} /></button>
@@ -164,17 +177,23 @@ export function OwnerHorsesPage() {
                       </div>
                     </div>
                     {h.healthStatus && (
-                      <div className="flex justify-between text-[11px] text-muted font-medium">
-                        <span className="flex items-center gap-1"><ShieldCheck size={10} /> Sức khỏe</span>
-                        <span className="text-champagne">{h.healthStatus}</span>
+                      <div className="flex justify-between items-center text-[11px] text-muted font-medium mt-1 pt-3 border-t border-glass-border/60">
+                        <span className="flex items-center gap-1.5"><span className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400"><ShieldCheck size={10} /></span> Sức khỏe</span>
+                        <span className="text-champagne font-semibold px-2 py-0.5 rounded-full bg-gold/[0.06] border border-gold/20">{h.healthStatus}</span>
                       </div>
                     )}
                   </div>
                 </motion.div>
               ))}
               {filtered.length === 0 && (
-                <div className="col-span-full glass-panel rounded-xl p-12 text-center text-muted text-sm">
-                  {horses.length === 0 ? 'Chưa có ngựa nào. Nhấn "Thêm ngựa" để bắt đầu.' : 'Không tìm thấy ngựa phù hợp.'}
+                <div className="col-span-full glass-panel rounded-xl p-12 text-center text-muted text-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+                  <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-500/10 to-transparent blur-[40px] pointer-events-none" />
+                  <div className="relative z-10">
+                    <div className="text-4xl opacity-40 mb-3">🐴</div>
+                    {horses.length === 0 ? 'Chưa có ngựa nào. Nhấn "Thêm ngựa" để bắt đầu.' : 'Không tìm thấy ngựa phù hợp.'}
+                    <div className="mx-auto mt-4 w-24 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+                  </div>
                 </div>
               )}
             </div>
@@ -278,9 +297,12 @@ export function OwnerHorsesPage() {
             ) : (
               <>
                 <div className="text-center mb-6">
-                  <div className="text-5xl mb-3">🐴</div>
+                  <div className="mx-auto mb-3 w-20 h-20 rounded-full bg-gold/10 border border-gold/25 ring-1 ring-gold/30 flex items-center justify-center">
+                    <span className="text-5xl drop-shadow-[0_2px_8px_rgba(201,168,76,0.35)]">🐴</span>
+                  </div>
                   <h2 className="text-2xl font-serif text-white">{viewHorse.name}</h2>
                   <p className="text-sm text-muted mt-1">{viewHorse.breed}</p>
+                  <div className="mx-auto mt-3 w-24 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
                 </div>
                 <div className="space-y-1">
                   {[
