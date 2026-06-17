@@ -1,16 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Plus, ChevronDown } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
+import { getRaceViolations } from '../../api/refereeService';
+import { getRaceSchedule } from '../../api/publicService';
 
 type Tab = 'active' | 'decided';
 
 export function RefereeViolationsPage() {
   const [tab, setTab] = useState<Tab>('active');
   const [showAdd, setShowAdd] = useState(false);
+  const [races, setRaces] = useState<any[]>([]);
+  const [selectedRaceId, setSelectedRaceId] = useState('');
+  const [violations, setViolations] = useState<any[]>([]);
+  const [racesLoading, setRacesLoading] = useState(true);
+  const [violationsLoading, setViolationsLoading] = useState(false);
+
+  useEffect(() => {
+    getRaceSchedule()
+      .then((d: any) => setRaces(d?.result ?? (Array.isArray(d) ? d : [])))
+      .catch(() => setRaces([]))
+      .finally(() => setRacesLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedRaceId) { setViolations([]); return; }
+    setViolationsLoading(true);
+    getRaceViolations(selectedRaceId)
+      .then((d: any) => setViolations(d?.result ?? (Array.isArray(d) ? d : [])))
+      .catch(() => setViolations([]))
+      .finally(() => setViolationsLoading(false));
+  }, [selectedRaceId]);
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
@@ -66,11 +89,56 @@ export function RefereeViolationsPage() {
             ))}
           </div>
 
-          {/* TODO: BE chưa có API danh sách đơn vi phạm của trọng tài */}
-          <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
+          {/* Race selector */}
+          <div className="relative w-72">
+            <select
+              value={selectedRaceId}
+              onChange={e => setSelectedRaceId(e.target.value)}
+              className="w-full bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 pr-8 text-sm text-white focus:border-gold/40 outline-none appearance-none cursor-pointer"
+            >
+              <option value="">{racesLoading ? 'Đang tải...' : races.length === 0 ? 'Không có cuộc đua' : '— Chọn cuộc đua —'}</option>
+              {races.map((r, i) => (
+                <option key={r.id ?? r.raceId ?? i} value={String(r.id ?? r.raceId ?? i)}>
+                  {r.name ?? r.raceName ?? `Cuộc đua #${r.id ?? r.raceId ?? i}`}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+          </div>
+
+          <div className="glass-panel rounded-xl overflow-hidden relative">
             <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-            <div className="text-4xl opacity-40 mb-3">⚠️</div>
-            <div className="text-muted text-sm">Chưa có dữ liệu</div>
+            {!selectedRaceId ? (
+              <div className="p-12 text-center">
+                <div className="text-4xl opacity-40 mb-3">⚠️</div>
+                <div className="text-muted text-sm">Chọn cuộc đua để xem danh sách vi phạm</div>
+              </div>
+            ) : violationsLoading ? (
+              <div className="p-12 text-center text-muted text-sm">Đang tải...</div>
+            ) : violations.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="text-4xl opacity-40 mb-3">✅</div>
+                <div className="text-muted text-sm">Không có vi phạm nào trong cuộc đua này</div>
+              </div>
+            ) : (
+              <div className="divide-y divide-glass-border relative z-10">
+                {violations.map((v, i) => (
+                  <div key={v.violationId ?? i} className="flex items-start gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors group">
+                    <div className="w-7 h-7 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-xs font-serif font-bold text-red-400 shrink-0 mt-0.5">{i + 1}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-white group-hover:text-champagne transition-colors">{v.description ?? '—'}</div>
+                      <div className="text-xs text-muted mt-0.5">
+                        {v.raceName ? <span className="mr-2">Cuộc đua: {v.raceName}</span> : null}
+                        Trọng tài: {v.refereeName ?? `#${v.refereeId ?? '—'}`}
+                      </div>
+                    </div>
+                    {v.penalty != null && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-red-500/10 text-red-400 border-red-500/20 shrink-0">{v.penalty}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Add modal */}

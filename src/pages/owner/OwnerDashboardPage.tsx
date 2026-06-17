@@ -41,11 +41,13 @@ export function OwnerDashboardPage() {
   const [schedule, setSchedule] = useState<any[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [results, setResults] = useState<any[]>([]);
+  const [resultsLoading, setResultsLoading] = useState(true);
 
   useEffect(() => {
     getOwnerResults()
       .then((d: any) => setResults(d?.result ?? (Array.isArray(d) ? d : [])))
-      .catch(() => setResults([]));
+      .catch(() => setResults([]))
+      .finally(() => setResultsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -63,6 +65,14 @@ export function OwnerDashboardPage() {
   }, []);
 
   const upcomingRaces = schedule.filter(r => isFuture(r.raceDate));
+
+  const totalPrize = results.reduce((sum, r) => sum + Number(r.prize ?? r.prizeAmount ?? 0), 0);
+  const fmtPrize = (v: number) => {
+    if (v === 0) return '0 ₫';
+    if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1).replace(/\.0$/, '')}tỷ ₫`;
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(/\.0$/, '')}tr ₫`;
+    return v.toLocaleString('vi-VN') + ' ₫';
+  };
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{ backgroundColor: '#0b101e' }}>
@@ -101,9 +111,10 @@ export function OwnerDashboardPage() {
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-4 gap-4">
             {[
               { title: 'Ngựa của tôi', value: String(horses.length), trend: '+12%', icon: Star, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', spark: SPARKS[0] },
+              // TODO: BE chưa có API race đang diễn ra của owner
               { title: 'Đang thi đấu', value: '—', trend: '+1', icon: Activity, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', spark: SPARKS[1] },
               { title: 'Sắp thi đấu', value: scheduleLoading ? '…' : String(upcomingRaces.length), trend: '3 ngày nữa', icon: Calendar, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', spark: SPARKS[2] },
-              { title: 'Tiền thưởng', value: '—', trend: '+18%', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[3] },
+              { title: 'Tiền thưởng', value: resultsLoading ? '…' : fmtPrize(totalPrize), trend: '+18%', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[3] },
             ].map((m, i) => (
               <motion.div key={i} variants={child} className="glass-panel rounded-xl p-5 relative overflow-hidden group cursor-default" style={{ height: '140px' }}>
                 <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${m.bg} blur-[30px] opacity-60 group-hover:opacity-100 transition-opacity`} />
