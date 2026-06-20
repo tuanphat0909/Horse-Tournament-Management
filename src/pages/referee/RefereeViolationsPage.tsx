@@ -1,16 +1,85 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Plus } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
+import { getRaceViolations, logViolation } from '../../api/refereeService';
+import { getRaceSchedule } from '../../api/publicService';
+import { getCurrentUser, parseApiError } from '../../api/authService';
 
 type Tab = 'active' | 'decided';
+
+const raceLabel = (r: any) =>
+  `${r.name ?? ('Cuộc đua #' + (r.id ?? r.raceId))}${r.raceDate ? ' — ' + r.raceDate : ''}${r.tournamentName ? ' (' + r.tournamentName + ')' : ''}`;
 
 export function RefereeViolationsPage() {
   const [tab, setTab] = useState<Tab>('active');
   const [showAdd, setShowAdd] = useState(false);
+
+  const user = getCurrentUser();
+  const myRefId = user?.id ?? user?.userId;
+
+  const [races, setRaces] = useState<any[]>([]);
+  const [raceId, setRaceId] = useState<string>('');
+  const [list, setList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    getRaceSchedule()
+      .then((data: any) => {
+        const arr = data?.result ?? (Array.isArray(data) ? data : []);
+        setRaces(Array.isArray(arr) ? arr : []);
+      })
+      .catch(() => setRaces([]));
+  }, []);
+
+  // form state
+  const [fRaceId, setFRaceId] = useState<string>('');
+  const [fRefId, setFRefId] = useState<string>('');
+  const [fDescription, setFDescription] = useState('');
+  const [fPenalty, setFPenalty] = useState('warning');
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  const loadList = (id: string) => {
+    if (!id) { setList([]); return; }
+    setLoading(true);
+    setError('');
+    getRaceViolations(Number(id))
+      .then((data: any) => {
+        const arr = data?.result ?? (Array.isArray(data) ? data : []);
+        setList(Array.isArray(arr) ? arr : []);
+      })
+      .catch((err: any) => { setError(parseApiError(err)); setList([]); })
+      .finally(() => setLoading(false));
+  };
+
+  const onRaceIdChange = (v: string) => {
+    setRaceId(v);
+    loadList(v);
+  };
+
+  const submit = () => {
+    setFormError('');
+    const effectiveRefId = myRefId ?? (fRefId ? Number(fRefId) : undefined);
+    if (!fRaceId) { setFormError('Vui lòng nhập mã cuộc đua.'); return; }
+    if (!fDescription.trim()) { setFormError('Vui lòng nhập mô tả.'); return; }
+    setSubmitting(true);
+    logViolation({ raceId: Number(fRaceId), refereeId: effectiveRefId, description: fDescription.trim(), penalty: fPenalty })
+      .then(() => {
+        setShowAdd(false);
+        setFDescription('');
+        setFPenalty('warning');
+        // refresh list using the form raceId or current raceId
+        const refreshId = raceId || fRaceId;
+        if (refreshId) { setRaceId(refreshId); loadList(refreshId); }
+      })
+      .catch((err: any) => setFormError(parseApiError(err)))
+      .finally(() => setSubmitting(false));
+  };
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
@@ -26,7 +95,7 @@ export function RefereeViolationsPage() {
             imageUrl="/images/hero-referee.jpg"
             imagePosition="right 52%"
             actions={
-              <button onClick={() => setShowAdd(true)} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
+              <button onClick={() => { setFRaceId(raceId); setShowAdd(true); }} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
                 <Plus size={14} /> Ghi nhận vi phạm
               </button>
             }
@@ -53,6 +122,21 @@ export function RefereeViolationsPage() {
             </div>
           </div>
 
+          {/* Race selector */}
+          <div className="flex items-end gap-3">
+            <div>
+              <label className="block text-xs text-muted font-medium mb-1.5">Cuộc đua</label>
+              <select value={raceId} onChange={e => onRaceIdChange(e.target.value)}
+                className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors">
+                <option value="">-- Chọn cuộc đua --</option>
+                {races.map((r: any) => {
+                  const id = r.id ?? r.raceId;
+                  return <option key={String(id)} value={String(id)}>{raceLabel(r)}</option>;
+                })}
+              </select>
+            </div>
+          </div>
+
           {/* Tabs */}
           <div className="flex items-center gap-1 border-b border-glass-border">
             {([
@@ -66,12 +150,34 @@ export function RefereeViolationsPage() {
             ))}
           </div>
 
-          {/* TODO: BE chưa có API danh sách đơn vi phạm của trọng tài */}
-          <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-            <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-            <div className="text-4xl opacity-40 mb-3">⚠️</div>
-            <div className="text-muted text-sm">Chưa có dữ liệu</div>
-          </div>
+          {error && <div className="glass-panel rounded-xl p-4 text-sm text-red-400 border border-red-500/30">{error}</div>}
+
+          {loading ? (
+            <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm">Đang tải...</div>
+          ) : list.length === 0 ? (
+            <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="text-4xl opacity-40 mb-3">⚠️</div>
+              <div className="text-muted text-sm">Chưa có dữ liệu</div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {list.map((v: any, i: number) => (
+                <div key={v.violationId ?? i} className="glass-panel rounded-xl p-5 border border-glass-border relative overflow-hidden">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="text-white font-serif text-base">{v.raceName ?? ('Cuộc đua #' + (v.raceId ?? '—'))}</div>
+                      <div className="text-sm text-muted mt-1">{v.description ?? '—'}</div>
+                      <div className="text-xs text-muted/70 mt-2">Trọng tài: {v.refereeName ?? v.refereeId ?? '—'}</div>
+                    </div>
+                    {v.penalty != null && (
+                      <span className="shrink-0 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs font-bold">{String(v.penalty)}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Add modal */}
           {showAdd && (
@@ -87,15 +193,27 @@ export function RefereeViolationsPage() {
                 </div>
                 <p className="text-xs text-muted mb-5">Jockey sẽ nhận thông báo ngay và có <span className="text-white font-bold">30 phút</span> để gửi khiếu nại.</p>
                 <div className="space-y-4">
-                  {[['Cuộc đua', 'Chọn cuộc đua...'], ['Ngựa / Nài ngựa vi phạm', 'Nhập tên...'], ['Loại vi phạm', 'VD: Lấn đường, Cản trở, Xuất phát sớm...']].map(([label, ph]) => (
-                    <div key={label}>
-                      <label className="block text-xs text-muted font-medium mb-1.5">{label}</label>
-                      <input placeholder={ph} className="w-full bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors" />
+                  <div>
+                    <label className="block text-xs text-muted font-medium mb-1.5">Cuộc đua</label>
+                    <select value={fRaceId} onChange={e => setFRaceId(e.target.value)}
+                      className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors">
+                      <option value="">-- Chọn cuộc đua --</option>
+                      {races.map((r: any) => {
+                        const id = r.id ?? r.raceId;
+                        return <option key={String(id)} value={String(id)}>{raceLabel(r)}</option>;
+                      })}
+                    </select>
+                  </div>
+                  {myRefId == null && (
+                    <div>
+                      <label className="block text-xs text-muted font-medium mb-1.5">Mã trọng tài (refereeId)</label>
+                      <input type="number" value={fRefId} onChange={e => setFRefId(e.target.value)} placeholder="Nhập mã trọng tài..."
+                        className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors" />
                     </div>
-                  ))}
+                  )}
                   <div>
                     <label className="block text-xs text-muted font-medium mb-1.5">Mức độ vi phạm</label>
-                    <select className="w-full bg-[#0B1628] border border-glass-border rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-gold/40">
+                    <select value={fPenalty} onChange={e => setFPenalty(e.target.value)} className="w-full bg-[#0B1628] border border-glass-border rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-gold/40">
                       <option value="warning">Cảnh cáo</option>
                       <option value="penalty">Phạt thời gian</option>
                       <option value="disqualify">Truất quyền thi đấu</option>
@@ -103,12 +221,13 @@ export function RefereeViolationsPage() {
                   </div>
                   <div>
                     <label className="block text-xs text-muted font-medium mb-1.5">Mô tả chi tiết</label>
-                    <textarea rows={3} placeholder="Mô tả sự việc theo camera / quan sát thực tế..." className="w-full bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none resize-none focus:border-gold/40" />
+                    <textarea rows={3} value={fDescription} onChange={e => setFDescription(e.target.value)} placeholder="Mô tả sự việc theo camera / quan sát thực tế..." className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none resize-none focus:border-gold/40 transition-colors" />
                   </div>
                 </div>
+                {formError && <div className="mt-4 text-sm text-red-400">{formError}</div>}
                 <div className="flex justify-end gap-3 mt-6">
                   <button onClick={() => setShowAdd(false)} className="px-5 py-2 rounded-lg text-sm text-muted border border-glass-border hover:text-white transition-colors">Hủy</button>
-                  <button onClick={() => setShowAdd(false)} className="btn-gold px-6 py-2 rounded-lg text-sm font-bold">Gửi vi phạm</button>
+                  <button onClick={submit} disabled={submitting} className="btn-gold px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-60">{submitting ? 'Đang gửi...' : 'Gửi vi phạm'}</button>
                 </div>
               </motion.div>
             </div>

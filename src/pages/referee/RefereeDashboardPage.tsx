@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Flag, FileText, ClipboardList, ChevronRight, AlertTriangle } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -5,14 +6,27 @@ import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser } from '../../api/authService';
+import { getRefereeDashboard } from '../../api/refereeService';
 import { useNavigate } from 'react-router-dom';
 
 const child = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 
+// Field thật từ GET /referee/dashboard (đã xác minh bằng API):
+// { assignedRaceCount, pendingReportCount, completedReportCount, violationsCreatedCount, assignedRaces: [] }
+const show = (n: any) => (n == null ? '—' : String(n));
+
 export function RefereeDashboardPage() {
   const navigate = useNavigate();
   const user = getCurrentUser();
+  const [d, setD] = useState<any>({});
+
+  useEffect(() => {
+    getRefereeDashboard()
+      .then((res: any) => setD(res?.result ?? res ?? {}))
+      .catch(() => setD({})); // leave '—' on error
+  }, []);
+
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
@@ -44,13 +58,12 @@ export function RefereeDashboardPage() {
           />
 
           {/* Stats */}
-          {/* TODO: BE chưa có API thống kê dashboard trọng tài — hiển thị '—' */}
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-4 gap-4">
             {[
-              { title: 'Cuộc đua hôm nay', value: '—', trend: 'Cần giám sát', icon: Flag, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/referee/confirm-results' },
-              { title: 'Ngựa cần kiểm tra', value: '—', trend: 'Chờ phê duyệt', icon: ShieldCheck, color: 'text-yellow-400', bg: 'from-yellow-500/15 to-yellow-900/20', path: '/referee/horse-check' },
-              { title: 'Vi phạm chờ xử lý', value: '—', trend: 'Cần xem xét', icon: AlertTriangle, color: 'text-red-400', bg: 'from-red-500/15 to-red-900/20', path: '/referee/violations' },
-              { title: 'Báo cáo đã gửi', value: '—', trend: 'Mùa giải 2026', icon: FileText, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/referee/reports' },
+              { title: 'Cuộc đua hôm nay', value: show(d.assignedRaceCount), trend: 'Được phân công', icon: Flag, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/referee/confirm-results' },
+              { title: 'Báo cáo chờ', value: show(d.pendingReportCount), trend: 'Chưa xử lý', icon: ShieldCheck, color: 'text-yellow-400', bg: 'from-yellow-500/15 to-yellow-900/20', path: '/referee/horse-check' },
+              { title: 'Vi phạm chờ xử lý', value: show(d.violationsCreatedCount), trend: 'Cần xem xét', icon: AlertTriangle, color: 'text-red-400', bg: 'from-red-500/15 to-red-900/20', path: '/referee/violations' },
+              { title: 'Báo cáo đã gửi', value: show(d.completedReportCount), trend: 'Đã hoàn thành', icon: FileText, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/referee/reports' },
             ].map((m, i) => (
               <motion.div key={i} variants={child} onClick={() => navigate(m.path)}
                 className="glass-panel rounded-xl p-5 relative overflow-hidden group cursor-pointer" style={{ height: '130px' }}>

@@ -10,8 +10,8 @@ import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser } from '../../api/authService';
+import { getAccounts, getRegistrations } from '../../api/adminService';
 import { getRaceSchedule, getTournaments } from '../../api/publicService';
-import { getAccounts } from '../../api/adminService';
 import { useNavigate } from 'react-router-dom';
 
 const child = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
@@ -21,24 +21,44 @@ export function AdminDashboardPage() {
   const navigate = useNavigate();
   const user = getCurrentUser();
   const [schedule, setSchedule] = useState<any[]>([]);
-  const [userCount, setUserCount] = useState<string>('…');
-  const [tournamentCount, setTournamentCount] = useState<string>('…');
+  const [userCount, setUserCount] = useState<number | null>(null);
+  const [tournamentCount, setTournamentCount] = useState<number | null>(null);
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
 
   useEffect(() => {
     getRaceSchedule()
       .then((d: any) => setSchedule(d?.result ?? (Array.isArray(d) ? d : [])))
       .catch(() => setSchedule([]));
+
+    // Người dùng ← GET /admin/accounts (cần đăng nhập admin)
     getAccounts()
-      .then((d: any) => { const list = d?.result ?? (Array.isArray(d) ? d : []); setUserCount(String(list.length)); })
-      .catch(() => setUserCount('—'));
+      .then((d: any) => {
+        const list = d?.result ?? (Array.isArray(d) ? d : []);
+        setUserCount(list.length);
+      })
+      .catch(() => setUserCount(null));
+
+    // Giải đấu ← GET /public/tournaments (API thật)
     getTournaments()
-      .then((d: any) => { const list = d?.result ?? (Array.isArray(d) ? d : []); setTournamentCount(String(list.length)); })
-      .catch(() => setTournamentCount('—'));
+      .then((d: any) => {
+        const list = d?.result ?? (Array.isArray(d) ? d : []);
+        setTournamentCount(list.length);
+      })
+      .catch(() => setTournamentCount(null));
+
+    // Chờ duyệt ← GET /admin/registrations (đếm status = Pending, không phân biệt hoa thường)
+    getRegistrations()
+      .then((d: any) => {
+        const list = d?.result ?? (Array.isArray(d) ? d : []);
+        setPendingCount(list.filter((r: any) => (r.status ?? '').toLowerCase() === 'pending').length);
+      })
+      .catch(() => setPendingCount(null));
   }, []);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayRaces = schedule.filter(r => (r.raceDate ?? '').startsWith(today)).length;
   const upcomingRaces = schedule.length;
+  const show = (n: number | null) => (n == null ? '—' : String(n));
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
@@ -74,9 +94,12 @@ export function AdminDashboardPage() {
           {/* STATS */}
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { title: 'Người dùng', value: userCount, trend: '—', icon: Users, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/admin/users' },
-              { title: 'Giải đấu', value: tournamentCount, trend: '—', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/admin/tournaments' },
-              { title: 'Chờ duyệt', value: '—', trend: '—', icon: ClipboardList, color: 'text-orange-400', bg: 'from-orange-500/15 to-orange-900/20', path: '/admin/registrations' },
+              // Người dùng ← GET /admin/accounts
+              { title: 'Người dùng', value: show(userCount), trend: 'Tổng', icon: Users, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/admin/users' },
+              // Giải đấu ← GET /public/tournaments
+              { title: 'Giải đấu', value: show(tournamentCount), trend: 'Tổng', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/admin/tournaments' },
+              // Chờ duyệt ← GET /admin/registrations (đếm status = Pending)
+              { title: 'Chờ duyệt', value: show(pendingCount), trend: 'Pending', icon: ClipboardList, color: 'text-orange-400', bg: 'from-orange-500/15 to-orange-900/20', path: '/admin/registrations' },
               { title: 'Cuộc đua hôm nay', value: todayRaces > 0 ? String(todayRaces) : '—', trend: upcomingRaces > 0 ? `${upcomingRaces} sắp tới` : '—', icon: Calendar, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', path: '/admin/races' },
             ].map((m, i) => (
               <motion.div

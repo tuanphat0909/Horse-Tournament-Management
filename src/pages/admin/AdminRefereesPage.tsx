@@ -1,11 +1,31 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
+import { getAdminReferees } from '../../api/adminService';
+import { parseApiError } from '../../api/authService';
 
 export function AdminRefereesPage() {
+  const [referees, setReferees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    getAdminReferees()
+      .then((data: any) => {
+        const list = data?.result ?? (Array.isArray(data) ? data : []);
+        setReferees(list);
+      })
+      .catch((err: unknown) => setError(parseApiError(err as Error)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Backend field shape for referees is not specified, so we read every field
+  // defensively (fullName/name/email/licenseNumber/experienceYears + id fallbacks).
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
@@ -16,56 +36,58 @@ export function AdminRefereesPage() {
 
           <PageHero
             title="Referee Management"
-            subtitle="Assign referees to races"
+            subtitle="Danh sách trọng tài"
             imageUrl="/images/hero-admin.jpg"
             imagePosition="center center"
           />
 
-          <div className="grid grid-cols-[1fr_320px] gap-6">
-            {/* Left: Race Assignment */}
-            <div className="space-y-4">
-              {/* Needs Referee */}
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl overflow-hidden">
-                <div className="p-5 border-b border-glass-border flex items-center gap-2">
-                  <AlertCircle size={16} className="text-yellow-400" />
-                  <h2 className="text-base font-serif text-white">Unassigned</h2>
-                  <span className="ml-auto px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 text-[11px] font-bold border border-yellow-500/20">
-                    0
-                  </span>
-                </div>
-                {/* TODO: BE chưa có API danh sách cuộc đua cần trọng tài */}
-                <div className="p-12 text-center relative overflow-hidden">
-                  <div className="text-4xl opacity-40 mb-3">🧑‍⚖️</div>
-                  <div className="text-muted text-sm">Chưa có dữ liệu</div>
-                </div>
-              </motion.div>
-
-              {/* Already Assigned */}
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-panel rounded-xl overflow-hidden">
-                <div className="p-5 border-b border-glass-border flex items-center gap-2">
-                  <CheckCircle size={16} className="text-emerald-400" />
-                  <h2 className="text-base font-serif text-white">Assigned</h2>
-                  <span className="ml-auto px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-bold border border-emerald-500/20">0</span>
-                </div>
-                {/* TODO: BE chưa có API danh sách cuộc đua đã phân công trọng tài */}
-                <div className="p-12 text-center relative overflow-hidden">
-                  <div className="text-4xl opacity-40 mb-3">🧑‍⚖️</div>
-                  <div className="text-muted text-sm">Chưa có dữ liệu</div>
-                </div>
-              </motion.div>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-base font-serif text-white">Referee List</h2>
+              <span className="ml-auto px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-bold border border-emerald-500/20">
+                {referees.length}
+              </span>
             </div>
 
-            {/* Right: Referee List */}
-            <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="glass-panel rounded-xl p-5 h-fit">
-              <h2 className="text-base font-serif text-white mb-4">Referee List</h2>
-              {/* TODO: BE chưa có API danh sách trọng tài */}
+            {error ? (
+              <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{error}</div>
+            ) : loading ? (
+              <div className="text-center py-12 text-muted text-sm">Đang tải...</div>
+            ) : referees.length === 0 ? (
               <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
                 <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
                 <div className="text-4xl opacity-40 mb-3">🧑‍⚖️</div>
                 <div className="text-muted text-sm">Chưa có dữ liệu</div>
               </div>
-            </motion.div>
-          </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {referees.map((r, i) => {
+                  const name = r.fullName ?? r.name ?? ('Referee #' + (r.userId ?? r.refereeId ?? r.id));
+                  return (
+                    <div key={r.refereeId ?? r.userId ?? r.id ?? i} className="glass-panel rounded-xl p-4 border border-glass-border hover:border-gold/25 transition-all relative overflow-hidden">
+                      <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                      <div className="text-sm font-semibold text-white">{name}</div>
+                      {r.email != null && <div className="text-xs text-muted mt-1">{r.email}</div>}
+                      <div className="mt-2 space-y-1 text-xs text-muted">
+                        {r.licenseNumber != null && (
+                          <div className="flex justify-between">
+                            <span>Giấy phép:</span>
+                            <span className="text-white font-medium">{r.licenseNumber}</span>
+                          </div>
+                        )}
+                        {r.experienceYears != null && (
+                          <div className="flex justify-between">
+                            <span>Kinh nghiệm:</span>
+                            <span className="text-gold font-bold">{r.experienceYears} năm</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
 
         </main>
       </div>

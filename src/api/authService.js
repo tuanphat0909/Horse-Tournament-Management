@@ -3,7 +3,9 @@ import { api } from '../services/api';
 function parseApiError(err) {
   try {
     const parsed = JSON.parse(err.message);
-    return parsed.message || parsed.title || err.message;
+    const base = parsed.message || parsed.title || err.message;
+    // BE kèm nguyên nhân thật trong `detail` (vd lỗi 500) → hiển thị để dễ chẩn đoán
+    return parsed.detail ? `${base} — ${parsed.detail}` : base;
   } catch {
     return err.message;
   }

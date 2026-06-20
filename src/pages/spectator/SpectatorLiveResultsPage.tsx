@@ -5,7 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { getRaceSchedule, getJockeyRankings, getHorseRankings } from '../../api/publicService';
+import { getRaceSchedule, getJockeyRankings, getHorseRankings, getRaceResultsPublic } from '../../api/publicService';
 
 const POS_STYLE: Record<number, string> = {
   1: 'bg-gold/20 text-gold border-gold/30',
@@ -19,6 +19,23 @@ export function SpectatorLiveResultsPage() {
   const [horseRankings, setHorseRankings] = useState<any[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [rankingsLoading, setRankingsLoading] = useState(true);
+
+  // Kết quả đã xác nhận (GET /public/races/{id}/results)
+  const [resultRaceId, setResultRaceId] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [resultsLoaded, setResultsLoaded] = useState(false);
+
+  function loadResults(raceId: string) {
+    setResultRaceId(raceId);
+    setResults([]); setResultsLoaded(false);
+    if (!raceId) return;
+    setResultsLoading(true);
+    getRaceResultsPublic(Number(raceId))
+      .then(d => setResults(d?.result ?? (Array.isArray(d) ? d : [])))
+      .catch(() => setResults([]))
+      .finally(() => { setResultsLoading(false); setResultsLoaded(true); });
+  }
 
   useEffect(() => {
     getRaceSchedule()
@@ -137,15 +154,15 @@ export function SpectatorLiveResultsPage() {
                 ) : (
                   <div className="divide-y divide-glass-border">
                     {jockeyRankings.slice(0, 10).map((j, i) => (
-                      <div key={j.id ?? i} className={`flex items-center gap-4 px-5 py-3.5 transition-all hover:bg-gold/[0.04] group ${i === 0 ? 'bg-gold/[0.04]' : i < 3 ? 'bg-white/[0.03]' : ''}`}>
+                      <div key={j.jockeyId ?? i} className={`flex items-center gap-4 px-5 py-3.5 transition-all hover:bg-gold/[0.04] group ${i === 0 ? 'bg-gold/[0.04]' : i < 3 ? 'bg-white/[0.03]' : ''}`}>
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center font-serif font-bold text-sm border shrink-0 ${POS_STYLE[i + 1] ?? 'bg-white/5 text-muted border-glass-border'}`}>{i + 1}</div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-white">{j.jockeyName ?? j.fullName ?? j.name ?? `Jockey #${j.id}`}</div>
-                          {j.totalWins != null && <div className="text-xs text-muted">{j.totalWins} thắng</div>}
+                          <div className="text-sm font-semibold text-white">{j.fullName ?? `Jockey #${j.jockeyId}`}</div>
+                          {j.experienceYears != null && <div className="text-xs text-muted">{j.experienceYears} năm KN</div>}
                         </div>
-                        {j.score != null && (
+                        {j.rankingPoint != null && (
                           <div className="flex items-center gap-1 text-gold text-xs font-bold shrink-0">
-                            <Star size={11} /> {j.score}
+                            <Star size={11} /> {j.rankingPoint} điểm
                           </div>
                         )}
                       </div>
@@ -175,17 +192,12 @@ export function SpectatorLiveResultsPage() {
                 ) : (
                   <div className="divide-y divide-glass-border">
                     {horseRankings.slice(0, 10).map((h, i) => (
-                      <div key={h.id ?? i} className={`flex items-center gap-4 px-5 py-3.5 transition-all hover:bg-gold/[0.04] group ${i === 0 ? 'bg-gold/[0.04]' : i < 3 ? 'bg-white/[0.03]' : ''}`}>
+                      <div key={h.horseId ?? i} className={`flex items-center gap-4 px-5 py-3.5 transition-all hover:bg-gold/[0.04] group ${i === 0 ? 'bg-gold/[0.04]' : i < 3 ? 'bg-white/[0.03]' : ''}`}>
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center font-serif font-bold text-sm border shrink-0 ${POS_STYLE[i + 1] ?? 'bg-white/5 text-muted border-glass-border'}`}>{i + 1}</div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-white">{h.horseName ?? h.name ?? `Ngựa #${h.id}`}</div>
-                          {h.totalWins != null && <div className="text-xs text-muted">{h.totalWins} thắng</div>}
+                          <div className="text-sm font-semibold text-white">{h.name ?? `Ngựa #${h.horseId}`}</div>
+                          {h.winsCount != null && <div className="text-xs text-muted">{h.winsCount} thắng</div>}
                         </div>
-                        {h.score != null && (
-                          <div className="flex items-center gap-1 text-gold text-xs font-bold shrink-0">
-                            <Star size={11} /> {h.score}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -201,12 +213,46 @@ export function SpectatorLiveResultsPage() {
               <h2 className="text-lg font-serif text-white">Kết quả đã xác nhận</h2>
               <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
             </div>
-            <div className="glass-panel rounded-xl p-8 text-center relative overflow-hidden">
+            <div className="glass-panel rounded-xl p-6 relative overflow-hidden">
               <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
-              <div className="text-4xl opacity-40 mb-3">🏆</div>
-              <div className="text-muted text-sm">Dữ liệu kết quả cuộc đua sẽ được hiển thị khi backend cung cấp API.</div>
-              <div className="mx-auto mt-4 w-24 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+              <div className="relative z-10 mb-4 max-w-md">
+                <label className="block text-xs text-muted font-medium mb-1.5">Chọn cuộc đua để xem kết quả</label>
+                <select value={resultRaceId} onChange={e => loadResults(e.target.value)}
+                  className="w-full bg-[#0B1628] border border-glass-border rounded-lg px-3 py-2.5 text-sm text-white outline-none focus:border-gold/40 transition-colors" style={{ colorScheme: 'dark' }}>
+                  <option value="">-- Chọn cuộc đua --</option>
+                  {schedule.map((r, i) => {
+                    const rid = r.raceId ?? r.id;
+                    return <option key={rid ?? i} value={rid}>{`${r.name ?? ('Cuộc đua #' + rid)}${r.raceDate ? ' — ' + r.raceDate : ''}`}</option>;
+                  })}
+                </select>
+              </div>
+              {resultsLoading ? (
+                <div className="relative z-10 text-center py-8 text-muted text-sm">Đang tải kết quả...</div>
+              ) : !resultRaceId ? (
+                <div className="relative z-10 text-center py-8 text-muted text-sm">Chọn một cuộc đua để xem kết quả đã xác nhận.</div>
+              ) : results.length === 0 && resultsLoaded ? (
+                <div className="relative z-10 text-center py-8">
+                  <div className="text-4xl opacity-40 mb-3">🏆</div>
+                  <div className="text-muted text-sm">Cuộc đua này chưa có kết quả công bố.</div>
+                </div>
+              ) : (
+                <div className="relative z-10 space-y-2">
+                  {results.map((r, i) => (
+                    <div key={r.id ?? r.raceEntryId ?? i} className="flex items-center gap-4 px-4 py-3 rounded-lg bg-white/[0.02] border border-glass-border">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center font-serif font-bold text-sm border shrink-0 ${POS_STYLE[i + 1] ?? 'bg-white/5 text-muted border-glass-border'}`}>{i + 1}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-white">🐴 {r.horseName ?? `Ngựa #${r.horseId}`}</div>
+                        <div className="text-xs text-muted">{r.jockeyName ? `Nài: ${r.jockeyName}` : ''}{r.raceName ? ` • ${r.raceName}` : ''}</div>
+                      </div>
+                      {r.winner && (r.winner === r.horseName || r.winner === String(r.horseId)) && (
+                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full border text-gold bg-gold/10 border-gold/25 shrink-0">🏆 Vô địch</span>
+                      )}
+                      {r.status && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full border text-blue-400 bg-blue-500/10 border-blue-500/20 shrink-0">{r.status}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

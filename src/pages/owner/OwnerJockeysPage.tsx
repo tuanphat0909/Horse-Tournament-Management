@@ -6,7 +6,7 @@ import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getMyProposals, createJockeyContract, getMyHorses } from '../../api/ownerService';
-import { getJockeyRankings } from '../../api/publicService';
+import { getJockeyRankings, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 
 const STATUS_CFG: Record<string, { label: string; color: string; Icon: typeof Clock }> = {
@@ -27,6 +27,7 @@ export function OwnerJockeysPage() {
   const [proposals, setProposals] = useState<any[]>([]);
   const [horses, setHorses] = useState<any[]>([]);
   const [jockeys, setJockeys] = useState<any[]>([]);
+  const [tournaments, setTournaments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showInvite, setShowInvite] = useState(false);
@@ -38,10 +39,11 @@ export function OwnerJockeysPage() {
   async function load() {
     setLoading(true); setError('');
     try {
-      const [propData, horseData, jockeyData] = await Promise.all([getMyProposals(), getMyHorses(), getJockeyRankings()]);
+      const [propData, horseData, jockeyData, tournamentData] = await Promise.all([getMyProposals(), getMyHorses(), getJockeyRankings(), getTournaments()]);
       setProposals(propData?.result ?? (Array.isArray(propData) ? propData : []));
       setHorses(horseData?.result ?? (Array.isArray(horseData) ? horseData : []));
       setJockeys(jockeyData?.result ?? (Array.isArray(jockeyData) ? jockeyData : []));
+      setTournaments(tournamentData?.result ?? (Array.isArray(tournamentData) ? tournamentData : []));
     } catch (err: unknown) {
       setError(parseApiError(err as Error));
     } finally {
@@ -186,10 +188,15 @@ export function OwnerJockeysPage() {
                 </select>
                 {jockeys.length === 0 && <p className="text-[10px] text-muted/60 mt-1">Danh sách jockey đang tải hoặc trống.</p>}
               </div>
-              {/* TODO: cần BE bổ sung GET danh sách giải đấu để thay ô nhập tay bằng dropdown */}
               <div>
-                <label className={LABEL}>ID Giải đấu * <span className="text-muted/50 normal-case font-normal">— nhập ID (BE chưa có API danh sách giải đấu)</span></label>
-                <input type="number" value={form.tournamentId} onChange={e => setForm(p => ({...p, tournamentId: e.target.value}))} placeholder="ID giải đấu" className={INPUT} />
+                <label className={LABEL}>Chọn giải đấu *</label>
+                <select value={form.tournamentId} onChange={e => setForm(p => ({...p, tournamentId: e.target.value}))} className={INPUT} style={{colorScheme:'dark'}}>
+                  <option value="">-- Chọn giải đấu --</option>
+                  {tournaments.map(t => (
+                    <option key={t.tournamentId ?? t.id} value={t.tournamentId ?? t.id}>{t.name}</option>
+                  ))}
+                </select>
+                {tournaments.length === 0 && <p className="text-[10px] text-muted/60 mt-1">Danh sách giải đấu đang tải hoặc trống.</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

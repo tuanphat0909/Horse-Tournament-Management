@@ -293,7 +293,7 @@ export function SpectatorWalletPage() {
                     const amt = tx.amount ?? tx.coins ?? 0;
                     const isPos = amt > 0;
                     return (
-                      <motion.div key={tx.id ?? i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                      <motion.div key={tx.transactionId ?? i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
                         className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all group">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${cfg.bg} ${cfg.color}`}>
                           <TxIcon size={15} />

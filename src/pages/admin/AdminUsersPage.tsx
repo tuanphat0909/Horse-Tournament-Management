@@ -104,17 +104,24 @@ export function AdminUsersPage() {
     setForm(INIT_FORM);
   }
 
+  // DB trả vai trò chủ ngựa là 'horseowner' (không phải 'owner') → chuẩn hóa để lọc/đếm đúng.
+  const matchesRole = (roleName: string, key: RoleFilter) => {
+    const r = (roleName ?? '').toLowerCase();
+    if (key === 'owner') return r === 'owner' || r === 'horseowner';
+    return r === key;
+  };
+
   const roleCounts: Record<RoleFilter, number> = {
     all: accounts.length,
-    owner: accounts.filter(a => (a.roleName ?? '').toLowerCase() === 'owner').length,
-    jockey: accounts.filter(a => (a.roleName ?? '').toLowerCase() === 'jockey').length,
-    referee: accounts.filter(a => (a.roleName ?? '').toLowerCase() === 'referee').length,
-    spectator: accounts.filter(a => (a.roleName ?? '').toLowerCase() === 'spectator').length,
-    admin: accounts.filter(a => (a.roleName ?? '').toLowerCase() === 'admin').length,
+    owner: accounts.filter(a => matchesRole(a.roleName, 'owner')).length,
+    jockey: accounts.filter(a => matchesRole(a.roleName, 'jockey')).length,
+    referee: accounts.filter(a => matchesRole(a.roleName, 'referee')).length,
+    spectator: accounts.filter(a => matchesRole(a.roleName, 'spectator')).length,
+    admin: accounts.filter(a => matchesRole(a.roleName, 'admin')).length,
   };
 
   const filtered = accounts
-    .filter(a => filter === 'all' || (a.roleName ?? '').toLowerCase() === filter)
+    .filter(a => filter === 'all' || matchesRole(a.roleName, filter))
     .filter(a => {
       if (!search) return true;
       const q = search.toLowerCase();

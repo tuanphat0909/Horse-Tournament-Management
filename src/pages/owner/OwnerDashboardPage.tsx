@@ -10,7 +10,7 @@ import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser, parseApiError } from '../../api/authService';
-import { getMyHorses } from '../../api/ownerService';
+import { getMyHorses, getOwnerResults } from '../../api/ownerService';
 import { getRaceSchedule } from '../../api/publicService';
 
 function isFuture(dateStr: string | null | undefined): boolean {
@@ -40,6 +40,7 @@ export function OwnerDashboardPage() {
   const [horsesLoading, setHorsesLoading] = useState(true);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [totalPrize, setTotalPrize] = useState<string>('—');
 
   useEffect(() => {
     getMyHorses()
@@ -53,6 +54,16 @@ export function OwnerDashboardPage() {
       .then((d: any) => setSchedule(d?.result ?? (Array.isArray(d) ? d : [])))
       .catch((err: Error) => { console.error(parseApiError(err)); setSchedule([]); })
       .finally(() => setScheduleLoading(false));
+  }, []);
+
+  useEffect(() => {
+    getOwnerResults()
+      .then((d: any) => {
+        const results: any[] = d?.result ?? (Array.isArray(d) ? d : []);
+        const sum = results.reduce((acc, r) => acc + (Number(r.prizeAmount) || 0), 0);
+        setTotalPrize(sum.toLocaleString());
+      })
+      .catch(() => setTotalPrize('—'));
   }, []);
 
   const upcomingRaces = schedule.filter(r => isFuture(r.raceDate));
@@ -96,7 +107,7 @@ export function OwnerDashboardPage() {
               { title: 'Ngựa của tôi', value: String(horses.length), trend: '+12%', icon: Star, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', spark: SPARKS[0] },
               { title: 'Đang thi đấu', value: '—', trend: '+1', icon: Activity, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', spark: SPARKS[1] },
               { title: 'Sắp thi đấu', value: scheduleLoading ? '…' : String(upcomingRaces.length), trend: '3 ngày nữa', icon: Calendar, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', spark: SPARKS[2] },
-              { title: 'Tiền thưởng', value: '—', trend: '+18%', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[3] },
+              { title: 'Tiền thưởng', value: totalPrize, trend: '+18%', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[3] },
             ].map((m, i) => (
               <motion.div key={i} variants={child} className="glass-panel rounded-xl p-5 relative overflow-hidden group cursor-default" style={{ height: '140px' }}>
                 <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${m.bg} blur-[30px] opacity-60 group-hover:opacity-100 transition-opacity`} />
