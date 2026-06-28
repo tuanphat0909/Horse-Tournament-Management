@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Flag, UserCheck, ListOrdered, Trash2 } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { createRace, createRaceEntry, assignReferee, getRaceReferees, removeReferee, getAdminReferees, getRegistrations } from '../../api/adminService';
+import { createRace, createRaceEntry, assignReferee, getRaceReferees, removeReferee, getAdminReferees, getRegistrations, deleteRace } from '../../api/adminService';
 import { getRaceSchedule, getTournaments, getTournamentDetail } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 
@@ -57,6 +57,9 @@ export function AdminRacesPage() {
   const [raceList, setRaceList] = useState<any[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState('');
+
+  // Delete race
+  const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
 
   function loadRaceList() {
     setListLoading(true); setListError('');
@@ -217,13 +220,26 @@ export function AdminRacesPage() {
     }
   }
 
+  async function handleDeleteRace(raceId: number) {
+    if (!window.confirm(`Xóa cuộc đua #${raceId}? Thao tác này không thể hoàn tác.`)) return;
+    setDeleteLoading(raceId);
+    try {
+      await deleteRace(raceId);
+      setRaceList(prev => prev.filter(r => (r.raceId ?? r.id) !== raceId));
+    } catch (err: unknown) {
+      alert(parseApiError(err as Error));
+    } finally {
+      setDeleteLoading(null);
+    }
+  }
+
   return (
     <div className="min-h-screen text-body font-sans flex" style={{ backgroundColor: '#0b101e' }}>
       <Sidebar />
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="gold" />
         <Topbar />
-        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-400 mx-auto px-8 py-6 space-y-6">
 
           <PageHero
             title="Quản lý cuộc đua"
@@ -248,25 +264,25 @@ export function AdminRacesPage() {
           {/* Danh sách cuộc đua (GET /public/races/schedule) */}
           {listLoading ? (
             <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               Đang tải danh sách cuộc đua...
             </div>
           ) : listError ? (
             <div className="glass-panel rounded-xl p-5 text-red-400 text-sm border border-red-500/20">{listError}</div>
           ) : raceList.length === 0 ? (
             <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <div className="text-4xl opacity-40 mb-3">🏁</div>
               <div className="text-muted text-sm">Chưa có cuộc đua</div>
               <div className="text-muted/60 text-xs mt-1">Dùng nút "Thêm cuộc đua" ở trên để tạo mới</div>
             </div>
           ) : (
             <div className="glass-panel rounded-xl overflow-hidden relative">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <div className="p-5 border-b border-glass-border flex items-center gap-3">
                 <Flag size={15} className="text-gold shrink-0" />
                 <h2 className="text-base font-serif text-white">Danh sách cuộc đua</h2>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/[0.04] border border-glass-border text-champagne">{raceList.length}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/4 border border-glass-border text-champagne">{raceList.length}</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -279,13 +295,14 @@ export function AdminRacesPage() {
                       <th className="py-3.5 px-6">Cự ly</th>
                       <th className="py-3.5 px-6">Số làn</th>
                       <th className="py-3.5 px-6">Trạng thái</th>
+                      <th className="py-3.5 px-6"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-glass-border/30 text-sm">
                     {raceList.map((r, i) => {
                       const rid = r.raceId ?? r.id;
                       return (
-                        <tr key={rid ?? i} className="hover:bg-white/[0.02] transition-colors">
+                        <tr key={rid ?? i} className="hover:bg-white/2 transition-colors">
                           <td className="py-3.5 px-6 text-muted font-mono">#{rid ?? '—'}</td>
                           <td className="py-3.5 px-6 font-semibold text-white">{r.name ?? '—'}</td>
                           <td className="py-3.5 px-6 text-muted">
@@ -297,6 +314,16 @@ export function AdminRacesPage() {
                           <td className="py-3.5 px-6 text-muted">{r.maxLanes ?? '—'}</td>
                           <td className="py-3.5 px-6">
                             <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold border text-blue-400 bg-blue-500/10 border-blue-500/20">{r.status ?? '—'}</span>
+                          </td>
+                          <td className="py-3.5 px-6">
+                            <button
+                              onClick={() => handleDeleteRace(rid)}
+                              disabled={deleteLoading === rid}
+                              className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
+                              title="Xóa cuộc đua"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </td>
                         </tr>
                       );
@@ -314,14 +341,14 @@ export function AdminRacesPage() {
       {modal === 'race' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-8 w-full max-w-lg border border-gold/20 relative overflow-hidden">
-            <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
+            <div className="absolute top-0 left-8 right-8 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-gold/10 to-transparent blur-2xl pointer-events-none" />
             <div className="relative flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
                 <Flag size={15} className="text-gold" />
               </div>
               <h2 className="text-xl font-serif text-white">Thêm cuộc đua mới</h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
             </div>
 
             <div className="space-y-4">
@@ -380,14 +407,14 @@ export function AdminRacesPage() {
       {modal === 'entry' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-8 w-full max-w-md border border-blue-500/20 relative overflow-hidden">
-            <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-blue-400/40 to-transparent pointer-events-none" />
-            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-blue-500/10 to-transparent blur-[40px] pointer-events-none" />
+            <div className="absolute top-0 left-8 right-8 h-px bg-linear-to-r from-transparent via-blue-400/40 to-transparent pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-blue-500/10 to-transparent blur-2xl pointer-events-none" />
             <div className="relative flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
                 <ListOrdered size={15} className="text-blue-400" />
               </div>
               <h2 className="text-xl font-serif text-white">Ghép ngựa vào làn đua</h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-blue-400/30 via-glass-border to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-blue-400/30 via-glass-border to-transparent" />
             </div>
 
             <div className="space-y-4">
@@ -444,14 +471,14 @@ export function AdminRacesPage() {
       {modal === 'referee' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-8 w-full max-w-lg border border-cyan-500/20 relative overflow-hidden">
-            <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none" />
-            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-cyan-500/10 to-transparent blur-[40px] pointer-events-none" />
+            <div className="absolute top-0 left-8 right-8 h-px bg-linear-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-cyan-500/10 to-transparent blur-2xl pointer-events-none" />
             <div className="relative flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
                 <UserCheck size={15} className="text-cyan-400" />
               </div>
               <h2 className="text-xl font-serif text-white">Phân công trọng tài</h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-cyan-400/30 via-glass-border to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-cyan-400/30 via-glass-border to-transparent" />
             </div>
 
             <div className="space-y-4">
@@ -501,7 +528,7 @@ export function AdminRacesPage() {
                     {referees.map((r, i) => {
                       const id = r.refereeId ?? r.id;
                       return (
-                      <div key={id ?? i} className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-white/[0.02] border border-glass-border">
+                      <div key={id ?? i} className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-white/2 border border-glass-border">
                         <div>
                           <div className="text-sm text-white">{r.refereeName ?? r.fullName ?? r.name ?? `Trọng tài #${id}`}</div>
                           {r.email && <div className="text-[11px] text-muted">{r.email}</div>}

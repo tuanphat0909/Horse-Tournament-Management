@@ -12,3 +12,6 @@ export const getMyBets = () => api.get('/spectator/bets/my-bets');
 export const createPrediction = (data) => api.post('/spectator/predictions', data);
 export const getMyPredictions = () => api.get('/spectator/predictions/my-predictions');
 export const getPredictionsByRace = (raceId) => api.get(`/spectator/predictions/race/${raceId}`);
+
+// GET /spectator/races/{raceId}/betting-info — thông tin cược của race (MỚI)
+export const getRaceBettingInfo = (raceId) => api.get(`/spectator/races/${raceId}/betting-info`);

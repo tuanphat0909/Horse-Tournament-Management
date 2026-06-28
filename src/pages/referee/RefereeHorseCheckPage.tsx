@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
@@ -52,6 +52,7 @@ export function RefereeHorseCheckPage() {
 
   // fields verified: { raceEntryId, horseId, horseName, ownerName, jockeyName, laneNo, medicalStatus, status }
   const filtered = list.filter((item: any) => {
+    if (tab !== 'all' && (item.status ?? '').toLowerCase() !== tab) return false;
     if (!search.trim()) return true;
     const title = String(item.horseName ?? item.ownerName ?? item.horseId ?? '');
     return title.toLowerCase().includes(search.trim().toLowerCase());
@@ -63,7 +64,7 @@ export function RefereeHorseCheckPage() {
       <div className="flex-1 relative min-w-0 overflow-y-auto">
         <PageAmbience accent="red" />
         <Topbar />
-        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-400 mx-auto px-8 py-6 space-y-6">
 
           <PageHero
             title="Kiểm tra ngựa"
@@ -84,7 +85,7 @@ export function RefereeHorseCheckPage() {
                 })}
               </select>
             </div>
-            <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-64">
+            <div className="flex items-center gap-2 bg-white/4 border border-glass-border rounded-lg px-3 py-2 w-64">
               <Search size={14} className="text-muted shrink-0" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm ngựa / chủ ngựa..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
             </div>
@@ -105,7 +106,7 @@ export function RefereeHorseCheckPage() {
             <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm">Đang tải...</div>
           ) : filtered.length === 0 ? (
             <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <div className="text-4xl opacity-40 mb-3">🐴</div>
               <div className="text-muted text-sm">Chưa có dữ liệu</div>
             </div>

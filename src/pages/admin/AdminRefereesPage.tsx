@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
@@ -32,7 +32,7 @@ export function AdminRefereesPage() {
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="gold" />
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6 relative z-10">
+        <main className="max-w-400 mx-auto px-8 py-6 space-y-6 relative z-10">
 
           <PageHero
             title="Referee Management"
@@ -55,7 +55,7 @@ export function AdminRefereesPage() {
               <div className="text-center py-12 text-muted text-sm">Đang tải...</div>
             ) : referees.length === 0 ? (
               <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
                 <div className="text-4xl opacity-40 mb-3">🧑‍⚖️</div>
                 <div className="text-muted text-sm">Chưa có dữ liệu</div>
               </div>
@@ -65,7 +65,7 @@ export function AdminRefereesPage() {
                   const name = r.fullName ?? r.name ?? ('Referee #' + (r.userId ?? r.refereeId ?? r.id));
                   return (
                     <div key={r.refereeId ?? r.userId ?? r.id ?? i} className="glass-panel rounded-xl p-4 border border-glass-border hover:border-gold/25 transition-all relative overflow-hidden">
-                      <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                      <div className="absolute top-0 left-4 right-4 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
                       <div className="text-sm font-semibold text-white">{name}</div>
                       {r.email != null && <div className="text-xs text-muted mt-1">{r.email}</div>}
                       <div className="mt-2 space-y-1 text-xs text-muted">

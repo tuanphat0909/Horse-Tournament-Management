@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Megaphone, DollarSign, Zap, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -138,7 +138,7 @@ export function AdminResultsPage() {
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="gold" />
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6 relative z-10">
+        <main className="max-w-400 mx-auto px-8 py-6 space-y-6 relative z-10">
 
           <PageHero
             title="Kết quả & Công bố"
@@ -151,8 +151,8 @@ export function AdminResultsPage() {
           <div className="grid grid-cols-2 gap-4">
             {/* Prizes Setup */}
             <div className="glass-panel rounded-xl p-6 border border-glass-border hover:border-gold/30 transition-all relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-gold/10 to-transparent blur-2xl pointer-events-none" />
               <div className="relative z-10 flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
                   <DollarSign size={18} className="text-gold" />
@@ -172,8 +172,8 @@ export function AdminResultsPage() {
 
             {/* Trigger Payout */}
             <div className="glass-panel rounded-xl p-6 border border-glass-border hover:border-emerald-500/30 transition-all relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-500/10 to-transparent blur-[40px] pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-400/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-emerald-500/10 to-transparent blur-2xl pointer-events-none" />
               <div className="relative z-10 flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                   <Zap size={18} className="text-emerald-400" />
@@ -216,14 +216,14 @@ export function AdminResultsPage() {
                 <Megaphone size={15} className="text-yellow-400" />
               </div>
               <h2 className="text-base font-medium font-serif text-white">Kết quả cuộc đua & Công bố</h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-yellow-400/30 via-glass-border to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-yellow-400/30 via-glass-border to-transparent" />
             </div>
 
             <div className="glass-panel rounded-xl p-6 border border-glass-border relative overflow-hidden space-y-4">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
 
               <div className="relative z-10 flex flex-wrap items-end gap-3">
-                <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-56">
+                <div className="flex items-center gap-2 bg-white/4 border border-glass-border rounded-lg px-3 py-2 w-56">
                   <Search size={14} className="text-muted shrink-0" />
                   <select
                     value={resultRaceId}
@@ -241,7 +241,7 @@ export function AdminResultsPage() {
                 <button
                   onClick={handleLoadResults}
                   disabled={resultsLoading}
-                  className="px-4 py-2 rounded-lg bg-white/[0.06] text-white border border-glass-border hover:border-gold/40 text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-lg bg-white/6 text-white border border-glass-border hover:border-gold/40 text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {resultsLoading ? '…' : 'Xem kết quả'}
                 </button>
@@ -278,7 +278,7 @@ export function AdminResultsPage() {
                     </thead>
                     <tbody>
                       {results.map((r, i) => (
-                        <tr key={r.id ?? r.raceEntryId ?? i} className="border-b border-glass-border/40 hover:bg-white/[0.02] transition-colors">
+                        <tr key={r.id ?? r.raceEntryId ?? i} className="border-b border-glass-border/40 hover:bg-white/2 transition-colors">
                           <td className="px-4 py-2.5 text-gold font-bold">{r.winner ?? '—'}</td>
                           <td className="px-4 py-2.5 text-white font-medium">{r.horseName ?? '—'}</td>
                           <td className="px-4 py-2.5 text-body">{r.jockeyName ?? '—'}</td>
@@ -299,14 +299,14 @@ export function AdminResultsPage() {
       {showPrizesModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-8 w-full max-w-lg border border-gold/20 relative overflow-hidden">
-            <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
+            <div className="absolute top-0 left-8 right-8 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-gold/10 to-transparent blur-2xl pointer-events-none" />
             <div className="relative flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
                 <DollarSign size={15} className="text-gold" />
               </div>
               <h2 className="text-xl font-serif text-white">Thiết lập giải thưởng</h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
             </div>
 
             <div className="space-y-4">

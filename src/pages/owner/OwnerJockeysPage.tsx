@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, CheckCircle, XCircle, Clock, Users, Calendar } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { getMyProposals, createJockeyContract, getMyHorses } from '../../api/ownerService';
+import { getMyProposals, createJockeyContract, getMyHorses, cancelJockeyContract } from '../../api/ownerService';
 import { getJockeyRankings, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 
@@ -35,6 +35,7 @@ export function OwnerJockeysPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
+  const [cancelLoading, setCancelLoading] = useState<number | null>(null);
 
   async function load() {
     setLoading(true); setError('');
@@ -84,13 +85,26 @@ export function OwnerJockeysPage() {
     setForm(INIT_FORM);
   }
 
+  async function handleCancel(id: number) {
+    if (!window.confirm('Hủy lời mời hợp đồng này?')) return;
+    setCancelLoading(id);
+    try {
+      await cancelJockeyContract(id);
+      setProposals(prev => prev.filter(p => (p.id ?? p.contractId) !== id));
+    } catch (err: unknown) {
+      alert(parseApiError(err as Error));
+    } finally {
+      setCancelLoading(null);
+    }
+  }
+
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="emerald" />
         <Topbar />
-        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-400 mx-auto px-8 py-6 space-y-6">
 
           <PageHero
             title="Nài ngựa"
@@ -112,7 +126,7 @@ export function OwnerJockeysPage() {
                 <Users size={15} className="text-gold" />
               </div>
               <h2 className="text-base font-medium font-serif text-white whitespace-nowrap">Danh sách hợp đồng</h2>
-              <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
             </div>
             {loading ? (
               <div className="text-center py-12 text-muted text-sm">Đang tải...</div>
@@ -121,37 +135,49 @@ export function OwnerJockeysPage() {
                 {proposals.map((p, i) => {
                   const cfg = STATUS_CFG[p.status] ?? DEFAULT_CFG;
                   const { Icon } = cfg;
+                  const pid = p.id ?? p.contractId;
+                  const isPending = (p.status ?? '').toLowerCase() === 'pending';
                   return (
-                    <motion.div key={p.id ?? i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                      className="glass-panel rounded-xl p-5 flex items-center gap-5 border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all group relative overflow-hidden">
-                      <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                      <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-500/10 to-transparent blur-[40px] pointer-events-none" />
+                    <motion.div key={pid ?? i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+                      className="glass-panel rounded-xl p-5 flex items-center gap-5 border border-glass-border hover:border-gold/30 hover:bg-gold/4 transition-all group relative overflow-hidden">
+                      <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                      <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-emerald-500/10 to-transparent blur-2xl pointer-events-none" />
                       <div className="relative z-10 w-8 h-8 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center font-serif font-bold text-champagne text-sm shrink-0">{i + 1}</div>
-                      <div className="relative z-10 w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-900/20 border border-blue-500/20 ring-1 ring-gold/30 flex items-center justify-center font-serif font-bold text-blue-300 text-lg shrink-0">
+                      <div className="relative z-10 w-12 h-12 rounded-full bg-linear-to-br from-blue-500/20 to-blue-900/20 border border-blue-500/20 ring-1 ring-gold/30 flex items-center justify-center font-serif font-bold text-blue-300 text-lg shrink-0">
                         {(p.jockeyName ?? 'J')[0]}
                       </div>
                       <div className="relative z-10 flex-1 min-w-0">
                         <div className="text-base font-serif text-white mb-1 group-hover:text-champagne transition-colors">{p.jockeyName ?? `Jockey #${p.jockeyId}`}</div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-champagne">🐴 {p.horseName ?? `Ngựa #${p.horseId}`}</span>
-                          {p.startDate && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-muted inline-flex items-center gap-1"><Calendar size={9} className="text-gold/60" /> Từ: {p.startDate}</span>}
-                          {p.endDate && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-muted inline-flex items-center gap-1"><Calendar size={9} className="text-gold/60" /> Đến: {p.endDate}</span>}
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/4 border border-glass-border text-champagne">🐴 {p.horseName ?? `Ngựa #${p.horseId}`}</span>
+                          {p.startDate && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/4 border border-glass-border text-muted inline-flex items-center gap-1"><Calendar size={9} className="text-gold/60" /> Từ: {p.startDate}</span>}
+                          {p.endDate && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/4 border border-glass-border text-muted inline-flex items-center gap-1"><Calendar size={9} className="text-gold/60" /> Đến: {p.endDate}</span>}
                         </div>
                       </div>
                       <span className={`relative z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border shrink-0 ${cfg.color}`}>
                         <Icon size={11} /> {cfg.label}
                       </span>
+                      {isPending && (
+                        <button
+                          onClick={() => handleCancel(pid)}
+                          disabled={cancelLoading === pid}
+                          className="relative z-10 p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40 shrink-0"
+                          title="Hủy lời mời"
+                        >
+                          <XCircle size={15} />
+                        </button>
+                      )}
                     </motion.div>
                   );
                 })}
                 {proposals.length === 0 && (
                   <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-500/10 to-transparent blur-[40px] pointer-events-none" />
+                    <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent" />
+                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-emerald-500/10 to-transparent blur-2xl pointer-events-none" />
                     <div className="relative z-10">
                       <div className="text-4xl opacity-40 mb-3">🏇</div>
                       Chưa có hợp đồng nào
-                      <div className="mx-auto mt-4 w-24 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+                      <div className="mx-auto mt-4 w-24 h-px bg-linear-to-r from-transparent via-gold/30 to-transparent" />
                     </div>
                   </div>
                 )}

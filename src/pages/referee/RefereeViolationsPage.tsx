@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Plus } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -81,13 +81,20 @@ export function RefereeViolationsPage() {
       .finally(() => setSubmitting(false));
   };
 
+  const filteredList = list.filter((v: any) => {
+    const s = (v.status ?? '').toLowerCase();
+    if (tab === 'active') return s === 'pending' || s === 'active' || s === '';
+    if (tab === 'decided') return s === 'confirmed' || s === 'rejected';
+    return true;
+  });
+
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="red" />
         <Topbar />
-        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-400 mx-auto px-8 py-6 space-y-6">
 
           <PageHero
             title="Xử lý vi phạm"
@@ -103,8 +110,8 @@ export function RefereeViolationsPage() {
 
           {/* Flow */}
           <div className="glass-panel rounded-xl p-4 border border-glass-border relative overflow-hidden">
-            <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
+            <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-red-500/10 to-transparent blur-2xl pointer-events-none" />
             <div className="flex items-center gap-2 text-xs flex-wrap relative">
               <span className="text-muted font-bold shrink-0">Quy trình:</span>
               {[
@@ -117,7 +124,7 @@ export function RefereeViolationsPage() {
                 { label: 'Kết quả chính thức — Admin nhận thông báo', active: false },
               ].map((s, i) =>
                 s.sep ? <span key={i} className="text-muted/30">→</span>
-                  : <span key={i} className={`px-2.5 py-1 rounded-lg border text-white/80 ${s.active ? 'bg-gold/10 border-gold/20 text-gold font-bold' : 'bg-white/[0.03] border-glass-border'}`}>{s.label}</span>
+                  : <span key={i} className={`px-2.5 py-1 rounded-lg border text-white/80 ${s.active ? 'bg-gold/10 border-gold/20 text-gold font-bold' : 'bg-white/3 border-glass-border'}`}>{s.label}</span>
               )}
             </div>
           </div>
@@ -154,20 +161,20 @@ export function RefereeViolationsPage() {
 
           {loading ? (
             <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm">Đang tải...</div>
-          ) : list.length === 0 ? (
+          ) : filteredList.length === 0 ? (
             <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <div className="text-4xl opacity-40 mb-3">⚠️</div>
               <div className="text-muted text-sm">Chưa có dữ liệu</div>
             </div>
           ) : (
             <div className="space-y-3">
-              {list.map((v: any, i: number) => (
+              {filteredList.map((v: any, i: number) => (
                 <div key={v.violationId ?? i} className="glass-panel rounded-xl p-5 border border-glass-border relative overflow-hidden">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="text-white font-serif text-base">{v.raceName ?? ('Cuộc đua #' + (v.raceId ?? '—'))}</div>
-                      <div className="text-sm text-muted mt-1">{v.description ?? '—'}</div>
+                      <div className="text-sm text-muted mt-1">{v.note ?? v.description ?? '—'}</div>
                       <div className="text-xs text-muted/70 mt-2">Trọng tài: {v.refereeName ?? v.refereeId ?? '—'}</div>
                     </div>
                     {v.penalty != null && (
@@ -184,12 +191,12 @@ export function RefereeViolationsPage() {
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
                 className="glass-panel rounded-2xl p-7 w-full max-w-lg border border-glass-border relative overflow-hidden">
-                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
+                <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-red-500/10 to-transparent blur-2xl pointer-events-none" />
                 <div className="flex items-center gap-3 mb-1 relative z-10">
                   <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><AlertTriangle size={15} className="text-gold" /></div>
                   <h3 className="text-lg font-serif text-white">Ghi nhận vi phạm</h3>
-                  <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+                  <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
                 </div>
                 <p className="text-xs text-muted mb-5">Jockey sẽ nhận thông báo ngay và có <span className="text-white font-bold">30 phút</span> để gửi khiếu nại.</p>
                 <div className="space-y-4">

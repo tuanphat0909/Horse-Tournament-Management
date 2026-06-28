@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Plus, Award } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { getRaceReports, submitReport } from '../../api/refereeService';
+import { getRaceReports, submitReport, getRefereeDashboard } from '../../api/refereeService';
 import { getRaceSchedule, getRaceEntries } from '../../api/publicService';
 import { getCurrentUser, parseApiError } from '../../api/authService';
 
@@ -18,6 +18,7 @@ export function RefereeReportsPage() {
   const user = getCurrentUser();
   const myRefId = user?.id ?? user?.userId;
 
+  const [dashStats, setDashStats] = useState<any>({});
   const [races, setRaces] = useState<any[]>([]);
   const [raceId, setRaceId] = useState<string>('');
   const [list, setList] = useState<any[]>([]);
@@ -25,6 +26,9 @@ export function RefereeReportsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    getRefereeDashboard()
+      .then((d: any) => setDashStats(d?.result ?? d ?? {}))
+      .catch(() => setDashStats({}));
     getRaceSchedule()
       .then((data: any) => {
         const arr = data?.result ?? (Array.isArray(data) ? data : []);
@@ -105,7 +109,7 @@ export function RefereeReportsPage() {
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="red" />
         <Topbar />
-        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-400 mx-auto px-8 py-6 space-y-6">
 
           <PageHero
             title="Báo cáo"
@@ -141,7 +145,7 @@ export function RefereeReportsPage() {
                 <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm">Đang tải...</div>
               ) : list.length === 0 ? (
                 <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                  <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
                   <div className="text-4xl opacity-40 mb-3">📋</div>
                   <div className="text-muted text-sm">Chưa có dữ liệu</div>
                 </div>
@@ -165,22 +169,21 @@ export function RefereeReportsPage() {
             </div>
 
             <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="glass-panel rounded-xl p-6 h-fit relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-red-500/10 to-transparent blur-2xl pointer-events-none" />
               <div className="flex items-center gap-3 mb-5 relative z-10">
                 <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Award size={15} className="text-gold" /></div>
                 <h3 className="text-base font-serif text-white">Tóm tắt mùa giải</h3>
-                <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+                <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
               </div>
-              {/* TODO: BE chưa có API thống kê tóm tắt mùa giải của trọng tài */}
               <div className="space-y-3 relative z-10">
                 {[
-                  { label: 'Tổng báo cáo', value: '—', color: 'text-white' },
-                  { label: 'Đã gửi', value: '—', color: 'text-emerald-400' },
-                  { label: 'Bản nháp', value: '—', color: 'text-yellow-400' },
-                  { label: 'Tổng vi phạm ghi nhận', value: '—', color: 'text-red-400' },
+                  { label: 'Tổng báo cáo', value: dashStats.pendingReportCount != null && dashStats.completedReportCount != null ? String((dashStats.pendingReportCount ?? 0) + (dashStats.completedReportCount ?? 0)) : '—', color: 'text-white' },
+                  { label: 'Đã gửi', value: dashStats.completedReportCount != null ? String(dashStats.completedReportCount) : '—', color: 'text-emerald-400' },
+                  { label: 'Chờ xử lý', value: dashStats.pendingReportCount != null ? String(dashStats.pendingReportCount) : '—', color: 'text-yellow-400' },
+                  { label: 'Tổng vi phạm ghi nhận', value: dashStats.violationsCreatedCount != null ? String(dashStats.violationsCreatedCount) : '—', color: 'text-red-400' },
                 ].map((s, i) => (
-                  <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.02] border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all group">
+                  <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/2 border border-glass-border hover:border-gold/30 hover:bg-gold/4 transition-all group">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center font-serif font-bold text-champagne text-sm shrink-0">{i + 1}</div>
                       <span className="text-xs text-muted group-hover:text-champagne transition-colors">{s.label}</span>
@@ -195,12 +198,12 @@ export function RefereeReportsPage() {
           {showAdd && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-7 w-full max-w-lg border border-glass-border relative overflow-hidden">
-                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
+                <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-red-500/10 to-transparent blur-2xl pointer-events-none" />
                 <div className="flex items-center gap-3 mb-5 relative z-10">
                   <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><FileText size={15} className="text-gold" /></div>
                   <h3 className="text-lg font-serif text-white">Tạo báo cáo mới</h3>
-                  <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+                  <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
                 </div>
                 <div className="space-y-4">
                   <div>

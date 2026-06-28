@@ -19,15 +19,20 @@ export const getRaceReferees = (raceId) => api.get(`/admin/races/${raceId}/refer
 export const removeReferee = (raceId, refereeId) => api.delete(`/admin/races/${raceId}/referees/${refereeId}`);
 
 export const createPrizes = (data) => api.post('/admin/payouts/prizes', data);
-
 export const triggerPayout = (raceId) => api.post(`/admin/payouts/trigger/${raceId}`);
+export const getPayouts = () => api.get('/admin/payouts');
+
+export const updateUserStatus = (id, status) => api.put(`/admin/users/${id}/status`, { status });
+export const getUserOptions = () => api.get('/admin/users/options');
+export const getHorseOptions = () => api.get('/admin/horses/options');
 
 // ===== Danh sách quản trị (BE đã có) =====
 export const getRegistrations = () => api.get('/admin/registrations');
-// Duyệt / từ chối đăng ký. body ReviewRegistrationRequest { status: 'Approved' | 'Rejected' }
-// LƯU Ý BE: endpoint này CHƯA tồn tại (BE-git mới có DTO, chưa nối route + RegistrationService.ReviewAsync).
-// Cần bổ sung: PUT /admin/registrations/{id}/review.
-export const reviewRegistration = (id, status) => api.put(`/admin/registrations/${id}/review`, { status });
+export const approveRegistration = (id) => api.put(`/admin/registrations/${id}/approve`);
+export const rejectRegistration = (id) => api.put(`/admin/registrations/${id}/reject`);
+
+export const getActivityLog = () => api.get('/admin/activity-log');
+export const getAdminDashboard = () => api.get('/admin/dashboard');
 export const getAdminReferees = () => api.get('/admin/referees');
 export const getViolations = () => api.get('/admin/violations');
 export const getPredictions = () => api.get('/admin/predictions');
@@ -39,3 +44,21 @@ export const getAdminRaceResults = (raceId) => api.get(`/admin/races/${raceId}/r
 
 // body { name, startDate, endDate, numberOfRounds, status }
 export const updateTournament = (id, body) => api.put(`/admin/tournaments/${id}`, body);
+
+// POST /admin/tournaments/{id}/generate-races — tạo các race cho tournament
+export const generateRacesForTournament = (id) => api.post(`/admin/tournaments/${id}/generate-races`);
+
+// POST /admin/tournaments/{id}/generate-final — tạo trận chung kết (MỚI)
+export const generateFinalRace = (id) => api.post(`/admin/tournaments/${id}/generate-final`);
+
+// DELETE /admin/races/{raceId} — xóa cuộc đua (MỚI)
+export const deleteRace = (raceId) => api.delete(`/admin/races/${raceId}`);
+
+// POST /admin/races/{raceId}/recalculate-odds — tính lại tỷ lệ cược (MỚI)
+export const recalculateOdds = (raceId) => api.post(`/admin/races/${raceId}/recalculate-odds`);
+
+// PUT /admin/violations/{id}/status — đổi trạng thái vi phạm (MỚI): Pending/Confirmed/Rejected
+export const updateViolationStatus = (id, status) => api.put(`/admin/violations/${id}/status`, { Status: status });
+
+// GET /admin/races/referee-assignments — danh sách race kèm referee assignment (MỚI)
+export const getRacesWithRefereeAssignments = () => api.get('/admin/races/referee-assignments');

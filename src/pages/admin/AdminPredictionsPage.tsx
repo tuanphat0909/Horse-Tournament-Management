@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Target, CheckCircle, TrendingUp, DollarSign, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -66,7 +66,7 @@ export function AdminPredictionsPage() {
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="gold" />
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6 relative z-10">
+        <main className="max-w-400 mx-auto px-8 py-6 space-y-6 relative z-10">
 
           <PageHero
             title="Quản lý dự đoán"
@@ -88,9 +88,9 @@ export function AdminPredictionsPage() {
                 transition={{ delay: i * 0.08 }}
                 className="glass-panel rounded-xl p-5 relative overflow-hidden"
               >
-                <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br ${s.bg} blur-[30px] opacity-60`} />
+                <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full bg-linear-to-br ${s.bg} blur-[30px] opacity-60`} />
                 <div className="relative z-10 flex items-center gap-3 mb-2">
-                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.bg} border border-white/[0.08] flex items-center justify-center ${s.color}`}>
+                  <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${s.bg} border border-white/8 flex items-center justify-center ${s.color}`}>
                     <s.icon size={16} />
                   </div>
                   <span className="text-[11px] uppercase tracking-wider text-muted font-bold">{s.label}</span>
@@ -102,7 +102,7 @@ export function AdminPredictionsPage() {
 
           {/* Search */}
           <div className="flex items-center gap-2 border-b border-glass-border pb-3">
-            <div className="ml-auto flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-1.5 w-56">
+            <div className="ml-auto flex items-center gap-2 bg-white/4 border border-glass-border rounded-lg px-3 py-1.5 w-56">
               <Search size={13} className="text-muted shrink-0" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm cuộc đua, ngựa..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
             </div>
@@ -115,13 +115,13 @@ export function AdminPredictionsPage() {
             <div className="text-center py-12 text-muted text-sm">Đang tải...</div>
           ) : filtered.length === 0 ? (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <div className="text-4xl opacity-40 mb-3">🎯</div>
               <div className="text-muted text-sm">Chưa có dữ liệu</div>
             </motion.div>
           ) : (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl overflow-hidden relative">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wider text-muted border-b border-glass-border">
@@ -134,7 +134,7 @@ export function AdminPredictionsPage() {
                 </thead>
                 <tbody>
                   {filtered.map((p, i) => (
-                    <tr key={p.predictionId ?? p.id ?? i} className="border-b border-glass-border/40 hover:bg-white/[0.02] transition-colors">
+                    <tr key={p.predictionId ?? p.id ?? i} className="border-b border-glass-border/40 hover:bg-white/2 transition-colors">
                       <td className="px-5 py-3 text-white font-medium">{p.raceName ?? '—'}</td>
                       <td className="px-5 py-3 text-body">{p.predictedWinner ?? '—'}</td>
                       <td className="px-5 py-3 text-body">{p.status ?? '—'}</td>

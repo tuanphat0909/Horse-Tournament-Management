@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, CheckCircle, XCircle, Calendar, Trophy } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -95,7 +95,7 @@ export function OwnerRegistrationsPage() {
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="emerald" />
         <Topbar />
-        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6 relative z-10">
+        <main className="max-w-400 mx-auto px-8 py-6 space-y-6 relative z-10">
 
           <PageHero
             title="Đăng ký thi đấu"
@@ -132,16 +132,16 @@ export function OwnerRegistrationsPage() {
                 const cfg = STATUS_CONFIG[statusKey];
                 return (
                   <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                    className="glass-panel rounded-xl p-5 flex items-center gap-5 border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all group relative overflow-hidden">
-                    <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-500/10 to-transparent blur-[40px] pointer-events-none" />
+                    className="glass-panel rounded-xl p-5 flex items-center gap-5 border border-glass-border hover:border-gold/30 hover:bg-gold/4 transition-all group relative overflow-hidden">
+                    <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-emerald-500/10 to-transparent blur-2xl pointer-events-none" />
                     <div className="relative z-10 w-8 h-8 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center font-serif font-bold text-champagne text-sm shrink-0">{i + 1}</div>
-                    <div className="relative z-10 w-11 h-11 rounded-xl bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/20 ring-1 ring-gold/30 flex items-center justify-center text-xl shrink-0">🐴</div>
+                    <div className="relative z-10 w-11 h-11 rounded-xl bg-linear-to-br from-gold/20 to-gold/5 border border-gold/20 ring-1 ring-gold/30 flex items-center justify-center text-xl shrink-0">🐴</div>
                     <div className="relative z-10 flex-1 min-w-0">
                       <div className="text-base font-serif text-white group-hover:text-champagne transition-colors">{r.horseName ?? `Ngựa #${r.horseId}`}</div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted mt-1">
-                        <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-champagne"><Trophy size={10} className="text-gold/60" /> {r.tournamentName ?? `Giải đấu #${r.tournamentId}`}</span>
-                        {(r.registeredAt ?? r.createdAt) && <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-muted"><Calendar size={10} className="text-gold/60" /> {r.registeredAt ?? r.createdAt}</span>}
+                        <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/4 border border-glass-border text-champagne"><Trophy size={10} className="text-gold/60" /> {r.tournamentName ?? `Giải đấu #${r.tournamentId}`}</span>
+                        {(r.registeredAt ?? r.createdAt) && <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/4 border border-glass-border text-muted"><Calendar size={10} className="text-gold/60" /> {r.registeredAt ?? r.createdAt}</span>}
                       </div>
                     </div>
                     <span className={`relative z-10 text-[11px] font-bold px-3 py-1 rounded-full border shrink-0 ${cfg.color}`}>{cfg.label}</span>
@@ -160,12 +160,12 @@ export function OwnerRegistrationsPage() {
               })}
               {filtered.length === 0 && (
                 <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm relative overflow-hidden">
-                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
-                  <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-500/10 to-transparent blur-[40px] pointer-events-none" />
+                  <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent" />
+                  <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-emerald-500/10 to-transparent blur-2xl pointer-events-none" />
                   <div className="relative z-10">
                     <div className="text-4xl opacity-40 mb-3">🐴</div>
                     Không có đăng ký nào
-                    <div className="mx-auto mt-4 w-24 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+                    <div className="mx-auto mt-4 w-24 h-px bg-linear-to-r from-transparent via-gold/30 to-transparent" />
                   </div>
                 </div>
               )}
