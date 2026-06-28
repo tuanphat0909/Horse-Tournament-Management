@@ -19,7 +19,14 @@ const STATUS_CFG: Record<string, { label: string; color: string; Icon: typeof Cl
 };
 const DEFAULT_CFG = { label: 'Không rõ', color: 'text-muted bg-white/5 border-glass-border', Icon: Clock };
 
-const INIT_FORM = { horseId: '', tournamentId: '', jockeyId: '', startDate: '', endDate: '' };
+function makeInitForm() {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const start = new Date();
+  const end = new Date();
+  end.setDate(end.getDate() + 30);
+  return { horseId: '', tournamentId: '', jockeyId: '', startDate: fmt(start), endDate: fmt(end) };
+}
 const INPUT = 'w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
 const LABEL = 'block text-xs font-bold text-muted uppercase tracking-wider mb-1.5';
 
@@ -31,7 +38,7 @@ export function OwnerJockeysPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showInvite, setShowInvite] = useState(false);
-  const [form, setForm] = useState(INIT_FORM);
+  const [form, setForm] = useState(makeInitForm);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
@@ -70,7 +77,7 @@ export function OwnerJockeysPage() {
         endDate: form.endDate,
       });
       setSubmitSuccess('Gửi lời mời thành công!');
-      setForm(INIT_FORM);
+      setForm(makeInitForm());
       load();
     } catch (err: unknown) {
       setSubmitError(parseApiError(err as Error));
@@ -82,7 +89,18 @@ export function OwnerJockeysPage() {
   function closeInvite() {
     setShowInvite(false);
     setSubmitError(''); setSubmitSuccess('');
-    setForm(INIT_FORM);
+    setForm(makeInitForm());
+  }
+
+  function onTournamentChange(tid: string) {
+    const t = tournaments.find((t: any) => String(t.tournamentId ?? t.id) === tid);
+    if (!t) { setForm(p => ({ ...p, tournamentId: tid })); return; }
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const today = fmt(new Date());
+    const tStart = t.startDate ? fmt(new Date(t.startDate)) : today;
+    const tEnd   = t.endDate   ? fmt(new Date(t.endDate))   : today;
+    setForm(p => ({ ...p, tournamentId: tid, startDate: tStart >= today ? tStart : today, endDate: tEnd }));
   }
 
   async function handleCancel(id: number) {
@@ -206,7 +224,7 @@ export function OwnerJockeysPage() {
                 <select value={form.jockeyId} onChange={e => setForm(p => ({...p, jockeyId: e.target.value}))} className={INPUT}>
                   <option value="">-- Chọn jockey --</option>
                   {jockeys.map(j => (
-                    <option key={j.id ?? j.jockeyId} value={j.id ?? j.jockeyId}>
+                    <option key={j.userId ?? j.jockeyId} value={j.userId ?? j.jockeyId}>
                       {j.fullName ?? j.name ?? `Jockey #${j.id ?? j.jockeyId}`}
                       {j.totalWins != null ? ` (${j.totalWins} thắng)` : ''}
                     </option>
@@ -216,7 +234,7 @@ export function OwnerJockeysPage() {
               </div>
               <div>
                 <label className={LABEL}>Chọn giải đấu *</label>
-                <select value={form.tournamentId} onChange={e => setForm(p => ({...p, tournamentId: e.target.value}))} className={INPUT} style={{colorScheme:'dark'}}>
+                <select value={form.tournamentId} onChange={e => onTournamentChange(e.target.value)} className={INPUT} style={{colorScheme:'dark'}}>
                   <option value="">-- Chọn giải đấu --</option>
                   {tournaments.map(t => (
                     <option key={t.tournamentId ?? t.id} value={t.tournamentId ?? t.id}>{t.name}</option>

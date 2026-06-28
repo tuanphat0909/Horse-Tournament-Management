@@ -75,7 +75,7 @@ export function JockeyViolationsPage() {
                         <span className="text-[10px] bg-red-500/15 text-red-400 font-bold px-2 py-0.5 rounded-full border border-red-500/25 uppercase tracking-wider shrink-0">{String(v.penalty)}</span>
                       )}
                     </div>
-                    <div className="text-xs text-muted leading-relaxed">{v.description ?? '—'}</div>
+                    <div className="text-xs text-muted leading-relaxed">{v.note ?? v.description ?? '—'}</div>
                     <div className="text-[11px] text-muted/70 mt-1">Trọng tài: {v.refereeName ?? '—'}</div>
                   </div>
                 </div>

@@ -32,6 +32,7 @@ export function JockeyDashboardPage() {
   const [respondingId, setRespondingId] = useState<number | null>(null);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [jockeyWins, setJockeyWins] = useState<string>('—');
+  const [stats, setStats] = useState<any>({});
 
   async function loadContracts() {
     try {
@@ -50,7 +51,7 @@ export function JockeyDashboardPage() {
       .then((d: any) => setSchedule(d?.result ?? (Array.isArray(d) ? d : [])))
       .catch(() => setSchedule([]));
     getJockeyStats()
-      .then((d: any) => { const s = d?.result ?? d ?? {}; setJockeyWins(String(s.winCount ?? s.wins ?? '—')); })
+      .then((d: any) => { const s = d?.result ?? d ?? {}; setStats(s); setJockeyWins(String(s.winCount ?? s.wins ?? '—')); })
       .catch(() => setJockeyWins('—'));
   }, []);
 
