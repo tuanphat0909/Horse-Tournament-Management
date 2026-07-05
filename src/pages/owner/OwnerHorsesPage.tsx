@@ -297,7 +297,12 @@ export function OwnerHorsesPage() {
               </div>
               <div>
                 <label className={LABEL}>Tình trạng sức khỏe</label>
-                <input value={editForm.healthStatus} onChange={e => setEditForm(p => ({...p, healthStatus: e.target.value}))} placeholder="VD: Tốt, Bị chấn thương..." className={INPUT} />
+                <select value={editForm.healthStatus || 'Healthy'} onChange={e => setEditForm(p => ({...p, healthStatus: e.target.value}))} className={INPUT} style={{colorScheme:'dark'}}>
+                  <option value="Healthy">🟢 Khỏe mạnh (Healthy)</option>
+                  <option value="Minor Issue">🟡 Vấn đề nhẹ (Minor Issue)</option>
+                  <option value="Injured">🔴 Chấn thương (Injured)</option>
+                  <option value="Sick">🔴 Bệnh (Sick)</option>
+                </select>
               </div>
               {editError && <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{editError}</div>}
             </div>

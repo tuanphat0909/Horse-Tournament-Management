@@ -23,7 +23,7 @@ type Entry = {
 function normStatus(s?: string): 'scheduled' | 'live' | 'finished' {
   const k = (s ?? '').toLowerCase();
   if (k === 'finished' || k === 'completed') return 'finished';
-  if (k === 'live' || k === 'running' || k === 'inprogress') return 'live';
+  if (k === 'live' || k === 'ongoing' || k === 'running' || k === 'inprogress') return 'live';
   return 'scheduled';
 }
 

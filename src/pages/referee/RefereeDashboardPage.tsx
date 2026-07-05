@@ -1,12 +1,14 @@
 ﻿import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Flag, FileText, ClipboardList, ChevronRight, AlertTriangle, Clock } from 'lucide-react';
+import { ShieldCheck, Flag, FileText, ClipboardList, ChevronRight, AlertTriangle, Clock, Eye, X, Trophy } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser } from '../../api/authService';
 import { getRefereeDashboard, getAllViolations } from '../../api/refereeService';
+import { getRaceSchedule, getRaceEntries } from '../../api/publicService';
+import { RaceTrack3D } from '../../components/ui/RaceTrack3D';
 import { useNavigate } from 'react-router-dom';
 
 const child = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
@@ -22,11 +24,23 @@ export function RefereeDashboardPage() {
   const [d, setD] = useState<any>({});
   const [violations, setViolations] = useState<any[]>([]);
   const [violationsLoading, setViolationsLoading] = useState(true);
+  // Lịch đua công khai — dùng để GHÉP thêm giải đấu/vòng/cự ly vào các race được phân công
+  // (BE /referee/dashboard chỉ trả raceId/name/date/status, thiếu detail)
+  const [schedule, setSchedule] = useState<any[]>([]);
+
+  // Modal chi tiết cuộc đua được phân công
+  const [detailRace, setDetailRace] = useState<any | null>(null);
+  const [detailEntries, setDetailEntries] = useState<any[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     getRefereeDashboard()
       .then((res: any) => setD(res?.result ?? res ?? {}))
       .catch(() => setD({}));
+
+    getRaceSchedule()
+      .then((res: any) => setSchedule(res?.result ?? []))
+      .catch(() => setSchedule([]));
 
     getAllViolations()
       .then((res: any) => setViolations(res?.result ?? (Array.isArray(res) ? res : [])))
@@ -34,7 +48,22 @@ export function RefereeDashboardPage() {
       .finally(() => setViolationsLoading(false));
   }, []);
 
-  const assignedRaces: any[] = Array.isArray(d.assignedRaces) ? d.assignedRaces : [];
+  // Ghép info: mỗi race được phân công + chi tiết từ lịch công khai (cùng raceId)
+  const assignedRaces: any[] = (Array.isArray(d.assignedRaces) ? d.assignedRaces : []).map((r: any) => {
+    const info = schedule.find((sc: any) => (sc.raceId ?? sc.id) === (r.raceId ?? r.id));
+    return { ...info, ...r }; // giữ status/date từ dashboard, bổ sung tournamentName/roundName/distance/maxLanes
+  });
+
+  async function openDetail(r: any) {
+    setDetailRace(r);
+    setDetailEntries([]);
+    setDetailLoading(true);
+    try {
+      const res: any = await getRaceEntries(Number(r.raceId ?? r.id));
+      setDetailEntries(res?.result ?? []);
+    } catch { setDetailEntries([]); }
+    finally { setDetailLoading(false); }
+  }
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: 'var(--page-bg)'}}>
@@ -116,15 +145,22 @@ export function RefereeDashboardPage() {
                       <div key={rid ?? i} className="flex items-center gap-3 p-3.5 rounded-xl bg-white/2 border border-glass-border hover:border-gold/25 hover:bg-gold/3 transition-all group">
                         <div className="w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-[11px] font-bold text-blue-400 shrink-0">{i + 1}</div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white group-hover:text-champagne transition-colors truncate">{r.name ?? `Cuộc đua #${rid}`}</div>
-                          <div className="text-[11px] text-muted flex items-center gap-2 mt-0.5">
-                            {r.raceDate && <span className="flex items-center gap-1"><Clock size={9} /> {r.raceDate}</span>}
-                            {r.tournamentName && <span>{r.tournamentName}</span>}
+                          <div className="text-sm font-medium text-white group-hover:text-champagne transition-colors truncate">{r.raceName ?? r.name ?? `Cuộc đua #${rid}`}</div>
+                          <div className="text-[11px] text-muted flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                            {r.raceDate && <span className="flex items-center gap-1"><Clock size={9} /> {new Date(r.raceDate).toLocaleString('vi-VN')}</span>}
+                            {r.tournamentName && <span className="flex items-center gap-1 text-champagne/80"><Trophy size={9} /> {r.tournamentName}</span>}
+                            {(r.roundName || r.roundNumber != null) && <span>{r.roundName ?? `Vòng ${r.roundNumber}`}</span>}
+                            {r.distanceMeter != null && <span>{r.distanceMeter}m</span>}
+                            {r.maxLanes != null && <span>{r.maxLanes} làn</span>}
                           </div>
                         </div>
                         {r.status && (
                           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 shrink-0">{r.status}</span>
                         )}
+                        <button onClick={() => openDetail(r)} title="Chi tiết giải đấu & sơ đồ làn"
+                          className="p-1.5 rounded-lg bg-white/4 text-champagne hover:bg-gold/15 border border-glass-border transition-colors shrink-0">
+                          <Eye size={13} />
+                        </button>
                       </div>
                     );
                   })}
@@ -171,6 +207,54 @@ export function RefereeDashboardPage() {
 
         </main>
       </div>
+
+      {/* ── Modal: chi tiết cuộc đua được phân công (giải, vòng, sơ đồ làn 3D) ── */}
+      {detailRace && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-7 w-full max-w-xl border border-gold/20 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Flag size={15} className="text-gold" /></div>
+              <div className="min-w-0">
+                <h2 className="text-lg font-serif text-white truncate">{detailRace.raceName ?? detailRace.name ?? `Cuộc đua #${detailRace.raceId}`}</h2>
+                <p className="text-[11px] text-muted truncate">
+                  {detailRace.tournamentName ?? 'Chưa rõ giải đấu'}{detailRace.roundName ? ` • ${detailRace.roundName}` : detailRace.roundNumber != null ? ` • Vòng ${detailRace.roundNumber}` : ''}
+                </p>
+              </div>
+              <div className="flex-1" />
+              <button onClick={() => setDetailRace(null)} className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-white/10 transition-colors"><X size={16} /></button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              {[
+                { l: 'Ngày đua', v: detailRace.raceDate ? new Date(detailRace.raceDate).toLocaleString('vi-VN') : '—' },
+                { l: 'Cự ly', v: detailRace.distanceMeter != null ? `${detailRace.distanceMeter}m` : '—' },
+                { l: 'Số làn', v: String(detailRace.maxLanes ?? '—') },
+                { l: 'Trạng thái', v: detailRace.status ?? '—' },
+              ].map(x => (
+                <div key={x.l} className="rounded-lg bg-white/3 border border-glass-border px-3 py-2.5">
+                  <div className="text-[10px] font-bold text-muted uppercase tracking-wider">{x.l}</div>
+                  <div className="text-xs text-white font-semibold mt-1">{x.v}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Sơ đồ làn (3D)</div>
+            {detailLoading ? (
+              <div className="text-center py-8 text-muted text-sm">Đang tải…</div>
+            ) : (
+              <RaceTrack3D status={detailRace.status} maxLanes={Number(detailRace.maxLanes ?? 0) || detailEntries.length} entries={detailEntries} />
+            )}
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => { setDetailRace(null); navigate('/referee/horse-check'); }}
+                className="flex-1 py-2.5 rounded-lg bg-gold/10 text-champagne border border-gold/25 hover:bg-gold/20 text-sm font-bold transition-colors">
+                Kiểm tra ngựa cuộc đua này
+              </button>
+              <button onClick={() => setDetailRace(null)} className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">Đóng</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

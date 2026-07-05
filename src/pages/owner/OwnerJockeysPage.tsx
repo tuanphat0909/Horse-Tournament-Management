@@ -5,7 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { getMyProposals, createJockeyContract, getMyHorses, cancelJockeyContract } from '../../api/ownerService';
+import { getMyProposals, createJockeyContract, getMyHorses, cancelJockeyContract, checkJockeyBusy } from '../../api/ownerService';
 import { getJockeyRankings, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { toast } from '../../components/ui/Toast';
@@ -44,6 +44,8 @@ export function OwnerJockeysPage() {
   const [form, setForm] = useState(makeInitForm);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  // Cảnh báo real-time: jockey đã có hợp đồng trong giải này (port từ FE của nhóm)
+  const [jockeyBusyError, setJockeyBusyError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
   const [cancelLoading, setCancelLoading] = useState<number | null>(null);
 
@@ -64,10 +66,30 @@ export function OwnerJockeysPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Khi chọn jockey + giải → hỏi BE ngay xem jockey có bận không (không cần bấm gửi mới biết)
+  useEffect(() => {
+    if (form.jockeyId && form.tournamentId) {
+      setJockeyBusyError('');
+      checkJockeyBusy(Number(form.jockeyId), Number(form.tournamentId))
+        .then((res: any) => {
+          if (res?.result?.isBusy || res?.isBusy) {
+            setJockeyBusyError('Jockey này đã có hợp đồng với ngựa khác trong giải này — hãy chọn jockey khác.');
+          }
+        })
+        .catch(() => setJockeyBusyError(''));
+    } else {
+      setJockeyBusyError('');
+    }
+  }, [form.jockeyId, form.tournamentId]);
+
   async function handleInvite() {
     setSubmitError(''); setSubmitSuccess('');
     if (!form.horseId || !form.tournamentId || !form.jockeyId || !form.startDate || !form.endDate) {
       setSubmitError('Vui lòng điền đầy đủ thông tin.');
+      return;
+    }
+    if (jockeyBusyError) {
+      setSubmitError(jockeyBusyError);
       return;
     }
     setSubmitLoading(true);
@@ -280,6 +302,7 @@ export function OwnerJockeysPage() {
                   <input type="date" value={form.endDate} onChange={e => setForm(p => ({...p, endDate: e.target.value}))} className={INPUT} style={{colorScheme:'dark'}} />
                 </div>
               </div>
+              {jockeyBusyError && <div className="text-sm px-4 py-3 rounded-lg bg-yellow-500/10 border border-yellow-500/25 text-yellow-400">⚠ {jockeyBusyError}</div>}
               {submitError && <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{submitError}</div>}
               {submitSuccess && <div className="text-sm px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{submitSuccess}</div>}
             </div>

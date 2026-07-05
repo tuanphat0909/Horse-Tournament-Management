@@ -55,7 +55,7 @@ export function RegisterPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col relative overflow-hidden"
+      className="theme-dark-scope min-h-screen flex flex-col relative overflow-hidden"
       style={{
         backgroundColor: 'var(--page-bg)',
         backgroundImage:

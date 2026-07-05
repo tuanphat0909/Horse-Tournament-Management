@@ -4,6 +4,7 @@ import { Bell, Search, CheckCheck, CheckCircle2, AlertCircle, Info } from 'lucid
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../../api/publicService';
 import { getCurrentUser } from '../../api/authService';
 import { getLocalNotifs, type LocalNotif } from '../ui/Toast';
+import { startNotificationHub } from '../../services/notificationHub';
 
 /**
  * Topbar dùng chung mọi role.
@@ -64,6 +65,14 @@ export function Topbar() {
     window.addEventListener('local-notif', onLocal);
     return () => window.removeEventListener('local-notif', onLocal);
   }, []);
+
+  // SignalR real-time: BE đẩy thông báo → chuông tự tải lại (port từ FE của nhóm)
+  useEffect(() => {
+    startNotificationHub();
+    const onServerNotif = () => load();
+    window.addEventListener('server-notif', onServerNotif);
+    return () => window.removeEventListener('server-notif', onServerNotif);
+  }, [load]);
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {

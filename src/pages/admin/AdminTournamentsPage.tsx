@@ -122,6 +122,19 @@ export function AdminTournamentsPage() {
     setForm(prev => ({ ...prev, [field]: value }));
   }
 
+  // Validation REAL-TIME (ý tưởng từ FE nhóm): báo lỗi ngay khi nhập, không đợi submit
+  function liveDateErrors(f: { registrationStartDate: string; registrationEndDate: string; startDate: string; endDate: string }): string[] {
+    const errs: string[] = [];
+    if (f.registrationStartDate && f.registrationEndDate && f.registrationEndDate <= f.registrationStartDate)
+      errs.push('Hạn chót đăng ký phải sau thời điểm mở đăng ký.');
+    if (f.registrationEndDate && f.startDate && f.startDate < f.registrationEndDate)
+      errs.push('Ngày bắt đầu giải phải từ sau khi đóng đăng ký.');
+    if (f.startDate && f.endDate && f.endDate <= f.startDate)
+      errs.push('Ngày kết thúc giải phải sau ngày bắt đầu.');
+    return errs;
+  }
+  const createLiveErrors = liveDateErrors(form);
+
   async function handleCreate() {
     setError(''); setSuccess('');
     if (!form.name || !form.registrationStartDate || !form.registrationEndDate || !form.startDate || !form.endDate || !form.numberOfRounds) {
@@ -457,6 +470,15 @@ export function AdminTournamentsPage() {
                   />
                 </div>
               </div>
+
+              {/* Lỗi ngày hiện NGAY khi nhập (real-time) */}
+              {createLiveErrors.length > 0 && (
+                <div className="space-y-1">
+                  {createLiveErrors.map((e, i) => (
+                    <div key={i} className="text-[11px] px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/25 text-yellow-400">⚠ {e}</div>
+                  ))}
+                </div>
+              )}
 
               <div>
                 <label className={LABEL}>Số vòng đua *</label>

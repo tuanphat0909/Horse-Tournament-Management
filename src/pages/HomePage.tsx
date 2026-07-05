@@ -10,7 +10,7 @@ import { CTASection } from '../components/landing/CTASection';
 
 export function HomePage() {
   return (
-    <div className="min-h-screen bg-navy text-body font-sans selection:bg-gold/30 selection:text-white">
+    <div className="theme-dark-scope min-h-screen bg-navy text-body font-sans selection:bg-gold/30 selection:text-white">
       <Navbar />
       <main>
         <HeroSection />

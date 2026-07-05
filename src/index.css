@@ -80,6 +80,34 @@ html[data-theme='light'] .hover\:text-white:hover { color: #1a2440 !important; }
 html[data-theme='light'] input, html[data-theme='light'] select, html[data-theme='light'] textarea { color-scheme: light; }
 html[data-theme='light'] .bg-black\/60, html[data-theme='light'] .bg-black\/70 { background-color: rgba(40, 55, 90, 0.45) !important; }
 
+/* ═══ VÙNG GIỮ TÔNG TỐI trong light mode (.theme-dark-scope) ═══
+   Dùng cho: PageHero (nền ảnh tối), trang Login/Register, Landing page —
+   các vùng này thiết kế trên nền tối, đổi chữ sang màu tối sẽ dính vào nền.
+   Mọi override light-mode bên trên bị HOÀN NGUYÊN bên trong scope này. */
+html[data-theme='light'] .theme-dark-scope { --color-muted: #7D8FB3; --color-champagne: #F0D080; --color-gold: #C9A84C; --color-body: #E2EAF4; --color-glass-border: rgba(255,255,255,0.06); }
+html[data-theme='light'] .theme-dark-scope .text-white { color: #ffffff !important; }
+html[data-theme='light'] .theme-dark-scope .text-white\/90 { color: rgba(255,255,255,0.9) !important; }
+html[data-theme='light'] .theme-dark-scope .text-white\/80 { color: rgba(255,255,255,0.8) !important; }
+html[data-theme='light'] .theme-dark-scope .hover\:text-white:hover { color: #ffffff !important; }
+html[data-theme='light'] .theme-dark-scope .bg-navy\/50 { background-color: rgba(11,22,40,0.5) !important; border-color: rgba(255,255,255,0.1) !important; }
+html[data-theme='light'] .theme-dark-scope .bg-white\/2,
+html[data-theme='light'] .theme-dark-scope .bg-white\/3,
+html[data-theme='light'] .theme-dark-scope .bg-white\/4,
+html[data-theme='light'] .theme-dark-scope .bg-white\/5 { background-color: rgba(255,255,255,0.045) !important; }
+html[data-theme='light'] .theme-dark-scope .hover\:bg-white\/4:hover,
+html[data-theme='light'] .theme-dark-scope .hover\:bg-white\/5:hover,
+html[data-theme='light'] .theme-dark-scope .hover\:bg-white\/10:hover { background-color: rgba(255,255,255,0.09) !important; }
+html[data-theme='light'] .theme-dark-scope .glass-panel,
+html[data-theme='light'] .theme-dark-scope .glass-panel-elevated,
+html[data-theme='light'] .theme-dark-scope .feature-card {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(212, 175, 55, 0.18);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+html[data-theme='light'] .theme-dark-scope input,
+html[data-theme='light'] .theme-dark-scope select,
+html[data-theme='light'] .theme-dark-scope textarea { color-scheme: dark; }
+
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Playfair Display', serif;
 }

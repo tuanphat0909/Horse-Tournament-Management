@@ -20,3 +20,6 @@ export const uploadHorseDocument = (id, data) => api.post(`/horses/${id}/documen
 
 // DELETE /jockey-contracts/{id} — owner hủy lời mời hợp đồng đang chờ (MỚI)
 export const cancelJockeyContract = (id) => api.delete(`/jockey-contracts/${id}`);
+
+// Kiểm tra jockey đã bận (có hợp đồng Active/Accepted) trong giải chưa — API mới của nhóm
+export const checkJockeyBusy = (jockeyId, tournamentId) => api.get(`/jockeys/${jockeyId}/check-busy/${tournamentId}`);

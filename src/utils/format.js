@@ -8,18 +8,30 @@ export function formatCurrency(amount, currency = 'USD') {
   }).format(amount);
 }
 
-export function formatCurrencyVND(amount) {
+export function formatCurrencyVND(value) {
+  if (value == null || Number.isNaN(value)) return '—';
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND',
-  }).format(amount);
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 export function formatDate(date) {
+  if (!date) return '—';
   return new Intl.DateTimeFormat('vi-VN', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(date));
+}
+
+// "2026-07-05T18:30" -> "05/07/2026 18:30" (port từ FE nhóm)
+export function formatDateTime(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return '—';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(date.getDate())}/${p(date.getMonth() + 1)}/${date.getFullYear()} ${p(date.getHours())}:${p(date.getMinutes())}`;
 }
 
 export function formatRaceCountdown(targetDate) {

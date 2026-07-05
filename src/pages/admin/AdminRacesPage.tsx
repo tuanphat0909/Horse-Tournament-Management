@@ -32,7 +32,7 @@ function fmtDate(v: any): string {
 function statusBadge(status?: string) {
   const s = (status ?? '').toLowerCase();
   if (s === 'finished' || s === 'completed') return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-  if (s === 'live' || s === 'running' || s === 'inprogress') return 'text-red-400 bg-red-500/10 border-red-500/20';
+  if (s === 'live' || s === 'ongoing' || s === 'running' || s === 'inprogress') return 'text-red-400 bg-red-500/10 border-red-500/20';
   return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
 }
 
@@ -103,7 +103,11 @@ export function AdminRacesPage() {
   const filtered = useMemo(() => raceList.filter(r => {
     const okSearch = (r.name ?? '').toLowerCase().includes(search.toLowerCase());
     const okTour = !filterTournament || String(r.tournamentId) === filterTournament;
-    const okStatus = !filterStatus || (r.status ?? '').toLowerCase() === filterStatus;
+    // "live" bao gồm cả Ongoing/Running/InProgress — BE dùng chữ "Ongoing"
+    const st = (r.status ?? '').toLowerCase();
+    const liveSet = ['live', 'ongoing', 'running', 'inprogress'];
+    const okStatus = !filterStatus
+      || (filterStatus === 'live' ? liveSet.includes(st) : st === filterStatus);
     return okSearch && okTour && okStatus;
   }), [raceList, search, filterTournament, filterStatus]);
 
@@ -350,7 +354,7 @@ export function AdminRacesPage() {
               className="bg-navy/50 border border-glass-border rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-gold/40" style={{ colorScheme: 'dark' }}>
               <option value="">Tất cả trạng thái</option>
               <option value="scheduled">Scheduled</option>
-              <option value="live">Live</option>
+              <option value="live">Live / Ongoing</option>
               <option value="finished">Finished</option>
             </select>
           </div>

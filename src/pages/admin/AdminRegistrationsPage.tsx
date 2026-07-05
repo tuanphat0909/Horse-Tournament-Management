@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Check, X } from 'lucide-react';
+import { Search, Check, X, Eye } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
@@ -30,6 +30,10 @@ export function AdminRegistrationsPage() {
   // Trạng thái thao tác duyệt/từ chối
   const [reviewingId, setReviewingId] = useState<number | null>(null);
   const [reviewError, setReviewError] = useState('');
+  // Modal "Xem & Duyệt": nút Duyệt bị ẨN cho tới khi admin tick xác nhận đã
+  // kiểm tra jockey (BE chưa có API cho admin xem hợp đồng để tự kiểm tra).
+  const [reviewTarget, setReviewTarget] = useState<any | null>(null);
+  const [jockeyChecked, setJockeyChecked] = useState(false);
 
   function loadRegistrations() {
     setLoading(true);
@@ -46,16 +50,6 @@ export function AdminRegistrationsPage() {
   useEffect(() => { loadRegistrations(); }, []);
 
   async function handleReview(id: number, status: 'Approved' | 'Rejected', horseName?: string) {
-    // BE hiện CHƯA có API cho admin xem hợp đồng jockey của ngựa → không thể tự
-    // kiểm tra. Bắt buộc admin xác nhận thủ công trước khi duyệt (quy trình:
-    // ngựa phải có jockey ký hợp đồng trước khi được duyệt thi đấu).
-    if (status === 'Approved') {
-      const ok = window.confirm(
-        `Duyệt đơn cho ngựa "${horseName ?? '#' + id}"?\n\n` +
-        'LƯU Ý QUY TRÌNH: chỉ duyệt khi ngựa đã có jockey CHẤP NHẬN hợp đồng cho giải này.\n' +
-        '(Hệ thống phía Owner đã chặn nộp đơn khi chưa có jockey — nhưng backend chưa cho admin xem hợp đồng để kiểm tra tự động.)');
-      if (!ok) return;
-    }
     setReviewError('');
     setReviewingId(id);
     try {
@@ -65,6 +59,7 @@ export function AdminRegistrationsPage() {
       toast.success(status === 'Approved'
         ? `Đã duyệt đơn đăng ký của ngựa "${horseName ?? '#' + id}"!`
         : `Đã từ chối đơn đăng ký của ngựa "${horseName ?? '#' + id}".`);
+      setReviewTarget(null); setJockeyChecked(false);
       loadRegistrations();
     } catch (err: unknown) {
       setReviewError(parseApiError(err as Error));
@@ -180,20 +175,13 @@ export function AdminRegistrationsPage() {
                       <td className="px-5 py-3 text-muted">{r.registeredAt ? new Date(r.registeredAt).toLocaleString() : '—'}</td>
                       <td className="px-5 py-3">
                         {isPending ? (
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end">
                             <button
-                              onClick={() => id != null && handleReview(id, 'Approved', r.horseName)}
+                              onClick={() => { setReviewTarget(r); setJockeyChecked(false); }}
                               disabled={busy}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold/10 text-champagne text-xs font-bold border border-gold/25 hover:bg-gold/20 transition-colors disabled:opacity-50"
                             >
-                              <Check size={13} /> Duyệt
-                            </button>
-                            <button
-                              onClick={() => id != null && handleReview(id, 'Rejected', r.horseName)}
-                              disabled={busy}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <X size={13} /> Từ chối
+                              <Eye size={13} /> Xem & Duyệt
                             </button>
                           </div>
                         ) : (
@@ -211,6 +199,70 @@ export function AdminRegistrationsPage() {
 
         </main>
       </div>
+
+      {/* ── Modal Xem & Duyệt: nút Duyệt chỉ hiện sau khi xác nhận jockey ── */}
+      {reviewTarget && (() => {
+        const id = reviewTarget.registrationId ?? reviewTarget.id;
+        const busy = reviewingId === id;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="glass-panel rounded-2xl p-7 w-full max-w-md border border-gold/20 relative overflow-hidden">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Eye size={15} className="text-gold" /></div>
+                <h3 className="text-lg font-serif text-white">Xét duyệt đơn đăng ký</h3>
+                <div className="flex-1" />
+                <button onClick={() => setReviewTarget(null)} className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-white/10 transition-colors"><X size={15} /></button>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                {[
+                  ['Ngựa', reviewTarget.horseName ?? '—'],
+                  ['Chủ ngựa', reviewTarget.ownerName ?? '—'],
+                  ['Giải đấu', reviewTarget.tournamentName ?? '—'],
+                  ['Ngày đăng ký', reviewTarget.registeredAt ? new Date(reviewTarget.registeredAt).toLocaleString('vi-VN') : '—'],
+                ].map(([l, v]) => (
+                  <div key={l as string} className="flex justify-between gap-4 text-sm">
+                    <span className="text-muted">{l}</span>
+                    <span className="text-white font-medium text-right">{v}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between gap-4 text-sm">
+                  <span className="text-muted">Jockey</span>
+                  <span className="text-yellow-400 text-right text-xs leading-snug max-w-55">
+                    Chưa có dữ liệu — backend chưa cung cấp API hợp đồng cho admin.
+                    Owner chỉ nộp được đơn khi jockey đã ký (chặn ở hệ thống), nhưng hãy kiểm tra chéo nếu cần.
+                  </span>
+                </div>
+              </div>
+
+              {/* Tick xác nhận → nút Duyệt mới xuất hiện */}
+              <label className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-gold/5 border border-gold/15 cursor-pointer mb-4">
+                <input type="checkbox" checked={jockeyChecked} onChange={e => setJockeyChecked(e.target.checked)} className="mt-0.5 accent-[#C9A84C]" />
+                <span className="text-xs text-champagne/90 leading-relaxed">
+                  Tôi xác nhận ngựa này <b>đã có jockey chấp nhận hợp đồng</b> cho giải đấu — đủ điều kiện thi đấu.
+                </span>
+              </label>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleReview(id, 'Rejected', reviewTarget.horseName)}
+                  disabled={busy}
+                  className="flex-1 py-2.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/25 hover:bg-red-500/20 text-sm font-bold transition-colors disabled:opacity-50">
+                  <X size={13} className="inline mr-1" /> Từ chối
+                </button>
+                {jockeyChecked && (
+                  <button
+                    onClick={() => handleReview(id, 'Approved', reviewTarget.horseName)}
+                    disabled={busy}
+                    className="flex-1 py-2.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 text-sm font-bold transition-colors disabled:opacity-50">
+                    <Check size={13} className="inline mr-1" /> {busy ? 'Đang duyệt…' : 'Duyệt'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
