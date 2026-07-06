@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
@@ -55,9 +55,9 @@ export function RegisterPage() {
 
   return (
     <div
-      className="theme-dark-scope min-h-screen flex flex-col relative overflow-hidden"
+      className="min-h-screen flex flex-col relative overflow-hidden"
       style={{
-        backgroundColor: 'var(--page-bg)',
+        backgroundColor: '#0b101e',
         backgroundImage:
           'radial-gradient(ellipse at 0% 100%, rgba(212,175,55,0.15) 0%, transparent 50%), radial-gradient(ellipse at 100% 0%, rgba(212,175,55,0.1) 0%, transparent 40%)',
         fontFamily: '"Inter", sans-serif',
@@ -91,7 +91,7 @@ export function RegisterPage() {
       </header>
 
       {/* Main */}
-      <main className="flex-grow flex items-center justify-center relative z-10 px-6 py-12 lg:px-16 w-full max-w-400 mx-auto">
+      <main className="flex-grow flex items-center justify-center relative z-10 px-6 py-12 lg:px-16 w-full max-w-[1600px] mx-auto">
         {/* Vertical divider */}
         <div
           className="absolute hidden lg:flex flex-col items-center pointer-events-none z-0"
@@ -138,7 +138,7 @@ export function RegisterPage() {
               {['Global', 'Elite', 'Secure'].map((s) => (
                 <span
                   key={s}
-                  className="px-5 py-2 rounded-full font-medium tracking-wide"
+                  className="px-5 py-2 rounded-full font-medium tracking-wide auth-badge"
                   style={{ border: '1px solid rgba(212,175,55,0.2)', color: '#d4af37', background: 'rgba(30,41,59,0.3)', fontSize: '13px' }}
                 >
                   {s}
@@ -146,7 +146,7 @@ export function RegisterPage() {
               ))}
             </div>
           </motion.section>
-
+ 
           {/* Right: Register form */}
           <section className="w-full flex justify-center">
             <div className="w-full max-w-md" style={{
@@ -156,7 +156,7 @@ export function RegisterPage() {
               boxShadow: '0 0 30px rgba(212,175,55,0.12), 0 0 60px rgba(212,175,55,0.06)',
             }}>
             <motion.div
-              className="rounded-2xl p-10 relative overflow-hidden"
+              className="rounded-2xl p-10 relative overflow-hidden auth-card"
               style={{
                 background: 'rgba(15,23,42,0.5)',
                 backdropFilter: 'blur(16px)',
@@ -290,7 +290,7 @@ export function RegisterPage() {
                 <motion.div variants={fadeUp}>
                   <button
                     className="w-full font-bold text-sm tracking-wider uppercase py-3.5 rounded-md flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{ background: 'linear-gradient(135deg,#e9c46a 0%,#d4af37 50%,#aa8c2c 100%)', color: 'var(--page-bg)' }}
+                    style={{ background: 'linear-gradient(135deg,#e9c46a 0%,#d4af37 50%,#aa8c2c 100%)', color: '#0b101e' }}
                     type="button"
                     onClick={handleRegister}
                     disabled={loading}

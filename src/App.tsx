@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes } from './routes';
-import { Toaster } from './components/ui/Toast';
+import { LanguageProvider } from './context/LanguageContext';
 
 function GlobalWave() {
   return (
@@ -25,11 +26,25 @@ function GlobalWave() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.classList.remove('light');
+    }
+  }, []);
+
   return (
-    <BrowserRouter>
-      <GlobalWave />
-      <AppRoutes />
-      <Toaster />
-    </BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter>
+        <GlobalWave />
+        <AppRoutes />
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
+
+

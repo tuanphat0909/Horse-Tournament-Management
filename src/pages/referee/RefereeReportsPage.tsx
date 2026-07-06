@@ -1,121 +1,146 @@
-﻿import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Plus, Award } from 'lucide-react';
+import { FileText, Plus, Award, Calendar, Loader, CheckCircle } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { getRaceReports, submitReport, getRefereeDashboard } from '../../api/refereeService';
-import { getRaceSchedule, getRaceEntries } from '../../api/publicService';
-import { getCurrentUser, parseApiError } from '../../api/authService';
-import { toast } from '../../components/ui/Toast';
-import { Pager, paginate } from '../../components/ui/Pager';
+import { getRefereeDashboard, getRaceReports, createReport, getHorseChecks } from '../../api/refereeService';
+import { parseApiError } from '../../api/authService';
 
-const raceLabel = (r: any) =>
-  `${r.name ?? ('Cuộc đua #' + (r.id ?? r.raceId))}${r.raceDate ? ' — ' + r.raceDate : ''}${r.tournamentName ? ' (' + r.tournamentName + ')' : ''}`;
+const INPUT = 'w-full bg-[#0B1628] border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
+const LABEL = 'block text-xs font-bold text-muted uppercase tracking-wider mb-1.5';
+
+interface AssignedRace {
+  raceId: number;
+  raceName: string;
+  status: string;
+}
+
+interface Report {
+  reportId: number;
+  content: string;
+  violationNote: string;
+  createdAt: string;
+  reportedHorseName: string;
+  reportedHorseId: number;
+}
 
 export function RefereeReportsPage() {
   const [showAdd, setShowAdd] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+  
+  const [races, setRaces] = useState<AssignedRace[]>([]);
+  const [selectedRaceId, setSelectedRaceId] = useState<number | ''>('');
+  const [reports, setReports] = useState<Report[]>([]);
+  const [horses, setHorses] = useState<any[]>([]);
+  
+  const [loadingRaces, setLoadingRaces] = useState(true);
+  const [loadingReports, setLoadingReports] = useState(false);
+  
+  const [form, setForm] = useState({ content: '', violationNote: '', reportedHorseId: '' });
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
 
-  const user = getCurrentUser();
-  const myRefId = user?.id ?? user?.userId;
-
-  const [dashStats, setDashStats] = useState<any>({});
-  const [races, setRaces] = useState<any[]>([]);
-  const [raceId, setRaceId] = useState<string>('');
-  const [list, setList] = useState<any[]>([]);
-  const [pageNo, setPageNo] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // Fetch races & stats
+  async function loadDashboard() {
+    setLoadingRaces(true);
+    try {
+      const res = await getRefereeDashboard();
+      if (res && res.result) {
+        setStats(res.result);
+        const assigned = res.result.assignedRaces || [];
+        setRaces(assigned);
+        if (assigned.length > 0 && !selectedRaceId) {
+          setSelectedRaceId(assigned[0].raceId);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingRaces(false);
+    }
+  }
 
   useEffect(() => {
-    getRefereeDashboard()
-      .then((d: any) => setDashStats(d?.result ?? d ?? {}))
-      .catch(() => setDashStats({}));
-    getRaceSchedule()
-      .then((data: any) => {
-        const arr = data?.result ?? (Array.isArray(data) ? data : []);
-        setRaces(Array.isArray(arr) ? arr : []);
-      })
-      .catch(() => setRaces([]));
+    loadDashboard();
   }, []);
 
-  // form state
-  const [fRaceId, setFRaceId] = useState<string>('');
-  const [fRefId, setFRefId] = useState<string>('');
-  const [fContent, setFContent] = useState('');
-  const [fViolationNote, setFViolationNote] = useState('');
-  const [fReportedUserId, setFReportedUserId] = useState<string>('');
-  const [fReportedHorseId, setFReportedHorseId] = useState<string>('');
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
-
-  // Danh sách ngựa trong cuộc đua đang chọn ở form → dropdown "Ngựa bị báo cáo"
-  const [formEntries, setFormEntries] = useState<any[]>([]);
+  // Fetch reports & horses when selected race changes
+  async function loadRaceData() {
+    if (!selectedRaceId) return;
+    setLoadingReports(true);
+    try {
+      const [repRes, horseRes] = await Promise.all([
+        getRaceReports(selectedRaceId),
+        getHorseChecks(selectedRaceId)
+      ]);
+      const fetchedReports = Array.isArray(repRes) ? repRes : repRes?.result ?? [];
+      const fetchedHorses = Array.isArray(horseRes) ? horseRes : horseRes?.result ?? [];
+      setReports(fetchedReports);
+      setHorses(fetchedHorses);
+    } catch (err) {
+      console.error(err);
+      setReports([]);
+      setHorses([]);
+    } finally {
+      setLoadingReports(false);
+    }
+  }
 
   useEffect(() => {
-    if (!fRaceId) { setFormEntries([]); return; }
-    let cancelled = false;
-    getRaceEntries(Number(fRaceId))
-      .then((d: any) => { if (!cancelled) setFormEntries(d?.result ?? (Array.isArray(d) ? d : [])); })
-      .catch(() => { if (!cancelled) setFormEntries([]); });
-    return () => { cancelled = true; };
-  }, [fRaceId]);
+    loadRaceData();
+  }, [selectedRaceId]);
 
-  const loadList = (id: string) => {
-    if (!id) { setList([]); return; }
-    setLoading(true);
-    setError('');
-    getRaceReports(Number(id))
-      .then((data: any) => {
-        const arr = data?.result ?? (Array.isArray(data) ? data : []);
-        setList(Array.isArray(arr) ? arr : []);
-      })
-      .catch((err: any) => { setError(parseApiError(err)); setList([]); })
-      .finally(() => setLoading(false));
-  };
+  function setF(field: string, val: string) {
+    setForm(p => ({ ...p, [field]: val }));
+  }
 
-  const onRaceIdChange = (v: string) => {
-    setRaceId(v);
-    loadList(v);
-  };
+  async function handleSubmit() {
+    setSubmitError('');
+    setSubmitSuccess('');
+    if (!selectedRaceId) {
+      setSubmitError('Vui lòng chọn một cuộc đua.');
+      return;
+    }
+    if (!form.content.trim()) {
+      setSubmitError('Nội dung báo cáo không được để trống.');
+      return;
+    }
 
-  const submit = () => {
-    setFormError('');
-    if (!fContent.trim()) { setFormError('Vui lòng nhập nội dung báo cáo.'); return; }
-    const body: any = {
-      raceId: fRaceId ? Number(fRaceId) : undefined,
-      refereeId: myRefId ?? (fRefId ? Number(fRefId) : undefined),
-      content: fContent.trim(),
-    };
-    if (fViolationNote.trim()) body.violationNote = fViolationNote.trim();
-    if (fReportedUserId) body.reportedUserId = Number(fReportedUserId);
-    if (fReportedHorseId) body.reportedHorseId = Number(fReportedHorseId);
-    setSubmitting(true);
-    submitReport(body)
-      .then(() => {
-        toast.success('Đã gửi báo cáo thành công!');
+    setSubmitLoading(true);
+    try {
+      const payload = {
+        raceId: Number(selectedRaceId),
+        content: form.content,
+        violationNote: form.violationNote || null,
+        reportedHorseId: form.reportedHorseId ? Number(form.reportedHorseId) : null
+      };
+
+      await createReport(payload);
+      setSubmitSuccess('Đã gửi báo cáo thành công!');
+      setForm({ content: '', violationNote: '', reportedHorseId: '' });
+      await loadRaceData();
+      await loadDashboard();
+      setTimeout(() => {
         setShowAdd(false);
-        setFContent('');
-        setFViolationNote('');
-        setFReportedUserId('');
-        setFReportedHorseId('');
-        const refreshId = raceId || fRaceId;
-        if (refreshId) { setRaceId(refreshId); loadList(refreshId); }
-      })
-      .catch((err: any) => setFormError(parseApiError(err)))
-      .finally(() => setSubmitting(false));
-  };
-
-  const pgList = paginate(list, pageNo, 8);
+        setSubmitSuccess('');
+      }, 1500);
+    } catch (err: unknown) {
+      setSubmitError(parseApiError(err as Error));
+    } finally {
+      setSubmitLoading(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: 'var(--page-bg)'}}>
+    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="red" />
         <Topbar />
-        <main className="relative z-10 max-w-400 mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
           <PageHero
             title="Báo cáo"
@@ -123,74 +148,116 @@ export function RefereeReportsPage() {
             imageUrl="/images/hero-referee.jpg"
             imagePosition="right 52%"
             actions={
-              <button onClick={() => { setFRaceId(raceId); setShowAdd(true); }} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
+              <button 
+                onClick={() => {
+                  setSubmitError('');
+                  setSubmitSuccess('');
+                  setShowAdd(true);
+                }} 
+                className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5"
+                disabled={!selectedRaceId}
+              >
                 <Plus size={14} /> Tạo báo cáo
               </button>
             }
           />
 
-          {/* Race selector */}
-          <div className="flex items-end gap-3">
-            <div>
-              <label className="block text-xs text-muted font-medium mb-1.5">Cuộc đua</label>
-              <select value={raceId} onChange={e => onRaceIdChange(e.target.value)}
-                className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors">
-                <option value="">-- Chọn cuộc đua --</option>
-                {races.map((r: any) => {
-                  const id = r.id ?? r.raceId;
-                  return <option key={String(id)} value={String(id)}>{raceLabel(r)}</option>;
-                })}
-              </select>
+          {/* Select Race Dropdown */}
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <span className="text-sm text-muted font-bold shrink-0">Chọn cuộc đua:</span>
+              {loadingRaces ? (
+                <span className="text-xs text-muted">Đang tải cuộc đua...</span>
+              ) : races.length === 0 ? (
+                <span className="text-xs text-red-400">Không có cuộc đua nào được phân công</span>
+              ) : (
+                <select
+                  value={selectedRaceId}
+                  onChange={e => setSelectedRaceId(Number(e.target.value))}
+                  className="bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 text-sm text-white focus:border-gold outline-none min-w-[200px]"
+                >
+                  {races.map(r => (
+                    <option key={r.raceId} value={r.raceId} className="bg-[#0b101e]">
+                      {r.raceName} (ID: {r.raceId})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-[1fr_380px] gap-6">
-            <div className="space-y-3">
-              {error && <div className="glass-panel rounded-xl p-4 text-sm text-red-400 border border-red-500/30">{error}</div>}
-              {loading ? (
-                <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm">Đang tải...</div>
-              ) : list.length === 0 ? (
-                <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-                  <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                  <div className="text-4xl opacity-40 mb-3">📋</div>
-                  <div className="text-muted text-sm">Chưa có dữ liệu</div>
-                </div>
-              ) : (
-                pgList.paged.map((r: any, i: number) => (
-                  <div key={r.reportId ?? i} className="glass-panel rounded-xl p-5 border border-glass-border relative overflow-hidden">
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <div className="text-white font-serif text-base">{r.raceName ?? ('Cuộc đua #' + (r.raceId ?? '—'))}</div>
-                      {r.createdAt && <span className="text-xs text-muted/70">{String(r.createdAt)}</span>}
-                    </div>
-                    <div className="text-sm text-muted whitespace-pre-wrap">{r.content ?? '—'}</div>
-                    {r.violationNote && <div className="text-xs text-red-400 mt-2">Ghi chú vi phạm: {r.violationNote}</div>}
-                    <div className="text-xs text-muted/70 mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                      <span>Trọng tài: {r.refereeName ?? r.refereeId ?? '—'}</span>
-                      {r.reportedUserId != null && <span>Người bị báo cáo: {r.reportedUserId}</span>}
-                      {r.reportedHorseId != null && <span>Ngựa bị báo cáo: {r.reportedHorseId}</span>}
-                    </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+            
+            {/* Left Pane: Reports list */}
+            <div className="space-y-4">
+              <div className="glass-panel p-5 rounded-xl border border-glass-border">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <FileText size={16} className="text-gold" />
+                  <span>Danh sách báo cáo cuộc đua</span>
+                </h3>
+
+                {loadingReports ? (
+                  <div className="text-center py-12 text-muted text-sm flex items-center justify-center gap-2">
+                    <Loader size={16} className="animate-spin text-gold" />
+                    <span>Đang tải danh sách báo cáo...</span>
                   </div>
-                ))
-              )}
-              <Pager page={pgList.page} totalPages={pgList.totalPages} total={pgList.total} onChange={setPageNo} />
+                ) : reports.length === 0 ? (
+                  <div className="text-center py-12 relative overflow-hidden">
+                    <div className="text-4xl opacity-40 mb-3">📋</div>
+                    <div className="text-muted text-sm">Chưa có dữ liệu báo cáo nào được nộp cho trận này</div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reports.map((rep) => (
+                      <div key={rep.reportId} className="bg-white/[0.02] border border-glass-border/60 hover:border-gold/20 p-4 rounded-xl space-y-3 transition-all">
+                        <div className="flex justify-between items-center border-b border-glass-border/30 pb-2">
+                          <span className="text-xs text-gold font-mono font-bold">Mã báo cáo: #{rep.reportId}</span>
+                          <span className="text-xs text-muted/65 flex items-center gap-1">
+                            <Calendar size={12} />
+                            {new Date(rep.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="text-sm text-white/90 whitespace-pre-wrap leading-relaxed">
+                          {rep.content}
+                        </div>
+                        {(rep.reportedHorseName || rep.violationNote) && (
+                          <div className="bg-red-500/[0.04] border border-red-500/10 p-3 rounded-lg text-xs space-y-1">
+                            {rep.reportedHorseName && (
+                              <div className="text-muted">
+                                Ngựa bị báo cáo: <span className="text-red-400 font-semibold">{rep.reportedHorseName}</span>
+                              </div>
+                            )}
+                            {rep.violationNote && (
+                              <div className="text-muted">
+                                Ghi chú vi phạm: <span className="text-red-400/90">{rep.violationNote}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
+            {/* Right Pane: Summary stats */}
             <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="glass-panel rounded-xl p-6 h-fit relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-red-500/10 to-transparent blur-2xl pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
               <div className="flex items-center gap-3 mb-5 relative z-10">
                 <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Award size={15} className="text-gold" /></div>
                 <h3 className="text-base font-serif text-white">Tóm tắt mùa giải</h3>
-                <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
+                <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
               </div>
               <div className="space-y-3 relative z-10">
                 {[
-                  { label: 'Tổng báo cáo', value: dashStats.pendingReportCount != null && dashStats.completedReportCount != null ? String((dashStats.pendingReportCount ?? 0) + (dashStats.completedReportCount ?? 0)) : '—', color: 'text-white' },
-                  { label: 'Đã gửi', value: dashStats.completedReportCount != null ? String(dashStats.completedReportCount) : '—', color: 'text-emerald-400' },
-                  { label: 'Chờ xử lý', value: dashStats.pendingReportCount != null ? String(dashStats.pendingReportCount) : '—', color: 'text-yellow-400' },
-                  { label: 'Tổng vi phạm ghi nhận', value: dashStats.violationsCreatedCount != null ? String(dashStats.violationsCreatedCount) : '—', color: 'text-red-400' },
+                  { label: 'Tổng báo cáo cần nộp', value: stats ? stats.assignedRaceCount : '—', color: 'text-white' },
+                  { label: 'Đã nộp', value: stats ? stats.completedReportCount : '—', color: 'text-emerald-400' },
+                  { label: 'Chờ nộp', value: stats ? stats.pendingReportCount : '—', color: 'text-yellow-400' },
+                  { label: 'Tổng vi phạm ghi nhận', value: stats ? stats.violationsCreatedCount : '—', color: 'text-red-400' },
                 ].map((s, i) => (
-                  <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/2 border border-glass-border hover:border-gold/30 hover:bg-gold/4 transition-all group">
+                  <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.02] border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all group">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center font-serif font-bold text-champagne text-sm shrink-0">{i + 1}</div>
                       <span className="text-xs text-muted group-hover:text-champagne transition-colors">{s.label}</span>
@@ -202,67 +269,103 @@ export function RefereeReportsPage() {
             </motion.div>
           </div>
 
+          {/* Create Report Modal */}
           {showAdd && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-7 w-full max-w-lg border border-glass-border relative overflow-hidden">
-                <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-red-500/10 to-transparent blur-2xl pointer-events-none" />
+                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
+                
                 <div className="flex items-center gap-3 mb-5 relative z-10">
                   <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><FileText size={15} className="text-gold" /></div>
                   <h3 className="text-lg font-serif text-white">Tạo báo cáo mới</h3>
-                  <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
+                  <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
                 </div>
-                <div className="space-y-4">
+
+                <div className="space-y-4 relative z-10">
+                  
                   <div>
-                    <label className="block text-xs text-muted font-medium mb-1.5">Cuộc đua</label>
-                    <select value={fRaceId} onChange={e => { setFRaceId(e.target.value); setFReportedHorseId(''); }}
-                      className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors">
-                      <option value="">-- Chọn cuộc đua --</option>
-                      {races.map((r: any) => {
-                        const id = r.id ?? r.raceId;
-                        return <option key={String(id)} value={String(id)}>{raceLabel(r)}</option>;
-                      })}
+                    <label className={LABEL}>Cuộc đua hiện tại</label>
+                    <input 
+                      disabled 
+                      value={races.find(r => r.raceId === selectedRaceId)?.raceName || ''} 
+                      className="w-full bg-white/[0.02] border border-glass-border rounded-lg px-4 py-2.5 text-sm text-muted cursor-not-allowed outline-none" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className={LABEL}>Báo cáo ngựa vi phạm (Tùy chọn)</label>
+                    <select 
+                      value={form.reportedHorseId} 
+                      onChange={e => setF('reportedHorseId', e.target.value)} 
+                      className={INPUT}
+                      style={{colorScheme: 'dark'}}
+                    >
+                      <option value="">-- Chọn ngựa (nếu có) --</option>
+                      {horses.map((h: any) => (
+                        <option key={h.horseId} value={h.horseId}>
+                          Làn {h.laneNo}: {h.horseName} ({h.jockeyName})
+                        </option>
+                      ))}
                     </select>
                   </div>
-                  {myRefId == null && (
+
+                  {form.reportedHorseId && (
                     <div>
-                      <label className="block text-xs text-muted font-medium mb-1.5">Mã trọng tài (refereeId)</label>
-                      <input type="number" value={fRefId} onChange={e => setFRefId(e.target.value)} placeholder="Nhập mã trọng tài..."
-                        className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors" />
+                      <label className={LABEL}>Ghi chú vi phạm của ngựa *</label>
+                      <input 
+                        value={form.violationNote} 
+                        onChange={e => setF('violationNote', e.target.value)} 
+                        placeholder="Mô tả hành vi vi phạm..." 
+                        className={INPUT} 
+                      />
                     </div>
                   )}
+
                   <div>
-                    <label className="block text-xs text-muted font-medium mb-1.5">Nội dung báo cáo</label>
-                    <textarea rows={4} value={fContent} onChange={e => setFContent(e.target.value)} placeholder="Mô tả diễn biến cuộc đua, vi phạm (nếu có), nhận xét..." className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none resize-none focus:border-gold/40 transition-colors" />
+                    <label className={LABEL}>Nội dung báo cáo chi tiết *</label>
+                    <textarea 
+                      rows={5} 
+                      value={form.content} 
+                      onChange={e => setF('content', e.target.value)} 
+                      placeholder="Mô tả chi tiết diễn biến cuộc đua, các sự cố và đánh giá của trọng tài..." 
+                      className="w-full bg-[#0B1628] border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none resize-none focus:border-gold/40 transition-colors" 
+                    />
                   </div>
-                  <div>
-                    <label className="block text-xs text-muted font-medium mb-1.5">Ghi chú vi phạm (tùy chọn)</label>
-                    <input value={fViolationNote} onChange={e => setFViolationNote(e.target.value)} placeholder="Ghi chú vi phạm..."
-                      className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-muted font-medium mb-1.5">Ngựa bị báo cáo (tùy chọn)</label>
-                      <select value={fReportedHorseId} onChange={e => setFReportedHorseId(e.target.value)} disabled={!fRaceId}
-                        className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-gold/40 transition-colors" style={{ colorScheme: 'dark' }}>
-                        <option value="">{!fRaceId ? '-- Chọn cuộc đua trước --' : '-- Không chọn --'}</option>
-                        {formEntries.map((e: any, ei: number) => (
-                          <option key={e.raceEntryId ?? e.horseId ?? ei} value={e.horseId}>{e.horseName ?? ('Ngựa #' + e.horseId)}</option>
-                        ))}
-                      </select>
+
+                  {submitError && (
+                    <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
+                      {submitError}
                     </div>
-                    <div>
-                      <label className="block text-xs text-muted font-medium mb-1.5">ID người bị báo cáo (tùy chọn)</label>
-                      <input type="number" value={fReportedUserId} onChange={e => setFReportedUserId(e.target.value)} placeholder="reportedUserId"
-                        className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors" />
+                  )}
+
+                  {submitSuccess && (
+                    <div className="text-sm px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-2">
+                      <CheckCircle size={16} />
+                      <span>{submitSuccess}</span>
                     </div>
-                  </div>
+                  )}
+
                 </div>
-                {formError && <div className="mt-4 text-sm text-red-400">{formError}</div>}
-                <div className="flex justify-end gap-3 mt-6">
-                  <button onClick={() => setShowAdd(false)} className="px-5 py-2 rounded-lg text-sm text-muted border border-glass-border hover:text-white transition-colors">Hủy</button>
-                  <button onClick={submit} disabled={submitting} className="btn-gold px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-60">{submitting ? 'Đang gửi...' : 'Gửi ngay'}</button>
+
+                <div className="flex justify-end gap-3 mt-6 relative z-10">
+                  <button 
+                    onClick={() => setShowAdd(false)} 
+                    disabled={submitLoading} 
+                    className="px-5 py-2 rounded-lg text-sm text-muted border border-glass-border hover:text-white transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    onClick={handleSubmit} 
+                    disabled={submitLoading} 
+                    className="btn-gold px-6 py-2 rounded-lg text-sm font-bold disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {submitLoading && <Loader size={12} className="animate-spin" />}
+                    Gửi báo cáo
+                  </button>
                 </div>
+
               </motion.div>
             </div>
           )}

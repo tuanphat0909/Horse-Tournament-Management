@@ -1,85 +1,155 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users, Trophy, ClipboardList, Calendar,
   TrendingUp, ChevronRight,
-  Activity, UserCheck, Megaphone, Clock,
+  Activity, UserCheck, Megaphone,
 } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser } from '../../api/authService';
-import { getAdminDashboard, getRegistrations, getActivityLog } from '../../api/adminService';
 import { getRaceSchedule } from '../../api/publicService';
+import { getDashboardStats, getRegistrations, getActivityLog } from '../../api/adminService';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
 const child = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 
+const fixMojibake = (str: string): string => {
+  if (!str) return '';
+  try {
+    return decodeURIComponent(escape(str));
+  } catch (e) {
+    return str;
+  }
+};
+
 export function AdminDashboardPage() {
   const navigate = useNavigate();
   const user = getCurrentUser();
+  const { t } = useLanguage();
   const [schedule, setSchedule] = useState<any[]>([]);
-  const [dashStats, setDashStats] = useState<any>(null);
-  const [pendingList, setPendingList] = useState<any[]>([]);
-  const [pendingLoading, setPendingLoading] = useState(true);
-  const [activityLog, setActivityLog] = useState<any[]>([]);
-  const [activityLoading, setActivityLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [regLoading, setRegLoading] = useState(true);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     getRaceSchedule()
-      .then((d: any) => setSchedule(d?.result ?? (Array.isArray(d) ? d : [])))
-      .catch(() => setSchedule([]));
-
-    getAdminDashboard()
-      .then((d: any) => setDashStats(d?.result ?? d ?? null))
-      .catch(() => setDashStats(null));
-
-    getRegistrations()
       .then((d: any) => {
-        const list: any[] = d?.result ?? (Array.isArray(d) ? d : []);
-        setPendingList(list.filter(r => (r.status ?? '').toLowerCase() === 'pending'));
+        const raw = d?.result ?? (Array.isArray(d) ? d : []);
+        setSchedule(raw.map((item: any) => ({
+          ...item,
+          name: fixMojibake(item.name)
+        })));
       })
-      .catch(() => setPendingList([]))
-      .finally(() => setPendingLoading(false));
+      .catch(() => setSchedule([]));
+      
+    getDashboardStats()
+      .then((res: any) => setStats(res?.result))
+      .catch(() => setStats(null));
 
+    setRegLoading(true);
+    getRegistrations()
+      .then((res: any) => {
+        let dataList = [];
+        if (res?.result) {
+          dataList = res.result;
+        } else if (res?.data?.result) {
+          dataList = res.data.result;
+        } else if (Array.isArray(res)) {
+          dataList = res;
+        }
+
+        // Clean UTF-8 Mojibake from API strings
+        dataList = dataList.map((item: any) => ({
+          ...item,
+          horseName: fixMojibake(item.horseName),
+          ownerName: fixMojibake(item.ownerName),
+          tournamentName: fixMojibake(item.tournamentName)
+        }));
+
+        setRegistrations(dataList);
+      })
+      .catch(() => setRegistrations([]))
+      .finally(() => setRegLoading(false));
+
+    // Hoạt động gần đây: dùng API thật GET /admin/activity-log (user mới, đăng ký, cược, thông báo, giao dịch ví)
+    setActivitiesLoading(true);
     getActivityLog()
-      .then((d: any) => setActivityLog(d?.result ?? (Array.isArray(d) ? d : [])))
-      .catch(() => setActivityLog([]))
-      .finally(() => setActivityLoading(false));
+      .then((d: any) => {
+        const raw: any[] = d?.result ?? (Array.isArray(d) ? d : []);
+        const typeMap: Record<string, string> = {
+          user: 'user',
+          registration: 'registration',
+          bet: 'bet',
+          notification: 'notification',
+          transaction: 'transaction'
+        };
+        setActivities(raw.map((a: any, i: number) => {
+          const beType = String(a.type ?? '').toLowerCase();
+          return {
+            id: `act-${i}`,
+            title: fixMojibake(a.title ?? ''),
+            desc: fixMojibake(a.description ?? ''),
+            date: a.createdAt ? new Date(a.createdAt) : new Date(),
+            type: typeMap[beType] ?? 'other',
+            status: /pending/i.test(a.title ?? '') ? 'pending' : undefined
+          };
+        }));
+      })
+      .catch(() => setActivities([]))
+      .finally(() => setActivitiesLoading(false));
   }, []);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const todayRaces = schedule.filter(r => (r.raceDate ?? '').startsWith(today)).length;
   const upcomingRaces = schedule.length;
-  const showStat = (v: number | null | undefined) => (v == null ? '—' : String(v));
+  const pendingRegs = registrations.filter((r: any) => r.status === 'Pending');
+
+  const formatRelativeTime = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return t("Vừa xong");
+    if (diffMins < 60) return `${diffMins} ${t("phút trước")}`;
+    if (diffHours < 24) return `${diffHours} ${t("giờ trước")}`;
+    if (diffDays === 1) return t("Hôm qua");
+    if (diffDays < 7) return `${diffDays} ${t("ngày trước")}`;
+    return date.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' });
+  };
 
   return (
-    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: 'var(--page-bg)'}}>
+    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 relative min-w-0 overflow-y-auto">
         <PageAmbience accent="gold" />
         <Topbar />
-        <main className="relative z-10 max-w-400 mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
+          {/* TODO: BE chưa có API thống kê cho dashboard */}
 
           <PageHero
-            title={<>Chào mừng, <span className="italic text-champagne">{user?.fullName ?? 'Admin'}</span></>}
-            subtitle="Tổng quan hệ thống • Mùa giải 2026"
+            title={<>{t("Chào mừng,")} <span className="italic text-champagne">{user?.fullName ?? 'Admin'}</span></>}
+            subtitle={`${t("Tổng quan hệ thống")} • ${t("Mùa giải 2026")}`}
             imageUrl="/images/hero-admin.jpg"
             imagePosition="center center"
             badge={
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Hệ thống đang hoạt động
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> {t("Hệ thống đang hoạt động")}
               </div>
             }
             actions={
               <>
-                <button onClick={() => navigate('/admin/registrations')} className="btn-gold px-5 py-2 rounded-lg text-xs flex items-center gap-1.5 font-bold">
-                  Xem đăng ký <ChevronRight size={13} />
+                <button onClick={() => navigate('/admin/registrations')} className="btn-gold px-5 py-2 rounded-lg text-xs flex items-center gap-1.5 font-bold font-sans">
+                  {t("Xem đăng ký")} <ChevronRight size={13} />
                 </button>
                 <button onClick={() => navigate('/admin/races')} className="px-5 py-2 rounded-lg text-xs text-champagne border border-gold/25 bg-gold/5 hover:bg-gold/10 transition-colors font-medium">
-                  Quản lý cuộc đua
+                  {t("Quản lý cuộc đua")}
                 </button>
               </>
             }
@@ -88,10 +158,10 @@ export function AdminDashboardPage() {
           {/* STATS */}
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { title: 'Người dùng', value: showStat(dashStats?.totalUsers), trend: 'Tổng', icon: Users, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/admin/users' },
-              { title: 'Giải đấu', value: showStat(dashStats?.totalTournaments), trend: 'Tổng', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/admin/tournaments' },
-              { title: 'Chờ duyệt', value: pendingLoading ? '…' : String(pendingList.length), trend: 'Pending', icon: ClipboardList, color: 'text-orange-400', bg: 'from-orange-500/15 to-orange-900/20', path: '/admin/registrations' },
-              { title: 'Cuộc đua hôm nay', value: todayRaces > 0 ? String(todayRaces) : '—', trend: upcomingRaces > 0 ? `${upcomingRaces} sắp tới` : '—', icon: Calendar, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', path: '/admin/races' },
+              { title: t('Người dùng'), value: stats ? stats.totalUsers : '—', trend: t('Hoạt động'), icon: Users, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/admin/users' },
+              { title: t('Giải đấu'), value: stats ? stats.totalTournaments : '—', trend: t('Mùa giải 2026'), icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/admin/tournaments' },
+              { title: t('Lợi nhuận (VNĐ)'), value: stats ? new Intl.NumberFormat('vi-VN').format(stats.profit) : '—', trend: t('Doanh thu cược'), icon: ClipboardList, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/admin/results' },
+              { title: t('Cuộc đua (số nhiều)'), value: stats ? stats.activeRaces : '—', trend: upcomingRaces > 0 ? `${upcomingRaces} ${t('tổng cộng')}` : '—', icon: Calendar, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', path: '/admin/races' },
             ].map((m, i) => (
               <motion.div
                 key={i}
@@ -100,9 +170,9 @@ export function AdminDashboardPage() {
                 className="glass-panel rounded-xl p-5 relative overflow-hidden group cursor-pointer"
                 style={{ height: '130px' }}
               >
-                <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-linear-to-br ${m.bg} blur-[30px] opacity-60 group-hover:opacity-100 transition-opacity`} />
+                <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${m.bg} blur-[30px] opacity-60 group-hover:opacity-100 transition-opacity`} />
                 <div className="relative z-10 flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${m.bg} border border-white/8 flex items-center justify-center ${m.color}`}>
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${m.bg} border border-white/[0.08] flex items-center justify-center ${m.color}`}>
                     <m.icon size={18} />
                   </div>
                   <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
@@ -121,101 +191,173 @@ export function AdminDashboardPage() {
           <div className="grid grid-cols-[1fr_380px] gap-6">
             {/* Pending Registrations */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-gold/10 to-transparent blur-2xl pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
               <div className="relative z-10 flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
                     <ClipboardList size={16} className="text-gold" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-serif text-white">Đăng ký chờ duyệt</h2>
-                    <p className="text-xs text-muted mt-0.5">Cần xử lý trong 24h</p>
+                    <h2 className="text-lg font-serif text-white">{t("Đăng ký chờ duyệt")}</h2>
+                    <p className="text-xs text-muted mt-0.5">{t("Cần xử lý trong 24h")}</p>
                   </div>
                 </div>
                 <button onClick={() => navigate('/admin/registrations')} className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium">
-                  Xem tất cả <ChevronRight size={14} />
+                  {t("Xem tất cả")} <ChevronRight size={14} />
                 </button>
               </div>
-              <div className="relative z-10 flex-1 space-y-2 overflow-y-auto">
-                {pendingLoading ? (
-                  <div className="text-center py-8 text-muted text-sm">Đang tải...</div>
-                ) : pendingList.length === 0 ? (
-                  <div className="text-center py-10">
-                    <div className="text-4xl opacity-40 mb-3">📋</div>
-                    <div className="text-muted text-sm">Không có đăng ký nào chờ duyệt</div>
+              
+              {regLoading ? (
+                <div className="relative z-10 flex-1 flex items-center justify-center text-xs text-muted">
+                  {t("Đang tải...")}
+                </div>
+              ) : pendingRegs.length === 0 ? (
+                <div className="relative z-10 flex-1 flex items-center justify-center">
+                  <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden w-full">
+                    <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                    <div className="text-4xl opacity-40 mb-3">📊</div>
+                    <div className="text-muted text-sm">{t("Chưa có dữ liệu")}</div>
                   </div>
-                ) : pendingList.map((r, i) => {
-                  const id = r.registrationId ?? r.id;
-                  return (
-                    <div key={id ?? i} className="flex items-center gap-3 p-3.5 rounded-xl bg-white/2 border border-glass-border hover:border-gold/25 hover:bg-gold/3 transition-all group">
-                      <div className="w-7 h-7 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[11px] font-bold text-orange-400 shrink-0">{i + 1}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white group-hover:text-champagne transition-colors truncate">{r.horseName ?? `Ngựa #${r.horseId ?? '—'}`}</div>
-                        <div className="text-[11px] text-muted truncate">{r.tournamentName ?? '—'}{r.registeredAt ? ' • ' + new Date(r.registeredAt).toLocaleDateString('vi-VN') : ''}</div>
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 shrink-0">Chờ duyệt</span>
-                    </div>
-                  );
-                })}
-              </div>
+                </div>
+              ) : (
+                <div className="relative z-10 flex-1 overflow-x-auto min-h-[300px]">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-glass-border bg-white/[0.01] text-[11px] font-bold text-muted uppercase tracking-wider">
+                        <th className="px-4 py-3">{t("Mã")}</th>
+                        <th className="px-4 py-3">{t("Ngựa")}</th>
+                        <th className="px-4 py-3">{t("Chủ")}</th>
+                        <th className="px-4 py-3">{t("Giải đấu")}</th>
+                        <th className="px-4 py-3 text-right">{t("Hành động")}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-glass-border/40 text-xs text-white">
+                      {pendingRegs.map((reg) => (
+                        <tr key={reg.registrationId} className="hover:bg-white/[0.01] transition-colors">
+                          <td className="px-4 py-3.5 font-mono text-[11px] text-muted">#{reg.registrationId}</td>
+                          <td className="px-4 py-3.5 font-medium">{reg.horseName}</td>
+                          <td className="px-4 py-3.5 text-muted">{reg.ownerName}</td>
+                          <td className="px-4 py-3.5 text-muted max-w-[150px] truncate" title={reg.tournamentName}>
+                            {reg.tournamentName}
+                          </td>
+                          <td className="px-4 py-3.5 text-right">
+                            <button 
+                              onClick={() => navigate('/admin/registrations')}
+                              className="px-2.5 py-1 rounded bg-gold/10 border border-gold/30 text-[10px] text-gold hover:bg-gold/20 transition-all font-semibold uppercase tracking-wider"
+                            >
+                              {t("Duyệt")}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </motion.div>
 
             {/* Recent Activity */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-gold/10 to-transparent blur-2xl pointer-events-none" />
-              <div className="relative z-10 flex items-center gap-3 mb-5">
-                <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
-                  <Activity size={15} className="text-gold" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
+              <div className="relative z-10 flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
+                    <Activity size={15} className="text-gold" />
+                  </div>
+                  <h2 className="text-lg font-serif text-white">{t("Hoạt động gần đây")}</h2>
                 </div>
-                <h2 className="text-lg font-serif text-white">Hoạt động gần đây</h2>
+                <Activity size={16} className="text-muted" />
               </div>
-              <div className="relative z-10 flex-1 space-y-2 overflow-y-auto">
-                {activityLoading ? (
-                  <div className="text-center py-8 text-muted text-sm">Đang tải...</div>
-                ) : activityLog.length === 0 ? (
-                  <div className="text-center py-10">
+              
+              {activitiesLoading ? (
+                <div className="relative z-10 flex-1 flex items-center justify-center text-xs text-muted">
+                  {t("Đang tải...")}
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="relative z-10 flex-1 flex items-center justify-center">
+                  <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden w-full">
+                    <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
                     <div className="text-4xl opacity-40 mb-3">📊</div>
-                    <div className="text-muted text-sm">Chưa có hoạt động nào</div>
+                    <div className="text-muted text-sm">{t("Chưa có dữ liệu")}</div>
                   </div>
-                ) : activityLog.slice(0, 8).map((a, i) => (
-                  <div key={a.id ?? i} className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/2 transition-colors group">
-                    <div className="w-7 h-7 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Clock size={12} className="text-gold" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-white/90 group-hover:text-white transition-colors leading-relaxed">{a.title ?? a.action ?? a.description ?? a.message ?? JSON.stringify(a)}</div>
-                      {a.description && a.description !== a.title && (
-                        <div className="text-[10px] text-muted/70 mt-0.5 leading-relaxed">{a.description}</div>
-                      )}
-                      {(a.createdAt ?? a.timestamp) && (
-                        <div className="text-[10px] text-muted/60 mt-0.5">{new Date(a.createdAt ?? a.timestamp).toLocaleString('vi-VN')}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="relative z-10 flex-1 overflow-y-auto pr-1 max-h-[300px] space-y-4 scrollbar-thin">
+                  {activities.slice(0, 10).map((act, index) => {
+                    let Icon = Activity;
+                    let colorClass = 'text-gold bg-gold/10 border-gold/25';
+                    if (act.type === 'registration') {
+                      Icon = ClipboardList;
+                      colorClass = act.status === 'pending' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                    } else if (act.type === 'tournament') {
+                      Icon = Trophy;
+                      colorClass = 'text-gold bg-gold/10 border-gold/25';
+                    } else if (act.type === 'race') {
+                      Icon = Calendar;
+                      colorClass = 'text-purple-400 bg-purple-500/10 border-purple-500/20';
+                    } else if (act.type === 'user') {
+                      Icon = Users;
+                      colorClass = 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20';
+                    } else if (act.type === 'bet' || act.type === 'transaction') {
+                      Icon = TrendingUp;
+                      colorClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                    } else if (act.type === 'notification') {
+                      Icon = Megaphone;
+                      colorClass = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                    }
+
+                    const timeStr = act.date ? formatRelativeTime(act.date) : '';
+
+                    return (
+                      <div key={act.id} className="relative flex gap-3 group">
+                        {index < Math.min(activities.length, 10) - 1 && (
+                          <div className="absolute left-[15px] top-8 bottom-[-16px] w-px bg-glass-border pointer-events-none group-hover:bg-gold/20 transition-colors" />
+                        )}
+
+                        <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 relative z-10 ${colorClass}`}>
+                          <Icon size={14} />
+                        </div>
+
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-xs font-bold text-white group-hover:text-champagne transition-colors truncate">
+                              {act.title}
+                            </h4>
+                            <span className="text-[10px] text-muted shrink-0 whitespace-nowrap font-medium">
+                              {timeStr}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted mt-0.5 leading-normal line-clamp-2">
+                            {act.desc}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </motion.div>
           </div>
 
           {/* QUICK LINKS */}
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Tạo giải đấu mới', desc: 'Thêm tournament mới vào hệ thống', icon: Trophy, path: '/admin/tournaments', color: 'text-gold' },
-              { label: 'Phân công trọng tài', desc: 'Gán referee cho các cuộc đua', icon: UserCheck, path: '/admin/referees', color: 'text-cyan-400' },
-              { label: 'Lập lịch đua', desc: 'Tạo và sắp xếp các vòng đua', icon: Calendar, path: '/admin/races', color: 'text-purple-400' },
-              { label: 'Công bố kết quả', desc: 'Publish kết quả đã xác nhận', icon: Megaphone, path: '/admin/results', color: 'text-emerald-400' },
+              { label: t('Tạo giải đấu mới'), desc: t('Thêm tournament mới vào hệ thống'), icon: Trophy, path: '/admin/tournaments', color: 'text-gold' },
+              { label: t('Phân công trọng tài'), desc: t('Gán referee cho các cuộc đua'), icon: UserCheck, path: '/admin/referees', color: 'text-cyan-400' },
+              { label: t('Lập lịch đua'), desc: t('Tạo và sắp xếp các cuộc đua'), icon: Calendar, path: '/admin/races', color: 'text-purple-400' },
+              { label: t('Công bố kết quả'), desc: t('Publish kết quả đã xác nhận'), icon: Megaphone, path: '/admin/results', color: 'text-emerald-400' },
             ].map((q, i) => (
               <motion.button
                 key={i}
                 onClick={() => navigate(q.path)}
                 whileHover={{ scale: 1.02 }}
-                className="glass-panel rounded-xl p-5 text-left group hover:border-gold/30 hover:bg-gold/3 border border-glass-border transition-all relative overflow-hidden"
+                className="glass-panel rounded-xl p-5 text-left group hover:border-gold/30 hover:bg-gold/[0.03] border border-glass-border transition-all relative overflow-hidden"
               >
-                <div className="absolute top-0 left-4 right-4 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-linear-to-br from-gold/10 to-transparent blur-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative z-10 w-10 h-10 rounded-lg bg-white/4 border border-glass-border group-hover:border-gold/25 flex items-center justify-center mb-3 transition-colors">
+                <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative z-10 w-10 h-10 rounded-lg bg-white/[0.04] border border-glass-border group-hover:border-gold/25 flex items-center justify-center mb-3 transition-colors">
                   <q.icon size={20} className={q.color} />
                 </div>
                 <div className="relative z-10 text-sm font-semibold text-white group-hover:text-champagne transition-colors">{q.label}</div>

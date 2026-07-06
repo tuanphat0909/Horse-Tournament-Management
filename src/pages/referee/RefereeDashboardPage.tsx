@@ -1,77 +1,68 @@
-﻿import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Flag, FileText, ClipboardList, ChevronRight, AlertTriangle, Clock, Eye, X, Trophy } from 'lucide-react';
+import { ShieldCheck, Flag, FileText, ClipboardList, ChevronRight, AlertTriangle } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser } from '../../api/authService';
-import { getRefereeDashboard, getAllViolations } from '../../api/refereeService';
-import { getRaceSchedule, getRaceEntries } from '../../api/publicService';
-import { RaceTrack3D } from '../../components/ui/RaceTrack3D';
 import { useNavigate } from 'react-router-dom';
+import { getRefereeDashboard } from '../../api/refereeService';
 
 const child = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 
-// Field thật từ GET /referee/dashboard (đã xác minh bằng API):
-// { assignedRaceCount, pendingReportCount, completedReportCount, violationsCreatedCount, assignedRaces: [] }
-const show = (n: any) => (n == null ? '—' : String(n));
+interface AssignedRace {
+  raceId: number;
+  raceName: string;
+  raceDate: string;
+  status: string;
+}
+
+interface DashboardData {
+  assignedRaceCount: number;
+  pendingReportCount: number;
+  completedReportCount: number;
+  violationsCreatedCount: number;
+  assignedRaces: AssignedRace[];
+}
 
 export function RefereeDashboardPage() {
   const navigate = useNavigate();
   const user = getCurrentUser();
-  const [d, setD] = useState<any>({});
-  const [violations, setViolations] = useState<any[]>([]);
-  const [violationsLoading, setViolationsLoading] = useState(true);
-  // Lịch đua công khai — dùng để GHÉP thêm giải đấu/vòng/cự ly vào các race được phân công
-  // (BE /referee/dashboard chỉ trả raceId/name/date/status, thiếu detail)
-  const [schedule, setSchedule] = useState<any[]>([]);
-
-  // Modal chi tiết cuộc đua được phân công
-  const [detailRace, setDetailRace] = useState<any | null>(null);
-  const [detailEntries, setDetailEntries] = useState<any[]>([]);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getRefereeDashboard()
-      .then((res: any) => setD(res?.result ?? res ?? {}))
-      .catch(() => setD({}));
-
-    getRaceSchedule()
-      .then((res: any) => setSchedule(res?.result ?? []))
-      .catch(() => setSchedule([]));
-
-    getAllViolations()
-      .then((res: any) => setViolations(res?.result ?? (Array.isArray(res) ? res : [])))
-      .catch(() => setViolations([]))
-      .finally(() => setViolationsLoading(false));
+      .then(res => {
+        if (res && res.result) {
+          setData(res.result);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError('Không thể tải thông tin dashboard trọng tài');
+        setLoading(false);
+      });
   }, []);
 
-  // Ghép info: mỗi race được phân công + chi tiết từ lịch công khai (cùng raceId)
-  const assignedRaces: any[] = (Array.isArray(d.assignedRaces) ? d.assignedRaces : []).map((r: any) => {
-    const info = schedule.find((sc: any) => (sc.raceId ?? sc.id) === (r.raceId ?? r.id));
-    return { ...info, ...r }; // giữ status/date từ dashboard, bổ sung tournamentName/roundName/distance/maxLanes
-  });
-
-  async function openDetail(r: any) {
-    setDetailRace(r);
-    setDetailEntries([]);
-    setDetailLoading(true);
-    try {
-      const res: any = await getRaceEntries(Number(r.raceId ?? r.id));
-      setDetailEntries(res?.result ?? []);
-    } catch { setDetailEntries([]); }
-    finally { setDetailLoading(false); }
-  }
+  const statsDisplay = [
+    { title: 'Tổng cuộc đua giám sát', value: loading ? '...' : (data?.assignedRaceCount ?? 0), trend: 'Mùa giải 2026', icon: Flag, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/referee/confirm-results' },
+    { title: 'Báo cáo chờ lập', value: loading ? '...' : (data?.pendingReportCount ?? 0), trend: 'Chờ thực hiện', icon: ShieldCheck, color: 'text-yellow-400', bg: 'from-yellow-500/15 to-yellow-900/20', path: '/referee/horse-check' },
+    { title: 'Vi phạm ghi nhận', value: loading ? '...' : (data?.violationsCreatedCount ?? 0), trend: 'Cần xem xét', icon: AlertTriangle, color: 'text-red-400', bg: 'from-red-500/15 to-red-900/20', path: '/referee/violations' },
+    { title: 'Báo cáo đã gửi', value: loading ? '...' : (data?.completedReportCount ?? 0), trend: 'Đã hoàn thành', icon: FileText, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/referee/reports' },
+  ];
 
   return (
-    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: 'var(--page-bg)'}}>
+    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="red" />
         <Topbar />
-        <main className="relative z-10 max-w-400 mx-auto px-8 py-6 space-y-6">
+        <main className="relative z-10 max-w-[1600px] mx-auto px-8 py-6 space-y-6">
 
           <PageHero
             title={<>Chào mừng, <span className="italic text-champagne">{user?.fullName ?? 'Trọng tài'}</span></>}
@@ -95,19 +86,21 @@ export function RefereeDashboardPage() {
             }
           />
 
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Stats */}
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-4 gap-4">
-            {[
-              { title: 'Cuộc đua hôm nay', value: show(d.assignedRaceCount), trend: 'Được phân công', icon: Flag, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/referee/confirm-results' },
-              { title: 'Báo cáo chờ', value: show(d.pendingReportCount), trend: 'Chưa xử lý', icon: ShieldCheck, color: 'text-yellow-400', bg: 'from-yellow-500/15 to-yellow-900/20', path: '/referee/horse-check' },
-              { title: 'Vi phạm chờ xử lý', value: show(d.violationsCreatedCount), trend: 'Cần xem xét', icon: AlertTriangle, color: 'text-red-400', bg: 'from-red-500/15 to-red-900/20', path: '/referee/violations' },
-              { title: 'Báo cáo đã gửi', value: show(d.completedReportCount), trend: 'Đã hoàn thành', icon: FileText, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/referee/reports' },
-            ].map((m, i) => (
+            {statsDisplay.map((m, i) => (
               <motion.div key={i} variants={child} onClick={() => navigate(m.path)}
                 className="glass-panel rounded-xl p-5 relative overflow-hidden group cursor-pointer" style={{ height: '130px' }}>
-                <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-linear-to-br ${m.bg} blur-[30px] opacity-60 group-hover:opacity-100 transition-opacity`} />
+                <div className={`absolute -top-4 -right-4 w-24 h-24 rounded-full bg-gradient-to-br ${m.bg} blur-[30px] opacity-60 group-hover:opacity-100 transition-opacity`} />
                 <div className="relative z-10 flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${m.bg} border border-white/8 flex items-center justify-center ${m.color}`}><m.icon size={18} /></div>
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${m.bg} border border-white/[0.08] flex items-center justify-center ${m.color}`}><m.icon size={18} /></div>
                   <div className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{m.trend}</div>
                 </div>
                 <div className="relative z-10">
@@ -121,83 +114,97 @@ export function RefereeDashboardPage() {
           {/* Today races + Recent activity */}
           <div className="grid grid-cols-[1fr_360px] gap-6">
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel rounded-xl p-6 relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-red-500/10 to-transparent blur-2xl pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
               <div className="flex items-center justify-between mb-5 relative z-10">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Flag size={15} className="text-gold" /></div>
-                  <h2 className="text-lg font-serif text-white">Cuộc đua hôm nay</h2>
-                  <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
+                  <h2 className="text-lg font-serif text-white">Lịch thi đấu cuộc đua</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
                 </div>
-                <button onClick={() => navigate('/referee/confirm-results')} className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium shrink-0 ml-3">Xem tất cả <ChevronRight size={14} /></button>
+                <button onClick={() => navigate('/referee/confirm-results')} className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium shrink-0 ml-3 font-bold">Xem tất cả <ChevronRight size={14} /></button>
               </div>
-              {assignedRaces.length === 0 ? (
-                <div className="glass-panel rounded-xl p-10 text-center relative overflow-hidden">
-                  <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+
+              {loading ? (
+                <div className="text-center py-12 text-muted text-sm">Đang tải cuộc đua...</div>
+              ) : !data || data.assignedRaces.length === 0 ? (
+                <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
+                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
                   <div className="text-4xl opacity-40 mb-3">🏁</div>
-                  <div className="text-muted text-sm">Chưa có cuộc đua nào được phân công</div>
+                  <div className="text-muted text-sm">Chưa được phân công cuộc đua nào</div>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {assignedRaces.map((r: any, i: number) => {
-                    const rid = r.raceId ?? r.id;
-                    return (
-                      <div key={rid ?? i} className="flex items-center gap-3 p-3.5 rounded-xl bg-white/2 border border-glass-border hover:border-gold/25 hover:bg-gold/3 transition-all group">
-                        <div className="w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-[11px] font-bold text-blue-400 shrink-0">{i + 1}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white group-hover:text-champagne transition-colors truncate">{r.raceName ?? r.name ?? `Cuộc đua #${rid}`}</div>
-                          <div className="text-[11px] text-muted flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                            {r.raceDate && <span className="flex items-center gap-1"><Clock size={9} /> {new Date(r.raceDate).toLocaleString('vi-VN')}</span>}
-                            {r.tournamentName && <span className="flex items-center gap-1 text-champagne/80"><Trophy size={9} /> {r.tournamentName}</span>}
-                            {(r.roundName || r.roundNumber != null) && <span>{r.roundName ?? `Vòng ${r.roundNumber}`}</span>}
-                            {r.distanceMeter != null && <span>{r.distanceMeter}m</span>}
-                            {r.maxLanes != null && <span>{r.maxLanes} làn</span>}
-                          </div>
-                        </div>
-                        {r.status && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 shrink-0">{r.status}</span>
-                        )}
-                        <button onClick={() => openDetail(r)} title="Chi tiết giải đấu & sơ đồ làn"
-                          className="p-1.5 rounded-lg bg-white/4 text-champagne hover:bg-gold/15 border border-glass-border transition-colors shrink-0">
-                          <Eye size={13} />
-                        </button>
-                      </div>
-                    );
-                  })}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-glass-border bg-white/[0.02] text-xs font-semibold text-muted uppercase tracking-wider">
+                        <th className="px-4 py-3">Mã đua</th>
+                        <th className="px-4 py-3">Tên cuộc đua</th>
+                        <th className="px-4 py-3">Thời gian</th>
+                        <th className="px-4 py-3">Trạng thái</th>
+                        <th className="px-4 py-3 text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-glass-border/40 text-sm text-white">
+                      {data.assignedRaces.map((race) => (
+                        <tr key={race.raceId} className="hover:bg-white/[0.01] transition-colors">
+                          <td className="px-4 py-3.5 font-mono text-xs text-muted">#{race.raceId}</td>
+                          <td className="px-4 py-3.5 font-medium">{race.raceName}</td>
+                          <td className="px-4 py-3.5 text-xs text-muted">
+                            {race.raceDate ? new Date(race.raceDate).toLocaleString('vi-VN') : '—'}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                              race.status === 'Finished' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                              race.status === 'InProgress' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse' :
+                              'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                            }`}>
+                              {race.status === 'Finished' ? 'Đã kết thúc' : race.status === 'InProgress' ? 'Đang chạy' : 'Lịch trình'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 text-right">
+                            <button 
+                              onClick={() => navigate(`/referee/horse-check`)} 
+                              className="text-xs text-gold hover:underline font-semibold"
+                            >
+                              Kiểm tra ngựa
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-panel rounded-xl p-6 relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-linear-to-br from-red-500/10 to-transparent blur-2xl pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
               <div className="flex items-center gap-3 mb-5 relative z-10">
                 <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><ClipboardList size={15} className="text-gold" /></div>
                 <h2 className="text-base font-serif text-white">Hoạt động gần đây</h2>
-                <div className="flex-1 h-px bg-linear-to-r from-gold/30 via-glass-border to-transparent" />
+                <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
               </div>
-              {violationsLoading ? (
-                <div className="text-center py-10 text-muted text-sm">Đang tải...</div>
-              ) : violations.length === 0 ? (
-                <div className="rounded-xl p-10 text-center bg-white/2 border border-glass-border">
-                  <div className="text-4xl opacity-40 mb-3">📋</div>
-                  <div className="text-muted text-sm">Chưa có vi phạm nào</div>
+              
+              {loading ? (
+                <div className="text-center py-12 text-muted text-sm">Đang tải hoạt động...</div>
+              ) : !data || data.assignedRaces.length === 0 ? (
+                <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
+                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                  <div className="text-4xl opacity-40 mb-3">📊</div>
+                  <div className="text-muted text-sm">Chưa có hoạt động</div>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {violations.slice(0, 6).map((v: any, i: number) => (
-                    <div key={v.id ?? i} className="flex items-start gap-2.5 p-3 rounded-xl bg-white/2 border border-glass-border hover:border-red-500/20 transition-all">
-                      <Clock size={12} className="text-gold/60 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-white truncate">{v.description ?? v.violationType ?? `Vi phạm #${v.id}`}</div>
-                        <div className="text-[10px] text-muted mt-0.5 flex items-center gap-2">
-                          {v.horseName && <span>{v.horseName}</span>}
-                          {v.createdAt && <span>{new Date(v.createdAt).toLocaleDateString('vi-VN')}</span>}
-                        </div>
+                <div className="space-y-4 text-xs">
+                  {data.assignedRaces.map((race, i) => (
+                    <div key={i} className="flex gap-3 items-start border-l border-glass-border pl-4 relative ml-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-gold absolute -left-[5.5px] top-1 border border-[#0b101e]" />
+                      <div className="space-y-1">
+                        <div className="text-white font-medium">Phân công giám sát cuộc đua:</div>
+                        <div className="text-gold font-semibold">{race.raceName}</div>
+                        <div className="text-muted/60">{race.raceDate ? new Date(race.raceDate).toLocaleDateString('vi-VN') : ''}</div>
                       </div>
-                      {v.status && (
-                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 shrink-0">{v.status}</span>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -207,54 +214,6 @@ export function RefereeDashboardPage() {
 
         </main>
       </div>
-
-      {/* ── Modal: chi tiết cuộc đua được phân công (giải, vòng, sơ đồ làn 3D) ── */}
-      {detailRace && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-7 w-full max-w-xl border border-gold/20 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Flag size={15} className="text-gold" /></div>
-              <div className="min-w-0">
-                <h2 className="text-lg font-serif text-white truncate">{detailRace.raceName ?? detailRace.name ?? `Cuộc đua #${detailRace.raceId}`}</h2>
-                <p className="text-[11px] text-muted truncate">
-                  {detailRace.tournamentName ?? 'Chưa rõ giải đấu'}{detailRace.roundName ? ` • ${detailRace.roundName}` : detailRace.roundNumber != null ? ` • Vòng ${detailRace.roundNumber}` : ''}
-                </p>
-              </div>
-              <div className="flex-1" />
-              <button onClick={() => setDetailRace(null)} className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-white/10 transition-colors"><X size={16} /></button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-              {[
-                { l: 'Ngày đua', v: detailRace.raceDate ? new Date(detailRace.raceDate).toLocaleString('vi-VN') : '—' },
-                { l: 'Cự ly', v: detailRace.distanceMeter != null ? `${detailRace.distanceMeter}m` : '—' },
-                { l: 'Số làn', v: String(detailRace.maxLanes ?? '—') },
-                { l: 'Trạng thái', v: detailRace.status ?? '—' },
-              ].map(x => (
-                <div key={x.l} className="rounded-lg bg-white/3 border border-glass-border px-3 py-2.5">
-                  <div className="text-[10px] font-bold text-muted uppercase tracking-wider">{x.l}</div>
-                  <div className="text-xs text-white font-semibold mt-1">{x.v}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Sơ đồ làn (3D)</div>
-            {detailLoading ? (
-              <div className="text-center py-8 text-muted text-sm">Đang tải…</div>
-            ) : (
-              <RaceTrack3D status={detailRace.status} maxLanes={Number(detailRace.maxLanes ?? 0) || detailEntries.length} entries={detailEntries} />
-            )}
-
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => { setDetailRace(null); navigate('/referee/horse-check'); }}
-                className="flex-1 py-2.5 rounded-lg bg-gold/10 text-champagne border border-gold/25 hover:bg-gold/20 text-sm font-bold transition-colors">
-                Kiểm tra ngựa cuộc đua này
-              </button>
-              <button onClick={() => setDetailRace(null)} className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">Đóng</button>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 }

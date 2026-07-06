@@ -3,24 +3,7 @@ import { api } from '../services/api';
 function parseApiError(err) {
   try {
     const parsed = JSON.parse(err.message);
-
-    // ASP.NET ValidationProblemDetails: { title: "One or more validation errors occurred.",
-    //   errors: { "Field": ["msg1", "msg2"], "$.age": ["The JSON value could not be converted..."] } }
-    // → liệt kê CHÍNH XÁC từng lỗi theo field thay vì câu chung chung.
-    if (parsed.errors && typeof parsed.errors === 'object') {
-      const details = Object.entries(parsed.errors)
-        .map(([field, msgs]) => {
-          const name = field.replace(/^\$\./, ''); // "$.age" -> "age"
-          const list = Array.isArray(msgs) ? msgs.join('; ') : String(msgs);
-          return name ? `${name}: ${list}` : list;
-        })
-        .join(' | ');
-      if (details) return details;
-    }
-
-    const base = parsed.message || parsed.title || err.message;
-    // BE kèm nguyên nhân thật trong `detail` (vd lỗi 500) → hiển thị để dễ chẩn đoán
-    return parsed.detail ? `${base} — ${parsed.detail}` : base;
+    return parsed.message || parsed.title || err.message;
   } catch {
     return err.message;
   }

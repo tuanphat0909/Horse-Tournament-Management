@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy } from 'lucide-react';
 
@@ -33,9 +34,29 @@ const horseLabel = (e: Entry) => e.horseName ?? (e.horseId != null ? `Ngựa #${
 
 function Track3D({ maxLanes, entries, live }: { maxLanes: number; entries: Entry[]; live: boolean }) {
   const lanes = Array.from({ length: maxLanes }, (_, i) => i + 1);
+  // Độ nghiêng nhẹ để các làn đầu (1, 2) vẫn cao, tên ngựa/jockey dễ đọc
+  const TILT = 20;
+  const PERSP = 800;
+
+  // rotateX chỉ xoay hình ảnh, KHÔNG thu gọn chiều cao layout → phần đỉnh đường đua
+  // co lại theo phối cảnh và để lại khoảng trống phía trên. Đo trực tiếp kích thước
+  // đã render (getBoundingClientRect có tính transform, cạnh đáy cố định tại gốc xoay)
+  // rồi kéo khối lên bằng margin âm cho khít khung — chạy 2 lần vì tâm phối cảnh
+  // phụ thuộc chiều cao khung, đổi margin xong hình chiếu thay đổi nhẹ.
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.style.marginTop = '0px';
+    for (let i = 0; i < 2; i++) {
+      const gap = el.offsetHeight - el.getBoundingClientRect().height;
+      el.style.marginTop = `-${Math.max(0, gap)}px`;
+    }
+  }, [maxLanes]);
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-glass-border bg-gradient-to-b from-[#0a1a12] to-[#132b1d] p-4"
-      style={{ perspective: '700px' }}>
+      style={{ perspective: `${PERSP}px` }}>
       {/* bầu trời + vạch đích xa */}
       <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-sky-900/40 to-transparent pointer-events-none" />
       {live && (
@@ -44,8 +65,8 @@ function Track3D({ maxLanes, entries, live }: { maxLanes: number; entries: Entry
         </span>
       )}
 
-      {/* Mặt đường đua nghiêng 3D */}
-      <div className="relative mx-auto" style={{ transform: 'rotateX(38deg)', transformStyle: 'preserve-3d', transformOrigin: 'center bottom' }}>
+      {/* Mặt đường đua nghiêng 3D — marginTop âm (đo runtime) cắt bỏ khoảng trống do phép nghiêng tạo ra */}
+      <div ref={trackRef} className="relative mx-auto" style={{ transform: `rotateX(${TILT}deg)`, transformStyle: 'preserve-3d', transformOrigin: 'center bottom' }}>
         {/* Vạch đích phía xa */}
         <div className="h-3 mb-1 rounded-sm opacity-80"
           style={{ backgroundImage: 'repeating-conic-gradient(#fff 0% 25%, #111 0% 50%)', backgroundSize: '10px 10px' }} />

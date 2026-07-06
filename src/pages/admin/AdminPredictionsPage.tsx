@@ -1,76 +1,109 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Target, CheckCircle, TrendingUp, DollarSign, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { getPredictions, getPredictionStats } from '../../api/adminService';
-import { parseApiError } from '../../api/authService';
+import { getPredictionStats, getPredictions } from '../../api/adminService';
 import { Pager, paginate } from '../../components/ui/Pager';
 
+type TabType = 'all' | 'correct' | 'incorrect' | 'pending';
+
+interface Prediction {
+  predictionId: number;
+  spectatorName: string;
+  raceName: string;
+  predictedWinner: string;
+  point: number;
+  isCorrect: boolean | null;
+  status: string;
+  predictedAt: string;
+}
+
+interface PredictionStats {
+  totalPredictions: number;
+  correctPredictions: number;
+  wrongPredictions: number;
+  accuracyRate: number;
+}
+
 export function AdminPredictionsPage() {
+  const [tab, setTab] = useState<TabType>('all');
   const [search, setSearch] = useState('');
-
-  const [stats, setStats] = useState<any | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [statsError, setStatsError] = useState('');
-
-  const [predictions, setPredictions] = useState<any[]>([]);
-  const [listLoading, setListLoading] = useState(true);
-  const [listError, setListError] = useState('');
+  const [page, setPage] = useState(1);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [stats, setStats] = useState<PredictionStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    setStatsLoading(true);
-    setStatsError('');
-    getPredictionStats()
-      .then((data: any) => {
-        const raw = data?.result ?? data;
-        // Admin stats returns a single object; if an array, take the first element.
-        setStats(Array.isArray(raw) ? (raw[0] ?? null) : (raw ?? null));
+    Promise.all([getPredictionStats(), getPredictions()])
+      .then(([statsRes, listRes]) => {
+        if (statsRes.data && statsRes.data.result) {
+          setStats(statsRes.data.result);
+        }
+        if (listRes.data && listRes.data.result) {
+          setPredictions(listRes.data.result);
+        }
+        setLoading(false);
       })
-      .catch((err: unknown) => setStatsError(parseApiError(err as Error)))
-      .finally(() => setStatsLoading(false));
-
-    setListLoading(true);
-    setListError('');
-    getPredictions()
-      .then((data: any) => {
-        const list = data?.result ?? (Array.isArray(data) ? data : []);
-        setPredictions(list);
-      })
-      .catch((err: unknown) => setListError(parseApiError(err as Error)))
-      .finally(() => setListLoading(false));
+      .catch(err => {
+        console.error(err);
+        setError('Không thể tải dữ liệu dự đoán');
+        setLoading(false);
+      });
   }, []);
 
-  // fields verified: stats = { totalPredictions, correctPredictions, wrongPredictions, accuracyRate }
-  const show = (v: any) => (v == null ? '—' : String(v));
+  const getFilteredPredictions = () => {
+    return predictions.filter(p => {
+      // Tab filter
+      let tabMatch = true;
+      if (tab === 'pending') tabMatch = p.isCorrect === null;
+      else if (tab === 'correct') tabMatch = p.isCorrect === true;
+      else if (tab === 'incorrect') tabMatch = p.isCorrect === false;
 
-  const STATS = [
-    { label: 'Tổng dự đoán', value: show(stats?.totalPredictions), icon: Target, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20' },
-    { label: 'Đúng', value: show(stats?.correctPredictions), icon: CheckCircle, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20' },
-    { label: 'Sai', value: show(stats?.wrongPredictions), icon: DollarSign, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20' },
-    { label: 'Độ chính xác %', value: stats?.accuracyRate != null ? `${Math.round(stats.accuracyRate)}%` : '—', icon: TrendingUp, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20' },
+      // Search filter
+      const query = search.toLowerCase();
+      const searchMatch = !search ||
+        p.spectatorName?.toLowerCase().includes(query) ||
+        p.predictedWinner?.toLowerCase().includes(query) ||
+        p.raceName?.toLowerCase().includes(query);
+
+      return tabMatch && searchMatch;
+    });
+  };
+
+  const getTabCount = (t: TabType) => {
+    if (t === 'all') return predictions.length;
+    if (t === 'pending') return predictions.filter(p => p.isCorrect === null).length;
+    if (t === 'correct') return predictions.filter(p => p.isCorrect === true).length;
+    if (t === 'incorrect') return predictions.filter(p => p.isCorrect === false).length;
+    return 0;
+  };
+
+  const filteredPredictions = getFilteredPredictions();
+  const { paged: pagedPredictions, totalPages, total, page: safePage } = paginate(filteredPredictions, page, 10);
+
+  // Calculated reward paid points
+  const totalRewardedPoints = predictions
+    .filter(p => p.isCorrect === true)
+    .reduce((sum, p) => sum + (p.point * 2), 0); // Assuming 2x payout
+
+  const statsDisplay = [
+    { label: 'Tổng dự đoán', value: loading ? '...' : (stats?.totalPredictions ?? 0), icon: Target, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20' },
+    { label: 'Dự đoán đúng', value: loading ? '...' : (stats?.correctPredictions ?? 0), icon: CheckCircle, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20' },
+    { label: 'Điểm trả thưởng', value: loading ? '...' : totalRewardedPoints, icon: DollarSign, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20' },
+    { label: 'Tỉ lệ chính xác', value: loading ? '...' : `${stats?.accuracyRate?.toFixed(1) ?? '0'}%`, icon: TrendingUp, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20' },
   ];
 
-  const filtered = predictions.filter(p => {
-    const q = search.toLowerCase();
-    return (
-      (p.raceName ?? '').toLowerCase().includes(q) ||
-      (p.predictedWinner ?? '').toString().toLowerCase().includes(q)
-    );
-  });
-
-  const [page, setPage] = useState(1);
-  const { paged, totalPages, total, page: safePage } = paginate(filtered, page, 10);
-
   return (
-    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: 'var(--page-bg)'}}>
+    <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
       <div className="flex-1 min-w-0 overflow-y-auto relative">
         <PageAmbience accent="gold" />
         <Topbar />
-        <main className="max-w-400 mx-auto px-8 py-6 space-y-6 relative z-10">
+        <main className="max-w-[1600px] mx-auto px-8 py-6 space-y-6 relative z-10">
 
           <PageHero
             title="Quản lý dự đoán"
@@ -80,11 +113,8 @@ export function AdminPredictionsPage() {
           />
 
           {/* Stats */}
-          {statsError && (
-            <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{statsError}</div>
-          )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {STATS.map((s, i) => (
+            {statsDisplay.map((s, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 12 }}
@@ -92,62 +122,107 @@ export function AdminPredictionsPage() {
                 transition={{ delay: i * 0.08 }}
                 className="glass-panel rounded-xl p-5 relative overflow-hidden"
               >
-                <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full bg-linear-to-br ${s.bg} blur-[30px] opacity-60`} />
+                <div className={`absolute -top-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br ${s.bg} blur-[30px] opacity-60`} />
                 <div className="relative z-10 flex items-center gap-3 mb-2">
-                  <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${s.bg} border border-white/8 flex items-center justify-center ${s.color}`}>
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.bg} border border-white/[0.08] flex items-center justify-center ${s.color}`}>
                     <s.icon size={16} />
                   </div>
                   <span className="text-[11px] uppercase tracking-wider text-muted font-bold">{s.label}</span>
                 </div>
-                <div className="relative z-10 text-2xl font-serif font-bold text-white">{statsLoading ? '…' : s.value}</div>
+                <div className="relative z-10 text-2xl font-serif font-bold text-white">{s.value}</div>
               </motion.div>
             ))}
           </div>
 
-          {/* Search */}
-          <div className="flex items-center gap-2 border-b border-glass-border pb-3">
-            <div className="ml-auto flex items-center gap-2 bg-white/4 border border-glass-border rounded-lg px-3 py-1.5 w-56">
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Tabs + Table */}
+          <div className="flex items-center gap-2 border-b border-glass-border pb-0">
+            {(['all', 'pending', 'correct', 'incorrect'] as TabType[]).map(t => {
+              const count = getTabCount(t);
+              const label = t === 'all' ? 'Tất cả' : t === 'pending' ? 'Chờ kết quả' : t === 'correct' ? 'Đúng' : 'Sai';
+              return (
+                <button
+                  key={t}
+                  onClick={() => { setTab(t); setPage(1); }}
+                  className={`px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-all ${tab === t ? 'text-gold border-gold' : 'text-muted border-transparent hover:text-white'}`}
+                >
+                  {label}
+                  <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[11px] font-bold ${tab === t ? 'bg-gold/10 text-gold' : 'bg-white/5 text-muted'}`}>{count}</span>
+                </button>
+              );
+            })}
+            <div className="ml-auto mb-1 flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-1.5 w-56">
               <Search size={13} className="text-muted shrink-0" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm cuộc đua, ngựa..." className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" />
+              <input 
+                value={search} 
+                onChange={e => { setSearch(e.target.value); setPage(1); }} 
+                placeholder="Tìm khán giả, ngựa..." 
+                className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full" 
+              />
             </div>
           </div>
 
-          {/* List */}
-          {listError ? (
-            <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{listError}</div>
-          ) : listLoading ? (
-            <div className="text-center py-12 text-muted text-sm">Đang tải...</div>
-          ) : filtered.length === 0 ? (
+          {/* Table */}
+          {loading ? (
+            <div className="glass-panel rounded-xl p-12 text-center text-muted">
+              Đang tải danh sách dự đoán...
+            </div>
+          ) : filteredPredictions.length === 0 ? (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <div className="text-4xl opacity-40 mb-3">🎯</div>
-              <div className="text-muted text-sm">Chưa có dữ liệu</div>
+              <div className="text-muted text-sm">Chưa có dữ liệu dự đoán nào</div>
             </motion.div>
           ) : (
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-xl overflow-hidden relative">
-              <div className="absolute top-0 left-6 right-6 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wider text-muted border-b border-glass-border">
-                    <th className="px-5 py-3 font-bold">Cuộc đua</th>
-                    <th className="px-5 py-3 font-bold">Dự đoán</th>
-                    <th className="px-5 py-3 font-bold">Trạng thái</th>
-                    <th className="px-5 py-3 font-bold">Điểm</th>
-                    <th className="px-5 py-3 font-bold">Thời gian</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paged.map((p, i) => (
-                    <tr key={p.predictionId ?? p.id ?? i} className="border-b border-glass-border/40 hover:bg-white/2 transition-colors">
-                      <td className="px-5 py-3 text-white font-medium">{p.raceName ?? '—'}</td>
-                      <td className="px-5 py-3 text-body">{p.predictedWinner ?? '—'}</td>
-                      <td className="px-5 py-3 text-body">{p.status ?? '—'}</td>
-                      <td className="px-5 py-3 text-gold">{p.point ?? '—'}</td>
-                      <td className="px-5 py-3 text-muted">{p.predictedAt ? new Date(p.predictedAt).toLocaleString() : '—'}</td>
+            <motion.div 
+              initial={{ opacity: 0, y: 16 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className="glass-panel rounded-xl overflow-hidden"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-glass-border bg-white/[0.02] text-xs font-semibold text-muted uppercase tracking-wider">
+                      <th className="px-6 py-4">Mã</th>
+                      <th className="px-6 py-4">Khán giả</th>
+                      <th className="px-6 py-4">Cuộc đua</th>
+                      <th className="px-6 py-4">Ngựa dự đoán</th>
+                      <th className="px-6 py-4">Điểm đặt</th>
+                      <th className="px-6 py-4">Kết quả</th>
+                      <th className="px-6 py-4">Ngày dự đoán</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-glass-border/40 text-sm text-white">
+                    {pagedPredictions.map((pred) => (
+                      <tr key={pred.predictionId} className="hover:bg-white/[0.01] transition-colors">
+                        <td className="px-6 py-4 font-mono text-xs text-muted">#{pred.predictionId}</td>
+                        <td className="px-6 py-4 font-medium">{pred.spectatorName}</td>
+                        <td className="px-6 py-4 text-muted">{pred.raceName}</td>
+                        <td className="px-6 py-4 text-gold font-semibold">{pred.predictedWinner}</td>
+                        <td className="px-6 py-4 font-mono text-xs">{pred.point} điểm</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            pred.isCorrect === null ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
+                            pred.isCorrect === true ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                            'bg-red-500/10 text-red-400 border border-red-500/20'
+                          }`}>
+                            {pred.isCorrect === null ? 'Chờ kết quả' : pred.isCorrect === true ? 'Chính xác' : 'Sai biệt'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-muted">
+                          {pred.predictedAt ? new Date(pred.predictedAt).toLocaleString('vi-VN') : ''}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               <Pager page={safePage} totalPages={totalPages} total={total} onChange={setPage} />
             </motion.div>
           )}
