@@ -62,7 +62,7 @@ export function OwnerDashboardPage() {
             title={<>Chào mừng, <span className="italic text-champagne">{user?.fullName ?? 'Chủ ngựa'}</span></>}
             subtitle="Tổng quan chuồng ngựa của bạn"
             imageUrl="/images/hero-owner.jpg"
-            imagePosition="center 58%"
+            imagePosition="center 5%"
             badge={
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold uppercase tracking-widest">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Mùa giải đang diễn ra

@@ -69,7 +69,7 @@ export function RefereeDashboardPage() {
             title={<>Chào mừng, <span className="italic text-champagne">{user?.fullName ?? 'Trọng tài'}</span></>}
             subtitle="Trọng tài — Mùa giải 2026"
             imageUrl="/images/hero-referee.jpg"
-            imagePosition="right 52%"
+            imagePosition="right 28%"
             badge={
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/25 text-red-400 text-[10px] font-bold uppercase tracking-widest">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> Nhiệm vụ giám sát

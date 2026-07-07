@@ -98,7 +98,7 @@ export function JockeyDashboardPage() {
             title={<>Chào mừng, <span className="italic text-champagne">{user?.fullName ?? 'Jockey'}</span></>}
             subtitle="Quản lý lời mời hợp đồng và lịch thi đấu của bạn"
             imageUrl="/images/hero-jockey.jpg"
-            imagePosition="center 25%"
+            imagePosition="center 12%"
             badge={
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-[10px] font-bold uppercase tracking-widest">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> {pending.length} lời mời đang chờ

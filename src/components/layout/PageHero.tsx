@@ -29,13 +29,30 @@ export function PageHero({
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-2xl overflow-hidden relative"
-      style={{
-        minHeight: '150px',
-        borderRadius: '15px',
-        background: `linear-gradient(to right, rgba(11,18,36,0.98) 0%, rgba(11,18,36,0.75) 45%, rgba(11,18,36,0.2) 100%), url('${imageUrl}') ${imagePosition} / cover no-repeat`,
-        boxShadow: 'inset 0 1px 0 rgba(212,175,55,0.12)',
-      }}
+      style={{ minHeight: '215px', borderRadius: '15px', backgroundColor: '#0b1224' }}
     >
+      {/* Lớp ẢNH — tách riêng từng thuộc tính (không dùng shorthand nhiều lớp
+          để tránh bị nuốt ảnh), đặt dưới cùng */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url('${imageUrl}')`,
+          backgroundPosition: imagePosition,
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+      {/* Lớp phủ tối: đậm bên trái cho chữ dễ đọc, GẦN TRONG SUỐT bên phải để lộ ảnh */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(to right, rgba(11,18,36,0.96) 0%, rgba(11,18,36,0.78) 38%, rgba(11,18,36,0.25) 68%, rgba(11,18,36,0.05) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(212,175,55,0.12)',
+        }}
+      />
+
       {/* Corner ornaments */}
       <div className="absolute top-3 left-3 pointer-events-none z-20">
         <svg viewBox="0 0 30 30" fill="none" className="w-6 h-6">
@@ -51,7 +68,7 @@ export function PageHero({
       </div>
       <div
         className="relative z-10 px-8 py-6 flex flex-col items-start justify-center"
-        style={{ minHeight: '150px' }}
+        style={{ minHeight: '215px' }}
       >
         {badge && <div className="mb-2">{badge}</div>}
         <h1 className="text-2xl font-serif text-white mb-1">{title}</h1>
