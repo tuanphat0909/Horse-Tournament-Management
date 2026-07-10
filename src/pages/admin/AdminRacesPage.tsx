@@ -453,12 +453,20 @@ export function AdminRacesPage() {
 
     // ── Trạng thái sẵn sàng xếp làn (để admin biết trước khi bấm nút) ──
     const now = new Date();
+    const regStart = t.registrationStartDate ? new Date(t.registrationStartDate) : null;
     const regEnd = t.registrationEndDate ? new Date(t.registrationEndDate) : null;
-    const regOpen = regEnd ? now < regEnd : false;
+    const regNotStarted = regStart != null && now < regStart;
+    const regOpen = !regNotStarted && (regEnd ? now < regEnd : false);
     const hasAnyRaces = rounds.some((r: any) => r.races.length > 0);
 
     let genHint: { tone: string; label: string; detail: string };
-    if (regOpen) {
+    if (regNotStarted) {
+      genHint = {
+        tone: 'wait',
+        label: 'Chưa mở đăng ký',
+        detail: `Đăng ký mở lúc ${fmtDate(t.registrationStartDate)} và đóng lúc ${fmtDate(t.registrationEndDate)}. Sau khi đóng đăng ký mới "Auto xếp làn đua" được.`,
+      };
+    } else if (regOpen) {
       genHint = {
         tone: 'wait',
         label: 'Chưa thể xếp làn — đăng ký còn mở',
@@ -504,6 +512,7 @@ export function AdminRacesPage() {
       canGeneratePre,
       canGenerateFinal,
       waitingLabel,
+      regNotStarted,
       regOpen,
       hasAnyRaces,
       genHint,
@@ -683,7 +692,7 @@ export function AdminRacesPage() {
 
                     <div className="flex items-center gap-3">
                       {/* Prefinal generation — chỉ cho bấm khi đã đóng đăng ký */}
-                      {t.canGeneratePre && !t.regOpen && (
+                      {t.canGeneratePre && !t.regOpen && !t.regNotStarted && (
                         <button
                           onClick={() => handleGenerateRaces(t.tournamentId)}
                           disabled={generatingForTournament === t.tournamentId}
@@ -700,14 +709,16 @@ export function AdminRacesPage() {
                         </button>
                       )}
 
-                      {/* Đăng ký còn mở → chưa thể xếp làn */}
-                      {t.regOpen && !t.hasAnyRaces && (
+                      {/* Đăng ký chưa mở / còn mở → chưa thể xếp làn */}
+                      {(t.regOpen || t.regNotStarted) && !t.hasAnyRaces && (
                         <button
                           disabled
-                          title={`Đăng ký đóng lúc ${fmtDate(t.registrationEndDate)}. Chờ hết hạn đăng ký mới xếp làn được.`}
+                          title={t.regNotStarted
+                            ? `Đăng ký mở lúc ${fmtDate(t.registrationStartDate)}, đóng lúc ${fmtDate(t.registrationEndDate)}.`
+                            : `Đăng ký đóng lúc ${fmtDate(t.registrationEndDate)}. Chờ hết hạn đăng ký mới xếp làn được.`}
                           className="px-4 py-2 bg-white/[0.04] text-muted border border-glass-border text-xs font-bold rounded-lg cursor-not-allowed flex items-center gap-1.5"
                         >
-                          <AlertCircle size={12} /> Chờ đóng đăng ký
+                          <AlertCircle size={12} /> {t.regNotStarted ? 'Chưa mở đăng ký' : 'Chờ đóng đăng ký'}
                         </button>
                       )}
 
@@ -751,8 +762,14 @@ export function AdminRacesPage() {
                       <div className="min-w-0">
                         <div className="text-sm font-bold">{t.genHint.label}</div>
                         {t.genHint.detail && <div className="text-xs opacity-90 mt-0.5">{t.genHint.detail}</div>}
-                        {t.genHint.tone === 'wait' && t.registrationEndDate && (
-                          <div className="mt-2"><CountdownTimer target={t.registrationEndDate} utc={false} /></div>
+                        {t.genHint.tone === 'wait' && (
+                          <div className="mt-2">
+                            {t.regNotStarted && t.registrationStartDate ? (
+                              <CountdownTimer target={t.registrationStartDate} utc={false} label="Mở đăng ký sau:" />
+                            ) : t.registrationEndDate ? (
+                              <CountdownTimer target={t.registrationEndDate} utc={false} />
+                            ) : null}
+                          </div>
                         )}
                       </div>
                     </div>

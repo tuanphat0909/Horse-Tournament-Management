@@ -262,10 +262,13 @@ export function AdminTournamentsPage() {
     const tournamentRaces = races.filter(r => r.tournamentId === tour.tournamentId);
     const rounds = tour.rounds ?? [];
     
-    // Check registration date
+    // Check registration date: phân biệt CHƯA MỞ / ĐANG MỞ / ĐÃ ĐÓNG
     const now = new Date();
+    const regStart = tour.registrationStartDate ? new Date(tour.registrationStartDate) : null;
     const regEnd = new Date(tour.registrationEndDate);
-    const regOpen = now < regEnd;
+    const regNotStarted = regStart != null && now < regStart;
+    const regOpen = !regNotStarted && now < regEnd;
+    const regEnded = now >= regEnd;
 
     const preRound = rounds.find((r: any) => r.roundNumber === 1);
     const finalRound = rounds.find((r: any) => r.roundNumber === 2);
@@ -277,14 +280,16 @@ export function AdminTournamentsPage() {
     const hasFinal = finalRound != null;
 
     // Auto arrange is available if registration has closed and no rounds have been generated yet
-    const canAutoArrange = !regOpen && rounds.length === 0;
+    const canAutoArrange = regEnded && rounds.length === 0;
 
     // Generate Final is available if we have Pre Round, all Pre races are Finished/Completed, and no Final race yet
     const preFinished = hasPre && preRaces.length > 0 && preRaces.every(r => r.status === 'Finished' || r.status === 'Completed');
     const canGenerateFinal = preFinished && finalRaces.length === 0;
 
     let statusLabel = '';
-    if (regOpen) {
+    if (regNotStarted) {
+      statusLabel = 'Chưa mở đăng ký';
+    } else if (regOpen) {
       statusLabel = 'Đang mở đăng ký';
     } else if (rounds.length === 0) {
       statusLabel = 'Chờ Auto Arrange';
@@ -298,6 +303,7 @@ export function AdminTournamentsPage() {
 
     return {
       totalRaces: tournamentRaces.length,
+      regNotStarted,
       regOpen,
       canAutoArrange,
       canGenerateFinal,
@@ -393,13 +399,15 @@ export function AdminTournamentsPage() {
                     className="glass-panel rounded-2xl p-5 border border-glass-border hover:border-gold/25 transition-all group relative overflow-hidden text-left"
                   >
                     <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                    <div className="flex justify-between items-start gap-2 flex-wrap mb-3">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${config.color} flex items-center gap-1.5`}>
+                    <div className="flex justify-between items-center gap-2 mb-3">
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${config.color} flex items-center gap-1.5 whitespace-nowrap shrink-0`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} /> {t(config.label)}
                       </span>
-                      {tour.registrationEndDate && (
+                      {raceState.regNotStarted && tour.registrationStartDate ? (
+                        <CountdownTimer target={tour.registrationStartDate} utc={false} label="Mở ĐK sau:" />
+                      ) : tour.registrationEndDate ? (
                         <CountdownTimer target={tour.registrationEndDate} utc={false} hideWhenExpired />
-                      )}
+                      ) : null}
                     </div>
                     <h3 className="text-lg font-serif text-white font-bold group-hover:text-champagne transition-colors mb-1 line-clamp-1">{tour.name}</h3>
                     <p className="text-xs text-muted/80 line-clamp-2 min-h-[32px] mb-3">{tour.description || t("Chưa có mô tả chi tiết.")}</p>

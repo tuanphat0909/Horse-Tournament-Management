@@ -22,10 +22,12 @@ interface CountdownTimerProps {
   utc?: boolean;
   /** Ẩn hẳn khi đã hết hạn (dùng cho danh sách có nhiều mục cũ). */
   hideWhenExpired?: boolean;
+  /** Nhãn trước đồng hồ. Mặc định "Còn lại:". */
+  label?: string;
   className?: string;
 }
 
-export function CountdownTimer({ target, utc = true, hideWhenExpired = false, className = '' }: CountdownTimerProps) {
+export function CountdownTimer({ target, utc = true, hideWhenExpired = false, label = 'Còn lại:', className = '' }: CountdownTimerProps) {
   const targetDate = utc ? parseUtcDate(target) : (target ? new Date(target) : null);
   const validTarget = targetDate && !isNaN(targetDate.getTime()) ? targetDate : null;
   const [now, setNow] = useState(() => Date.now());
@@ -50,9 +52,9 @@ export function CountdownTimer({ target, utc = true, hideWhenExpired = false, cl
       : 'text-yellow-400 bg-yellow-500/10 border-yellow-500/25';
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold tabular-nums ${tone} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold tabular-nums whitespace-nowrap shrink-0 ${tone} ${className}`}>
       <Clock size={12} />
-      {expired ? 'Đã hết hạn' : <>Còn lại: <span className="tracking-wide">{formatRemaining(diff)}</span></>}
+      {expired ? 'Đã hết hạn' : <>{label} <span className="tracking-wide">{formatRemaining(diff)}</span></>}
     </span>
   );
 }
