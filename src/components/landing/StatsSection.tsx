@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { getTournaments, getRaceSchedule, getJockeyRankings, getHorseRankings } from '../../api/publicService';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * Số liệu THẬT từ hệ thống (API public) thay cho số bịa.
@@ -33,6 +34,7 @@ function CountUp({ value }: { value: number | null }) {
 }
 
 export const StatsSection = () => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<{ horses: number | null; tournaments: number | null; races: number | null; jockeys: number | null }>({
     horses: null, tournaments: null, races: null, jockeys: null,
   });
@@ -52,10 +54,10 @@ export const StatsSection = () => {
   }, []);
 
   const items = [
-    { value: stats.horses, label: 'Ngựa trên bảng xếp hạng', sub: undefined as string | undefined },
-    { value: stats.tournaments, label: 'Giải đấu', sub: liveCount > 0 ? `${liveCount} đang diễn ra` : undefined },
-    { value: stats.races, label: 'Cuộc đua trong lịch', sub: undefined },
-    { value: stats.jockeys, label: 'Nài ngựa chuyên nghiệp', sub: undefined },
+    { value: stats.horses, label: t('Ngựa trên bảng xếp hạng'), sub: undefined as string | undefined },
+    { value: stats.tournaments, label: t('Giải đấu'), sub: liveCount > 0 ? `${liveCount} ${t('đang diễn ra')}` : undefined },
+    { value: stats.races, label: t('Cuộc đua trong lịch'), sub: undefined },
+    { value: stats.jockeys, label: t('Nài ngựa chuyên nghiệp'), sub: undefined },
   ];
 
   return (
@@ -90,7 +92,7 @@ export const StatsSection = () => {
             </motion.div>
           ))}
         </div>
-        <p className="text-center text-[11px] text-muted/50 mt-6">Số liệu trực tiếp từ hệ thống Equestria</p>
+        <p className="text-center text-[11px] text-muted/50 mt-6">{t('Số liệu trực tiếp từ hệ thống Equestria')}</p>
       </div>
     </section>
   );

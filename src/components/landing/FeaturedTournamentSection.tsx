@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Clock, Layers, Trophy } from 'lucide-react';
 import { getTournaments } from '../../api/publicService';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * Giải đấu nổi bật — dữ liệu THẬT từ GET /public/tournaments.
@@ -24,7 +25,8 @@ function daysLeft(v: any): number | null {
 
 export const FeaturedTournamentSection = () => {
   const navigate = useNavigate();
-  const [t, setT] = useState<any | null>(null);
+  const { t } = useLanguage();
+  const [tournament, setTournament] = useState<any | null>(null);
 
   useEffect(() => {
     getTournaments()
@@ -35,23 +37,23 @@ export const FeaturedTournamentSection = () => {
         const upcoming = list
           .filter(x => (x.status ?? '').toLowerCase() === 'upcoming')
           .sort((a, b) => new Date(a.startDate ?? 0).getTime() - new Date(b.startDate ?? 0).getTime());
-        setT(active[0] ?? upcoming[0] ?? list[list.length - 1]);
+        setTournament(active[0] ?? upcoming[0] ?? list[list.length - 1]);
       })
-      .catch(() => setT(null));
+      .catch(() => setTournament(null));
   }, []);
 
-  if (!t) return null; // không có dữ liệu thật → không dựng chuyện
+  if (!tournament) return null; // không có dữ liệu thật → không dựng chuyện
 
-  const isLive = (t.status ?? '').toLowerCase() === 'active';
-  const rounds = t.rounds?.length ?? t.numberOfRounds ?? null;
-  const regDays = daysLeft(t.registrationEndDate);
-  const regClosed = regDays === 0 && t.registrationEndDate != null;
+  const isLive = (tournament.status ?? '').toLowerCase() === 'active';
+  const rounds = tournament.rounds?.length ?? tournament.numberOfRounds ?? null;
+  const regDays = daysLeft(tournament.registrationEndDate);
+  const regClosed = regDays === 0 && tournament.registrationEndDate != null;
 
   // Tiến độ cửa sổ đăng ký: % thời gian đã trôi qua (dữ liệu thật, tính được)
   let regProgress: number | null = null;
-  if (t.registrationStartDate && t.registrationEndDate) {
-    const s = new Date(t.registrationStartDate).getTime();
-    const e = new Date(t.registrationEndDate).getTime();
+  if (tournament.registrationStartDate && tournament.registrationEndDate) {
+    const s = new Date(tournament.registrationStartDate).getTime();
+    const e = new Date(tournament.registrationEndDate).getTime();
     if (e > s) regProgress = Math.min(100, Math.max(0, Math.round(((Date.now() - s) / (e - s)) * 100)));
   }
 
@@ -74,41 +76,41 @@ export const FeaturedTournamentSection = () => {
               <div className="flex-1 space-y-6">
                 {isLive ? (
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-widest">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Đang diễn ra
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> {t('Đang diễn ra')}
                   </div>
                 ) : (
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
-                    <span className="w-2 h-2 rounded-full bg-blue-400" /> Sắp diễn ra
+                    <span className="w-2 h-2 rounded-full bg-blue-400" /> {t('Sắp diễn ra')}
                   </div>
                 )}
 
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white leading-tight">
-                  <span className="text-gradient-gold italic">{t.name}</span>
+                  <span className="text-gradient-gold italic">{tournament.name}</span>
                 </h2>
 
                 <div className="flex flex-wrap gap-6 text-sm text-muted">
-                  {fmtDate(t.startDate) && (
-                    <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-gold" /> {fmtDate(t.startDate)} → {fmtDate(t.endDate) ?? '—'}</div>
+                  {fmtDate(tournament.startDate) && (
+                    <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-gold" /> {fmtDate(tournament.startDate)} → {fmtDate(tournament.endDate) ?? '—'}</div>
                   )}
                   {rounds != null && (
-                    <div className="flex items-center gap-2"><Layers className="w-4 h-4 text-gold" /> {rounds} vòng đấu</div>
+                    <div className="flex items-center gap-2"><Layers className="w-4 h-4 text-gold" /> {rounds} {t('vòng đấu')}</div>
                   )}
-                  <div className="flex items-center gap-2"><Trophy className="w-4 h-4 text-gold" /> ID giải #{t.tournamentId ?? t.id}</div>
+                  <div className="flex items-center gap-2"><Trophy className="w-4 h-4 text-gold" /> ID giải #{tournament.tournamentId ?? tournament.id}</div>
                 </div>
 
-                {t.description && (
-                  <p className="text-body leading-relaxed max-w-lg">{t.description}</p>
+                {tournament.description && (
+                  <p className="text-body leading-relaxed max-w-lg">{tournament.description}</p>
                 )}
               </div>
 
               <div className="w-full lg:w-[400px] glass-panel p-8 rounded-2xl relative shadow-2xl">
                 <div className="absolute -top-4 -right-4 w-32 h-32 bg-gold/20 blur-3xl rounded-full pointer-events-none" />
-                <h3 className="text-lg font-serif text-white mb-6">Cửa sổ đăng ký</h3>
+                <h3 className="text-lg font-serif text-white mb-6">{t('Cửa sổ đăng ký')}</h3>
 
                 {regProgress != null && (
                   <div className="space-y-4 mb-8">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted font-medium">{regClosed ? 'Đã đóng đơn' : 'Thời gian đăng ký đã trôi qua'}</span>
+                      <span className="text-muted font-medium">{regClosed ? t('Đã đóng đơn') : t('Thời gian đăng ký đã trôi qua')}</span>
                       <span className="font-bold text-white tabular">{regProgress}%</span>
                     </div>
                     <div className="h-2.5 bg-navy-light rounded-full overflow-hidden shadow-inner border border-glass-border">
@@ -126,18 +128,18 @@ export const FeaturedTournamentSection = () => {
                 <div className="grid grid-cols-2 gap-4 mb-8">
                   <div className="bg-navy/60 p-4 rounded-xl border border-glass-border text-center hover:border-gold/30 transition-colors">
                     <div className="text-3xl font-serif text-champagne mb-1 tabular">{regDays != null ? regDays : '—'}</div>
-                    <div className="text-[10px] uppercase text-muted tracking-wider font-bold">Ngày còn để đăng ký</div>
+                    <div className="text-[10px] uppercase text-muted tracking-wider font-bold">{t('Ngày còn để đăng ký')}</div>
                   </div>
                   <div className="bg-navy/60 p-4 rounded-xl border border-glass-border text-center hover:border-gold/30 transition-colors">
                     <div className="text-3xl font-serif text-champagne mb-1 tabular">{rounds ?? '—'}</div>
-                    <div className="text-[10px] uppercase text-muted tracking-wider font-bold">Vòng đấu</div>
+                    <div className="text-[10px] uppercase text-muted tracking-wider font-bold">{t('Vòng đấu')}</div>
                   </div>
                 </div>
 
                 <button
                   onClick={() => navigate('/register')}
                   className="btn-gold w-full py-4 rounded-lg flex items-center justify-center gap-2 text-sm shadow-[0_0_15px_rgba(201,168,76,0.2)] group">
-                  {regClosed ? 'Xem giải đấu' : 'Tham gia ngay'}
+                  {regClosed ? t('Xem giải đấu') : t('Tham gia ngay')}
                   <span className="w-7 h-7 rounded-full bg-black/10 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-1">
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>

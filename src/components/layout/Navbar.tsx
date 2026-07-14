@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-
 import { useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { BrandLogo } from '../ui/BrandLogo';
+import { useLanguage } from '../../context/LanguageContext';
 
 const NAV_LINKS = [
   { label: 'Tournaments', href: '#tournaments' },
@@ -13,6 +14,7 @@ const NAV_LINKS = [
 
 export function Navbar() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -48,7 +50,7 @@ export function Navbar() {
               href={item.href}
               className="text-sm font-medium text-body hover:text-white transition-colors relative group"
             >
-              {item.label}
+              {t(item.label)}
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gold transition-all duration-300 group-hover:w-full" />
             </a>
           ))}
@@ -60,13 +62,13 @@ export function Navbar() {
             onClick={() => navigate('/login')}
             className="text-sm font-medium text-body hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 rounded-md px-2 py-1"
           >
-            Sign In
+            {t('Sign In')}
           </button>
           <button
             onClick={() => navigate('/register')}
             className="btn-gold px-6 py-2.5 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-navy"
           >
-            Register
+            {t('Register')}
           </button>
         </div>
 
@@ -99,7 +101,7 @@ export function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="text-sm font-medium text-body hover:text-white transition-colors py-2 border-b border-glass-border/40 last:border-0"
                 >
-                  {item.label}
+                  {t(item.label)}
                 </a>
               ))}
               <div className="flex gap-3 pt-2">
@@ -107,13 +109,13 @@ export function Navbar() {
                   onClick={() => { navigate('/login'); setMobileOpen(false); }}
                   className="flex-1 py-2.5 rounded-lg border border-glass-border text-sm font-medium text-body hover:text-white hover:bg-white/5 transition-colors"
                 >
-                  Sign In
+                  {t('Sign In')}
                 </button>
                 <button
                   onClick={() => { navigate('/register'); setMobileOpen(false); }}
                   className="flex-1 btn-gold py-2.5 rounded-lg text-xs font-bold"
                 >
-                  Register
+                  {t('Register')}
                 </button>
               </div>
             </div>

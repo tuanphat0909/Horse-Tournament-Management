@@ -3,9 +3,11 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getHorseRankings, getTournaments, getLiveRaces } from '../../api/publicService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const HeroSection = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // ── Dữ liệu THẬT cho hero: số ngựa/giải + top bảng xếp hạng + cuộc đua live ──
   const [horseCount, setHorseCount] = useState<number | null>(null);
@@ -55,7 +57,7 @@ export const HeroSection = () => {
             transition={{ delay: 0.2 }}
           >
             <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
-            Premium Racing Platform
+            {t('Premium Racing Platform')}
           </motion.div>
 
           <motion.h1 
@@ -64,8 +66,8 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <div className="text-white font-bold">Where Legends</div>
-            <div className="italic text-gradient-gold pb-2 text-glow">Race.</div>
+            <div className="text-white font-bold">{t('Where Legends')}</div>
+            <div className="italic text-gradient-gold pb-2 text-glow">{t('Race.')}</div>
           </motion.h1>
 
           <motion.p 
@@ -74,7 +76,7 @@ export const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            Experience the pinnacle of equestrian sports management. A comprehensive platform for tournament organizers, horse owners, jockeys, referees, and spectators.
+            {t('Experience the pinnacle of equestrian sports management. A comprehensive platform for tournament organizers, horse owners, jockeys, referees, and spectators.')}
           </motion.p>
 
           <motion.div 
@@ -87,7 +89,7 @@ export const HeroSection = () => {
               onClick={() => navigate('/login')}
               className="btn-gold px-8 py-4 rounded-lg flex items-center gap-2 text-sm shadow-[0_0_20px_rgba(201,168,76,0.3)]"
             >
-              Explore Platform <ArrowRight className="w-4 h-4" />
+              {t('Explore Platform')} <ArrowRight className="w-4 h-4" />
             </button>
           </motion.div>
 
@@ -98,11 +100,11 @@ export const HeroSection = () => {
             transition={{ delay: 1.2 }}
           >
             <div className="flex items-center gap-2">
-              <span className="text-white tabular">{horseCount ?? '—'}</span> ngựa đua trên bảng xếp hạng
+              <span className="text-white tabular">{horseCount ?? '—'}</span> {t('ngựa đua trên bảng xếp hạng')}
             </div>
             <div className="w-1 h-1 rounded-full bg-glass-border" />
             <div className="flex items-center gap-2">
-              <span className="text-white tabular">{tournamentCount ?? '—'}</span> giải đấu
+              <span className="text-white tabular">{tournamentCount ?? '—'}</span> {t('giải đấu')}
             </div>
           </motion.div>
         </motion.div>
@@ -115,15 +117,15 @@ export const HeroSection = () => {
           >
             <div className="flex justify-between items-start mb-6">
               <div className="min-w-0">
-                <h3 className="font-serif text-xl text-white mb-1 truncate">{liveRace ? (liveRace.name ?? `Cuộc đua #${liveRace.raceId ?? liveRace.id}`) : 'Trường đua Equestria'}</h3>
-                <p className="text-xs text-muted truncate">{liveRace?.tournamentName ?? 'Lịch thi đấu cập nhật liên tục'}</p>
+                <h3 className="font-serif text-xl text-white mb-1 truncate">{liveRace ? (liveRace.name ?? `Cuộc đua #${liveRace.raceId ?? liveRace.id}`) : t('Trường đua Equestria')}</h3>
+                <p className="text-xs text-muted truncate">{liveRace?.tournamentName ?? t('Lịch thi đấu cập nhật liên tục')}</p>
               </div>
               {liveRace ? (
                 <div className="px-2 py-1 bg-green-500/20 text-green-400 text-[10px] uppercase font-bold rounded flex items-center gap-1 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> {t('Live')}
                 </div>
               ) : (
-                <div className="px-2 py-1 bg-blue-500/15 text-blue-400 text-[10px] uppercase font-bold rounded shrink-0">Sắp diễn ra</div>
+                <div className="px-2 py-1 bg-blue-500/15 text-blue-400 text-[10px] uppercase font-bold rounded shrink-0">{t('Sắp diễn ra')}</div>
               )}
             </div>
 
@@ -136,7 +138,7 @@ export const HeroSection = () => {
                   </div>
                   <div className="text-right shrink-0">
                     <div className="text-xs font-mono text-white tabular">{h.winsCount ?? 0} pts</div>
-                    <div className="text-[10px] text-muted">{h.totalRaces != null ? `${h.totalRaces} trận` : ''}</div>
+                    <div className="text-[10px] text-muted">{h.totalRaces != null ? `${h.totalRaces} ${t('trận')}` : ''}</div>
                   </div>
                 </div>
               )) : (
@@ -145,7 +147,7 @@ export const HeroSection = () => {
             </div>
 
             <button onClick={() => navigate('/login')} className="w-full py-3 rounded text-xs font-bold text-champagne bg-gold/10 hover:bg-gold/20 transition-colors border border-gold/30">
-              Xem kết quả trực tiếp
+              {t('Xem kết quả trực tiếp')}
             </button>
           </motion.div>
 
@@ -158,8 +160,8 @@ export const HeroSection = () => {
                 <div className="w-full h-full bg-navy rounded-full flex items-center justify-center font-serif text-lg font-bold text-white">#1</div>
               </div>
               <div>
-                <div className="text-sm font-bold text-white">Leaderboard</div>
-                <div className="text-xs text-muted">Updated live</div>
+                <div className="text-sm font-bold text-white">{t('Leaderboard')}</div>
+                <div className="text-xs text-muted">{t('Updated live')}</div>
               </div>
             </div>
             <div className="space-y-2">

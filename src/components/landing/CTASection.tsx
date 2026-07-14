@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const CTASection = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   return (
     <section className="py-32 relative overflow-hidden border-t border-glass-border">
       {/* Intense Glowing Background */}
@@ -18,22 +20,22 @@ export const CTASection = () => {
           transition={{ duration: 0.8 }}
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-panel border-gold/30 text-gold text-xs font-semibold uppercase tracking-widest mb-8">
-            Join The Vanguard
+            {t('Join The Vanguard')}
           </div>
           
           <h2 className="text-5xl md:text-7xl font-serif text-white mb-8 leading-tight">
-            Enter The Future <br/><span className="italic text-gradient-gold text-glow">Of Racing.</span>
+            {t('Enter The Future')} <br/><span className="italic text-gradient-gold text-glow">{t('Of Racing.')}</span>
           </h2>
           
           <p className="text-lg text-body mb-12 max-w-xl mx-auto">
-            Don't just participate in the sport. Dominate it with the world's most advanced equestrian platform.
+            {t("Don't just participate in the sport. Dominate it with the world's most advanced equestrian platform.")}
           </p>
           
           <button
             onClick={() => navigate('/register')}
             className="btn-gold px-12 py-5 rounded-lg flex items-center gap-3 text-sm mx-auto shadow-[0_0_40px_rgba(201,168,76,0.4)] hover:shadow-[0_0_60px_rgba(201,168,76,0.6)]"
           >
-            Create Your Account <ArrowRight className="w-5 h-5" />
+            {t('Create Your Account')} <ArrowRight className="w-5 h-5" />
           </button>
         </motion.div>
       </div>

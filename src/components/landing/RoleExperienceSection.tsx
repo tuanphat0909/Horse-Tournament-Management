@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../../context/LanguageContext';
 
 const roles = [
   { id: 'owner', label: 'Horse Owner', desc: 'Manage your stables, register for premium tournaments, and track performance metrics across seasons.' },
@@ -250,6 +251,7 @@ const PREVIEWS: Record<string, () => React.ReactElement> = {
 /* ────────── Main Section ────────── */
 
 export const RoleExperienceSection = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(roles[0].id);
   const activeRole = roles.find(r => r.id === activeTab)!;
   const Preview = PREVIEWS[activeTab];
@@ -265,8 +267,8 @@ export const RoleExperienceSection = () => {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">Bespoke <span className="text-gradient-gold italic">Experiences</span></h2>
-            <p className="text-muted mb-12 max-w-md">Interfaces crafted precisely for every participant in the racing ecosystem.</p>
+            <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">{t('Bespoke')} <span className="text-gradient-gold italic">{t('Experiences')}</span></h2>
+            <p className="text-muted mb-12 max-w-md">{t('Interfaces crafted precisely for every participant in the racing ecosystem.')}</p>
           </motion.div>
 
           <div className="space-y-4">
@@ -290,7 +292,7 @@ export const RoleExperienceSection = () => {
                   />
                 )}
                 <h3 className={`text-xl font-serif mb-2 transition-colors ${activeTab === role.id ? 'text-champagne' : 'text-white'}`}>
-                  {role.label}
+                  {t(role.label)}
                 </h3>
                 <AnimatePresence mode="wait">
                   {activeTab === role.id && (
@@ -300,7 +302,7 @@ export const RoleExperienceSection = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="text-sm text-muted leading-relaxed"
                     >
-                      {role.desc}
+                      {t(role.desc)}
                     </motion.p>
                   )}
                 </AnimatePresence>
@@ -333,7 +335,7 @@ export const RoleExperienceSection = () => {
                 <div className="w-2 h-2 rounded-full bg-yellow-500/50" />
                 <div className="w-2 h-2 rounded-full bg-green-500/50" />
                 <div className="ml-3 text-[9px] uppercase font-mono text-white/25 tracking-widest">
-                  equestria · {activeRole.label} Dashboard
+                  equestria · {t(activeRole.label)} {t('Dashboard')}
                 </div>
               </div>
 

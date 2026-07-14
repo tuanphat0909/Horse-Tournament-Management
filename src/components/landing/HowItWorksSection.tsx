@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useLanguage } from '../../context/LanguageContext';
 
 const steps = [
   { title: "Onboard", desc: "Create your profile as an owner, jockey, or spectator with bank-grade security." },
@@ -8,6 +9,7 @@ const steps = [
 ];
 
 export const HowItWorksSection = () => {
+  const { t } = useLanguage();
   return (
     <section className="py-32 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-surface/30 via-navy to-navy" />
@@ -19,8 +21,8 @@ export const HowItWorksSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">Path to <span className="text-gradient-gold italic">Victory</span></h2>
-          <p className="text-muted max-w-2xl mx-auto">A streamlined, cinematic journey from registration to the winner's circle.</p>
+          <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">{t('Path to')} <span className="text-gradient-gold italic">{t('Victory')}</span></h2>
+          <p className="text-muted max-w-2xl mx-auto">{t("A streamlined, cinematic journey from registration to the winner's circle.")}</p>
         </motion.div>
 
         <div className="relative">
@@ -44,8 +46,8 @@ export const HowItWorksSection = () => {
                   
                   <span className="font-serif text-3xl font-bold text-champagne relative z-10">0{i + 1}</span>
                 </div>
-                <h3 className="text-xl font-serif text-white mb-3">{step.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{step.desc}</p>
+                <h3 className="text-xl font-serif text-white mb-3">{t(step.title)}</h3>
+                <p className="text-sm text-muted leading-relaxed">{t(step.desc)}</p>
               </motion.div>
             ))}
           </div>
