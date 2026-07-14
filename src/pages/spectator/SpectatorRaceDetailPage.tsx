@@ -44,7 +44,9 @@ export function SpectatorRaceDetailPage() {
 
   useEffect(() => {
     if (!raceId) return;
+    // eslint-disable-next-line react-hooks/immutability
     loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceId]);
 
   async function loadData() {

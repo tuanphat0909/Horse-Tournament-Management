@@ -66,6 +66,7 @@ export function RefereeReportsPage() {
 
   useEffect(() => {
     loadDashboard();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch reports & horses when selected race changes
@@ -92,6 +93,7 @@ export function RefereeReportsPage() {
 
   useEffect(() => {
     loadRaceData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRaceId]);
 
   function setF(field: string, val: string) {

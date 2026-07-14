@@ -72,6 +72,7 @@ export function SpectatorNotificationsPage() {
 
   useEffect(() => {
     loadNotifications();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, activeFilter]);
 
   // Reset page when filter changes

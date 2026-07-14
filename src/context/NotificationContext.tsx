@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { HubConnectionBuilder, HubConnection, LogLevel } from '@microsoft/signalr';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -172,6 +173,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => {
       newConnection.stop();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, token, fetchRecent]);
 
   // Initial load

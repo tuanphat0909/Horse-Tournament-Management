@@ -48,6 +48,7 @@ export function SpectatorTournamentDetailPage() {
       setError(t('Không thể tải thông tin giải đấu.'));
     })
     .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournamentId]);
 
   return (
