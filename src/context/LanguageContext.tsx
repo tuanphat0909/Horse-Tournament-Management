@@ -199,6 +199,13 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "Dự đoán của tôi": "My Predictions",
     "Xem trực tiếp": "Watch Live",
     "Thêm dự đoán": "Add Prediction",
+    // AdminDashboardPage stat card trends
+    "Hoạt động": "Active",
+    "Doanh thu cược": "Betting Revenue",
+    "tổng cộng": "total",
+    // Sidebar Settings panel
+    "Ngôn ngữ (Language)": "Language",
+    "Tiếng Việt": "Vietnamese",
   },
   vi: {
     // English to Vietnamese
@@ -244,6 +251,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "Register": "Đăng ký",
     "Search horses, races, tournaments...": "Tìm kiếm ngựa, cuộc đua, giải đấu...",
     "Season 2026": "Mùa giải 2026",
+    "English": "Tiếng Anh",
     "Menu": "Menu",
     "Welcome": "Chào mừng",
     

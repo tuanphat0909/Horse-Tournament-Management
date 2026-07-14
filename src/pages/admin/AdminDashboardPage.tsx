@@ -31,7 +31,7 @@ const fixMojibake = (str: string): string => {
 export function AdminDashboardPage() {
   const navigate = useNavigate();
   const user = getCurrentUser();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [schedule, setSchedule] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [registrations, setRegistrations] = useState<any[]>([]);
@@ -122,7 +122,7 @@ export function AdminDashboardPage() {
     if (diffHours < 24) return `${diffHours} ${t("giờ trước")}`;
     if (diffDays === 1) return t("Hôm qua");
     if (diffDays < 7) return `${diffDays} ${t("ngày trước")}`;
-    return date.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -161,7 +161,7 @@ export function AdminDashboardPage() {
             {[
               { title: t('Người dùng'), value: stats ? stats.totalUsers : '—', trend: t('Hoạt động'), icon: Users, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/admin/users' },
               { title: t('Giải đấu'), value: stats ? stats.totalTournaments : '—', trend: t('Mùa giải 2026'), icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/admin/tournaments' },
-              { title: t('Lợi nhuận (VNĐ)'), value: stats ? new Intl.NumberFormat('vi-VN').format(stats.profit) : '—', trend: t('Doanh thu cược'), icon: ClipboardList, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/admin/results' },
+              { title: t('Lợi nhuận (VNĐ)'), value: stats ? new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-US').format(stats.profit) : '—', trend: t('Doanh thu cược'), icon: ClipboardList, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/admin/results' },
               { title: t('Cuộc đua (số nhiều)'), value: stats ? stats.activeRaces : '—', trend: upcomingRaces > 0 ? `${upcomingRaces} ${t('tổng cộng')}` : '—', icon: Calendar, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', path: '/admin/races' },
             ].map((m, i) => (
               <motion.div

@@ -223,7 +223,7 @@ export function Sidebar() {
                     : 'text-muted hover:text-white'
                     }`}
                 >
-                  <span>Tiếng Việt</span>
+                  <span>{t('Tiếng Việt')}</span>
                 </button>
                 <button
                   onClick={() => setLanguage('en')}
@@ -232,7 +232,7 @@ export function Sidebar() {
                     : 'text-muted hover:text-white'
                     }`}
                 >
-                  <span>English</span>
+                  <span>{t('English')}</span>
                 </button>
               </div>
             </div>
