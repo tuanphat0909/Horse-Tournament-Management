@@ -135,7 +135,7 @@ export const HeroSection = () => {
                     <span className="text-sm font-medium text-white truncate">{h.horseName ?? h.name ?? `Ngựa #${h.horseId}`}</span>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-xs font-mono text-white tabular">{h.rankingPoint ?? h.totalWins ?? 0} pts</div>
+                    <div className="text-xs font-mono text-white tabular">{h.winsCount ?? 0} pts</div>
                     <div className="text-[10px] text-muted">{h.totalRaces != null ? `${h.totalRaces} trận` : ''}</div>
                   </div>
                 </div>
@@ -166,7 +166,7 @@ export const HeroSection = () => {
               {topHorses.slice(0, 2).length > 0 ? topHorses.slice(0, 2).map((h: any, i: number) => (
                 <div key={i} className="flex justify-between items-center text-xs px-2 py-1.5 rounded bg-navy/60 border border-glass-border">
                   <span className="text-white font-medium truncate">{h.horseName ?? h.name ?? `Ngựa #${h.horseId}`}</span>
-                  <span className="text-gold font-bold tabular shrink-0">{h.rankingPoint ?? h.totalWins ?? 0} pts</span>
+                  <span className="text-gold font-bold tabular shrink-0">{h.winsCount ?? 0} pts</span>
                 </div>
               )) : (
                 [0, 1].map(i => <div key={i} className="skeleton h-7 rounded" />)
