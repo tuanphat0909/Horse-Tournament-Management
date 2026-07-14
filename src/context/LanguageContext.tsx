@@ -169,6 +169,36 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "Cửa sổ đăng ký": "Registration window",
     "Đã đóng đơn": "Registration closed",
     "Thời gian đăng ký đã trôi qua": "Registration time elapsed",
+    // RoleExperienceSection Preview — OwnerPreview
+    "Giải thưởng": "Prizes",
+    "Hạng mùa": "Season Rank",
+    "Ngựa của tôi": "My Horses",
+    "Thi đấu": "Competing",
+    "Nghỉ ngơi": "Resting",
+    "Đăng ký ngựa mới": "Register New Horse",
+    // RoleExperienceSection Preview — JockeyPreview
+    "lời mời chờ phản hồi": "pending invitations",
+    "Số thắng": "Wins",
+    "Tỉ lệ thắng": "Win Rate",
+    "Lời mời thi đấu": "Race Invitations",
+    "Nhận": "Accept",
+    "Từ chối": "Decline",
+    "Lịch thi đấu hôm nay": "Today's Schedule",
+    // RoleExperienceSection Preview — RefereePreview
+    "cuộc đua hôm nay": "races today",
+    "Kiểm tra ngựa": "Horse Inspection",
+    "Vi phạm": "Violations",
+    "Vi phạm chờ xử lý": "Pending Violations",
+    "Chờ": "Pending",
+    "Thời gian khiếu nại": "Appeal Time",
+    "Xác nhận vi phạm": "Confirm Violation",
+    "Bác bỏ": "Dismiss",
+    "hoàn thành": "completed",
+    // RoleExperienceSection Preview — SpectatorPreview
+    "cuộc đua đang diễn ra": "race in progress",
+    "Dự đoán của tôi": "My Predictions",
+    "Xem trực tiếp": "Watch Live",
+    "Thêm dự đoán": "Add Prediction",
   },
   vi: {
     // English to Vietnamese

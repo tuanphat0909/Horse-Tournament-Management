@@ -48,7 +48,7 @@ export const StatsSection = () => {
         setStats({ horses: len(horses), tournaments: len(tournaments), races: len(races), jockeys: len(jockeys) });
         if (tournaments.status === 'fulfilled') {
           const list = (tournaments.value as any)?.result ?? [];
-          setLiveCount(list.filter((t: any) => (t.status ?? '').toLowerCase() === 'active').length);
+          setLiveCount(list.filter((tour: any) => (tour.status ?? '').toLowerCase() === 'active').length);
         }
       });
   }, []);

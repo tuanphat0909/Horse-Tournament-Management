@@ -117,7 +117,7 @@ export const HeroSection = () => {
           >
             <div className="flex justify-between items-start mb-6">
               <div className="min-w-0">
-                <h3 className="font-serif text-xl text-white mb-1 truncate">{liveRace ? (liveRace.name ?? `Cuộc đua #${liveRace.raceId ?? liveRace.id}`) : t('Trường đua Equestria')}</h3>
+                <h3 className="font-serif text-xl text-white mb-1 truncate">{liveRace ? (liveRace.name ?? `${t('Cuộc đua')} #${liveRace.raceId ?? liveRace.id}`) : t('Trường đua Equestria')}</h3>
                 <p className="text-xs text-muted truncate">{liveRace?.tournamentName ?? t('Lịch thi đấu cập nhật liên tục')}</p>
               </div>
               {liveRace ? (
@@ -134,7 +134,7 @@ export const HeroSection = () => {
                 <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-navy/50 border border-glass-border hover:border-gold/30 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="font-bold text-gold w-6 shrink-0">#{i + 1}</span>
-                    <span className="text-sm font-medium text-white truncate">{h.horseName ?? h.name ?? `Ngựa #${h.horseId}`}</span>
+                    <span className="text-sm font-medium text-white truncate">{h.horseName ?? h.name ?? `${t('Ngựa')} #${h.horseId}`}</span>
                   </div>
                   <div className="text-right shrink-0">
                     <div className="text-xs font-mono text-white tabular">{h.winsCount ?? 0} pts</div>
