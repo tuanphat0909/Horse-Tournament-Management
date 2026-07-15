@@ -10,6 +10,7 @@ import { getCurrentUser } from '../../api/authService';
 import { getBalance, getMyBets } from '../../api/spectatorService';
 import { getNotifications, getRaceSchedule, getTournaments } from '../../api/publicService';
 import { formatDateTime } from '../../utils/format';
+import { useLanguage } from '../../context/LanguageContext';
 
 const child = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
@@ -17,6 +18,7 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
 export function SpectatorDashboardPage() {
   const navigate = useNavigate();
   const user = getCurrentUser();
+  const { t, language } = useLanguage();
   const [balance, setBalance] = useState(0);
   const [bets, setBets] = useState<any[]>([]);
   const [notifCount, setNotifCount] = useState(0);
@@ -52,22 +54,22 @@ export function SpectatorDashboardPage() {
 
           {/* Hero */}
           <PageHero
-            title={<>Chào mừng, <span className="italic text-champagne">{user?.fullName ?? 'Khán giả'}</span></>}
-            subtitle="Theo dõi giải đấu, đặt cược và quản lý ví của bạn"
+            title={<>{t('Chào mừng,')} <span className="italic text-champagne">{user?.fullName ?? t('Khán giả')}</span></>}
+            subtitle={t('Theo dõi giải đấu, đặt cược và quản lý ví của bạn')}
             imageUrl="/images/hero-spectator.jpg"
             imagePosition="center 50%"
             badge={
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/25 text-purple-400 text-[10px] font-bold uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" /> Mùa giải 2026
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" /> {t('Mùa giải 2026')}
               </div>
             }
             actions={
               <>
                 <button onClick={() => navigate('/spectator/live')} className="btn-gold px-5 py-2 rounded-lg text-xs flex items-center gap-1.5 font-bold">
-                  Xem kết quả trực tiếp <Eye size={13} />
+                  {t('Xem kết quả trực tiếp')} <Eye size={13} />
                 </button>
                 <button onClick={() => navigate('/spectator/predictions')} className="px-5 py-2 rounded-lg text-xs text-champagne border border-gold/25 bg-gold/5 hover:bg-gold/10 transition-colors font-medium">
-                  Dự đoán của tôi
+                  {t('Dự đoán của tôi')}
                 </button>
               </>
             }
@@ -76,11 +78,11 @@ export function SpectatorDashboardPage() {
           {/* Stats */}
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-5 gap-4">
             {[
-              { title: 'Số dư', value: balance.toLocaleString(), trend: `≈ $${(balance / 100).toFixed(2)}`, icon: Wallet, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/spectator/wallet' },
-              { title: 'Đang diễn ra', value: liveRaces.length > 0 ? String(liveRaces.length) : '—', trend: 'Live ngay', icon: Activity, color: 'text-red-400', bg: 'from-red-500/15 to-red-900/20', path: '/spectator/live' },
-              { title: 'Giải đấu', value: String(new Set(upcoming.filter(r => r.status?.toLowerCase() !== 'finished').map(r => r.tournamentId)).size), trend: 'Đang theo dõi', icon: Trophy, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/spectator/tournaments' },
-              { title: 'Dự đoán', value: String(bets.length), trend: `${pendingBets} chờ kết quả`, icon: BarChart3, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/spectator/predictions' },
-              { title: 'Thông báo', value: String(notifCount), trend: 'Chưa đọc', icon: Bell, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', path: '/spectator/notifications' },
+              { title: t('Số dư'), value: balance.toLocaleString(), trend: `≈ $${(balance / 100).toFixed(2)}`, icon: Wallet, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', path: '/spectator/wallet' },
+              { title: t('Đang diễn ra'), value: liveRaces.length > 0 ? String(liveRaces.length) : '—', trend: t('Live ngay'), icon: Activity, color: 'text-red-400', bg: 'from-red-500/15 to-red-900/20', path: '/spectator/live' },
+              { title: t('Giải đấu'), value: String(new Set(upcoming.filter(r => r.status?.toLowerCase() !== 'finished').map(r => r.tournamentId)).size), trend: t('Đang theo dõi'), icon: Trophy, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', path: '/spectator/tournaments' },
+              { title: t('Dự đoán'), value: String(bets.length), trend: `${pendingBets} ${t('chờ kết quả')}`, icon: BarChart3, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', path: '/spectator/predictions' },
+              { title: t('Thông báo'), value: String(notifCount), trend: t('Chưa đọc'), icon: Bell, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', path: '/spectator/notifications' },
             ].map((m, i) => (
               <motion.div key={i} variants={child} onClick={() => navigate(m.path)}
                 className="glass-panel rounded-xl p-5 relative overflow-hidden group cursor-pointer" style={{ height: '130px' }}>
@@ -104,15 +106,15 @@ export function SpectatorDashboardPage() {
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
               <div className="relative z-10 flex items-center gap-3 mb-5">
                 <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Activity size={15} className="text-gold" /></div>
-                <h2 className="text-lg font-serif text-white">Đang diễn ra</h2>
+                <h2 className="text-lg font-serif text-white">{t('Đang diễn ra')}</h2>
                 <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
-                <button onClick={() => navigate('/spectator/live')} className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium shrink-0">Chi tiết <ChevronRight size={14} /></button>
+                <button onClick={() => navigate('/spectator/live')} className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium shrink-0">{t('Chi tiết')} <ChevronRight size={14} /></button>
               </div>
               {liveRaces.length === 0 ? (
                 <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
                   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
                   <div className="text-4xl opacity-40 mb-3">🏁</div>
-                  <div className="text-muted text-sm">Chưa có dữ liệu</div>
+                  <div className="text-muted text-sm">{t('Chưa có dữ liệu')}</div>
                 </div>
               ) : (
                 <div className="space-y-2 mb-4">
@@ -131,31 +133,31 @@ export function SpectatorDashboardPage() {
               )}
               <div className="mt-4 relative z-10">
                 <div className="flex items-center gap-3 mb-3">
-                  <h3 className="text-sm font-medium text-muted">Giải đấu sắp tới</h3>
+                  <h3 className="text-sm font-medium text-muted">{t('Giải đấu sắp tới')}</h3>
                   <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
-                  <button onClick={() => navigate('/spectator/tournaments')} className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium shrink-0">Xem tất cả <ChevronRight size={12} /></button>
+                  <button onClick={() => navigate('/spectator/tournaments')} className="text-xs text-gold hover:text-champagne flex items-center gap-1 transition-colors font-medium shrink-0">{t('Xem tất cả')} <ChevronRight size={12} /></button>
                 </div>
                 {upcomingTournaments.length === 0 ? (
-                  <div className="text-center py-6 text-muted text-sm">Chưa có giải đấu nào</div>
+                  <div className="text-center py-6 text-muted text-sm">{t('Chưa có giải đấu nào')}</div>
                 ) : (
                   <div className="space-y-2">
-                    {upcomingTournaments.slice(0, 4).map((t: any, i: number) => (
+                    {upcomingTournaments.slice(0, 4).map((tour: any, i: number) => (
                       <button
-                        key={t.tournamentId ?? i}
-                        onClick={() => navigate(`/spectator/tournaments/${t.tournamentId}`)}
+                        key={tour.tournamentId ?? i}
+                        onClick={() => navigate(`/spectator/tournaments/${tour.tournamentId}`)}
                         className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-glass-border hover:border-gold/30 hover:bg-gold/5 transition-all group text-left"
                       >
                         <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center font-serif font-bold text-champagne text-sm shrink-0">{i + 1}</div>
                         <Trophy size={13} className="text-gold/60 shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-white">{t.name}</div>
+                          <div className="text-xs font-medium text-white">{tour.name}</div>
                           <div className="text-[10px] text-muted">
-                            {t.startDate ? new Date(t.startDate).toLocaleDateString('vi-VN') : ''}
-                            {t.endDate ? ` → ${new Date(t.endDate).toLocaleDateString('vi-VN')}` : ''}
+                            {tour.startDate ? new Date(tour.startDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US') : ''}
+                            {tour.endDate ? ` → ${new Date(tour.endDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US')}` : ''}
                           </div>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${t.status === 'Active' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-blue-400 bg-blue-500/10 border-blue-500/20'}`}>
-                          {t.status === 'Active' ? 'Đang diễn ra' : 'Sắp tới'}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${tour.status === 'Active' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-blue-400 bg-blue-500/10 border-blue-500/20'}`}>
+                          {tour.status === 'Active' ? t('Đang diễn ra') : t('Sắp tới')}
                         </span>
                       </button>
                     ))}
@@ -169,11 +171,11 @@ export function SpectatorDashboardPage() {
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
               <div className="relative z-10 flex items-center gap-3 mb-5">
                 <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0"><Sparkles size={15} className="text-gold" /></div>
-                <h2 className="text-base font-serif text-white">Dự đoán gần đây</h2>
+                <h2 className="text-base font-serif text-white">{t('Dự đoán gần đây')}</h2>
                 <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
               </div>
               {bets.length === 0 ? (
-                <div className="text-center py-8"><div className="text-3xl opacity-40 mb-2">🎯</div><div className="text-muted text-sm">Chưa có dự đoán nào</div></div>
+                <div className="text-center py-8"><div className="text-3xl opacity-40 mb-2">🎯</div><div className="text-muted text-sm">{t('Chưa có dự đoán nào')}</div></div>
               ) : (
                 <div className="space-y-3 relative z-10">
                   {bets.slice(0, 5).map((b, i) => {
@@ -183,12 +185,12 @@ export function SpectatorDashboardPage() {
                     return (
                       <div key={i} className="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all group">
                         <div>
-                          <div className="text-xs font-medium text-white">🐴 {b.horseName ?? 'Ngựa #' + b.horseId}</div>
+                          <div className="text-xs font-medium text-white">🐴 {b.horseName ?? (t('Ngựa') + ' #' + b.horseId)}</div>
                           <div className="text-[10px] text-muted">{b.raceName ?? (b.raceId ? 'Race #' + b.raceId : '')}</div>
                         </div>
                         <div className="text-right">
                           <div className={`text-[11px] font-bold ${isWin ? 'text-emerald-400' : isLose ? 'text-red-400' : 'text-yellow-400'}`}>
-                            {isWin ? 'Đúng' : isLose ? 'Sai' : 'Chờ'}
+                            {isWin ? t('Đúng') : isLose ? t('Sai') : t('Chờ')}
                           </div>
                           <div className="text-xs text-gold font-bold">{b.prize != null ? '+' + Number(b.prize).toLocaleString() + ' coins' : ''}</div>
                         </div>

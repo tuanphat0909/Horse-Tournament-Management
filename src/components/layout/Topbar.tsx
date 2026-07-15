@@ -5,7 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNotifications } from '../../context/NotificationContext';
 
 export function Topbar() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -66,11 +66,11 @@ export function Topbar() {
       const diffMins = Math.floor(diffMs / 60000);
       const diffHours = Math.floor(diffMins / 60);
 
-      if (diffMins < 1) return 'Vừa xong';
-      if (diffMins < 60) return `${diffMins} phút trước`;
-      if (diffHours < 24) return `${diffHours} giờ trước`;
-      
-      return past.toLocaleDateString('vi-VN', { month: 'numeric', day: 'numeric' });
+      if (diffMins < 1) return t('Vừa xong');
+      if (diffMins < 60) return `${diffMins} ${t('phút trước')}`;
+      if (diffHours < 24) return `${diffHours} ${t('giờ trước')}`;
+
+      return past.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { month: 'numeric', day: 'numeric' });
     } catch {
       return dateStr;
     }
