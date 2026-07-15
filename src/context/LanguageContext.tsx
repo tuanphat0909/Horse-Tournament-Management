@@ -450,6 +450,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "Cancelled": "Đã hủy",
     "Pending Registration": "Chờ người đăng ký",
     "Pending Scheduling": "Chờ xếp lịch",
+    "Registration Suspended": "Tạm đóng đăng ký (Chờ gia hạn)",
+    "Registration Closed (Pending Extension)": "Tạm đóng đăng ký (Chờ gia hạn)",
     "Tournament is now in Registration Open status.": "Giải đấu đang ở trạng thái Đang mở đăng ký (Registration Open).",
     "Tournament is now in Pending Registration status.": "Giải đấu đang ở trạng thái Chờ người đăng ký (PendingRegistration).",
   }
