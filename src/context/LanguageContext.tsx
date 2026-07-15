@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 
 type Language = 'en' | 'vi';
 
@@ -437,20 +437,17 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem('language') as Language) || 'vi';
-  });
+  const language: Language = 'en';
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('language', lang);
+  const setLanguage = (_lang: Language) => {
+    // Language is locked to English, changing is disabled
   };
 
   const t = (key: string): string => {
     if (!key) return '';
     
     // Check if translation exists in current language config
-    const translations = TRANSLATIONS[language];
+    const translations = TRANSLATIONS['en'];
     if (translations && translations[key]) {
       return translations[key];
     }
