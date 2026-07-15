@@ -365,7 +365,10 @@ export function AdminTournamentsPage() {
     const canGenerateFinal = preFinished && finalRaces.length === 0;
 
     let statusLabel = '';
-    if (tour.status?.toLowerCase() === 'registration suspended') {
+    const isSuspended = tour.status?.toLowerCase() === 'registration suspended' ||
+                        (tour.status?.toLowerCase() === 'registration open' && regEnded && tour.cancelCount === 0);
+
+    if (isSuspended) {
       statusLabel = 'Registration Suspended';
     } else if (regNotStarted) {
       statusLabel = 'Registration not open';
@@ -466,7 +469,12 @@ export function AdminTournamentsPage() {
             <div className="overflow-y-auto pr-1.5 -mr-1.5 scrollbar-thin" style={{ maxHeight: 'calc(100vh - 330px)' }}>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {sortedTournaments.map((tour, i) => {
-                const s = tour.status?.toLowerCase() ?? 'upcoming';
+                const now = new Date();
+                const regEnd = tour.registrationEndDate ? new Date(tour.registrationEndDate) : null;
+                const regEnded = regEnd ? now >= regEnd : false;
+                const s = (tour.status?.toLowerCase() === 'registration open' && regEnded && tour.cancelCount === 0)
+                  ? 'registration suspended'
+                  : (tour.status?.toLowerCase() ?? 'upcoming');
                 const config = STATUS_CONFIG[s] ?? STATUS_CONFIG.upcoming;
                 const raceState = getTournamentRaceState(tour);
                 const isGenerating = generatingForTournament === tour.tournamentId;
@@ -561,7 +569,7 @@ export function AdminTournamentsPage() {
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {tour.status?.toLowerCase() === 'registration suspended' && tour.cancelCount === 0 && (
+                      {s === 'registration suspended' && tour.cancelCount === 0 && (
                         <button
                           onClick={() => {
                             setExtendingTournament(tour);
