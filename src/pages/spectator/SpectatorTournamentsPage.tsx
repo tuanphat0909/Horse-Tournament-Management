@@ -23,6 +23,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string 
   'final round': { label: 'Final Round', color: 'text-pink-400 bg-pink-500/10 border-pink-500/20', dot: 'bg-pink-400' },
   'prize distribution': { label: 'Prize Distribution', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
   'cancelled': { label: 'Cancelled', color: 'text-red-400 bg-red-500/10 border-red-500/20', dot: 'bg-red-400' },
+  pendingregistration: { label: 'Chờ người đăng ký', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
+  pendingscheduling: { label: 'Chờ xếp lịch', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', dot: 'bg-orange-400' },
 };
 
 type StatusFilter = 'all' | 'active' | 'upcoming' | 'completed';

@@ -448,7 +448,10 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "Prize Distribution": "Trao giải",
     "Completed": "Đã hoàn thành",
     "Cancelled": "Đã hủy",
+    "Pending Registration": "Chờ người đăng ký",
+    "Pending Scheduling": "Chờ xếp lịch",
     "Tournament is now in Registration Open status.": "Giải đấu đang ở trạng thái Đang mở đăng ký (Registration Open).",
+    "Tournament is now in Pending Registration status.": "Giải đấu đang ở trạng thái Chờ người đăng ký (PendingRegistration).",
   }
 };
 

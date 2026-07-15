@@ -14,7 +14,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNotifications } from '../../context/NotificationContext';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
-type StatusFilter = 'all' | 'upcoming' | 'active' | 'completed';
+type StatusFilter = 'all' | 'pendingregistration' | 'pendingscheduling' | 'upcoming' | 'active' | 'completed';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   active: { label: 'Active', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', dot: 'bg-emerald-400' },
@@ -29,6 +29,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string 
   'final round': { label: 'Final Round', color: 'text-pink-400 bg-pink-500/10 border-pink-500/20', dot: 'bg-pink-400' },
   'prize distribution': { label: 'Prize Distribution', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
   'cancelled': { label: 'Cancelled', color: 'text-red-400 bg-red-500/10 border-red-500/20', dot: 'bg-red-400' },
+  pendingregistration: { label: 'Chờ người đăng ký', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
+  pendingscheduling: { label: 'Chờ xếp lịch', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', dot: 'bg-orange-400' },
 };
 
 const INPUT = 'w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
@@ -205,7 +207,7 @@ export function AdminTournamentsPage() {
       });
       const newId = data?.result?.id ?? data?.result?.tournamentId;
       showToast(t('Success'), newId != null
-        ? `${t('Tournament created successfully!')} ID = ${newId}. ${t('Tournament is now in Registration Open status.')}`
+        ? `${t('Tournament created successfully!')} ID = ${newId}. ${t('Tournament is now in Pending Registration status.')}`
         : t('Tournament created successfully!'));
       setForm(INIT_FORM);
       setShowModal(false);
@@ -267,11 +269,16 @@ export function AdminTournamentsPage() {
 
   const statsCounts: Record<StatusFilter, number> = {
     all: tournaments.length,
+    pendingregistration: tournaments.filter(t => {
+      const s = (t.status ?? '').toLowerCase();
+      return s === 'pendingregistration' || s === 'registration open' || s === 'registration suspended';
+    }).length,
+    pendingscheduling: tournaments.filter(t => (t.status ?? '').toLowerCase() === 'pendingscheduling').length,
+    upcoming: tournaments.filter(t => (t.status ?? '').toLowerCase() === 'upcoming').length,
     active: tournaments.filter(t => {
       const s = (t.status ?? '').toLowerCase();
-      return s === 'active' || s === 'registration open' || s === 'registration suspended' || s === 'registration closed' || s === 'medical checking' || s === 'ready to arrange' || s === 'pre round' || s === 'final round' || s === 'prize distribution';
+      return s === 'active' || s === 'registration closed' || s === 'medical checking' || s === 'ready to arrange' || s === 'pre round' || s === 'final round' || s === 'prize distribution';
     }).length,
-    upcoming: tournaments.filter(t => (t.status ?? '').toLowerCase() === 'upcoming').length,
     completed: tournaments.filter(t => {
       const s = (t.status ?? '').toLowerCase();
       return s === 'completed' || s === 'cancelled';
@@ -282,11 +289,11 @@ export function AdminTournamentsPage() {
     const matchesSearch = (t.name ?? '').toLowerCase().includes(search.toLowerCase());
     if (filter === 'all') return matchesSearch;
     const s = (t.status ?? '').toLowerCase();
+    if (filter === 'pendingregistration') return matchesSearch && (s === 'pendingregistration' || s === 'registration open' || s === 'registration suspended');
+    if (filter === 'pendingscheduling') return matchesSearch && s === 'pendingscheduling';
     if (filter === 'active') {
       return matchesSearch && (
         s === 'active' ||
-        s === 'registration open' ||
-        s === 'registration suspended' ||
         s === 'registration closed' ||
         s === 'medical checking' ||
         s === 'ready to arrange' ||
@@ -407,7 +414,7 @@ export function AdminTournamentsPage() {
 
           {/* Status Filters */}
           <div className="flex items-center gap-2">
-            {(['all', 'active', 'upcoming', 'completed'] as StatusFilter[]).map(s => (
+            {(['all', 'pendingregistration', 'pendingscheduling', 'upcoming', 'active', 'completed'] as StatusFilter[]).map(s => (
               <button
                 key={s}
                 onClick={() => setFilter(s)}
