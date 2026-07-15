@@ -14,12 +14,14 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNotifications } from '../../context/NotificationContext';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
-type StatusFilter = 'all' | 'upcoming' | 'active' | 'completed';
+type StatusFilter = 'all' | 'pendingregistration' | 'pendingscheduling' | 'upcoming' | 'active' | 'completed';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   active: { label: 'Đang diễn ra', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', dot: 'bg-emerald-400' },
   upcoming: { label: 'Sắp diễn ra', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', dot: 'bg-blue-400' },
   completed: { label: 'Đã kết thúc', color: 'text-muted bg-white/5 border-glass-border', dot: 'bg-muted' },
+  pendingregistration: { label: 'Chờ người đăng ký', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
+  pendingscheduling: { label: 'Chờ xếp lịch', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', dot: 'bg-orange-400' },
 };
 
 const INPUT = 'w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
@@ -166,7 +168,7 @@ export function AdminTournamentsPage() {
       });
       const newId = data?.result?.id ?? data?.result?.tournamentId;
       showToast(t('Thành công'), newId != null
-        ? `${t('Tạo giải đấu thành công!')} ID = ${newId}. ${t('Giải đấu đang ở trạng thái Sắp diễn ra (Upcoming).')}`
+        ? `${t('Tạo giải đấu thành công!')} ID = ${newId}. ${t('Giải đấu đang ở trạng thái Chờ người đăng ký (PendingRegistration).')}`
         : t('Tạo giải đấu thành công!'));
       setForm(INIT_FORM);
       setShowModal(false);
@@ -228,14 +230,18 @@ export function AdminTournamentsPage() {
 
   const statsCounts: Record<StatusFilter, number> = {
     all: tournaments.length,
-    active: tournaments.filter(t => t.status === 'Active').length,
+    pendingregistration: tournaments.filter(t => t.status === 'PendingRegistration').length,
+    pendingscheduling: tournaments.filter(t => t.status === 'PendingScheduling').length,
     upcoming: tournaments.filter(t => t.status === 'Upcoming').length,
+    active: tournaments.filter(t => t.status === 'Active').length,
     completed: tournaments.filter(t => t.status === 'Completed').length,
   };
 
   const filteredTournaments = tournaments.filter(t => {
     const matchesSearch = (t.name ?? '').toLowerCase().includes(search.toLowerCase());
     if (filter === 'all') return matchesSearch;
+    if (filter === 'pendingregistration') return matchesSearch && t.status === 'PendingRegistration';
+    if (filter === 'pendingscheduling') return matchesSearch && t.status === 'PendingScheduling';
     if (filter === 'active') return matchesSearch && t.status === 'Active';
     if (filter === 'upcoming') return matchesSearch && t.status === 'Upcoming';
     if (filter === 'completed') return matchesSearch && t.status === 'Completed';
@@ -334,7 +340,7 @@ export function AdminTournamentsPage() {
 
           {/* Status Filters */}
           <div className="flex items-center gap-2">
-            {(['all', 'active', 'upcoming', 'completed'] as StatusFilter[]).map(s => (
+            {(['all', 'pendingregistration', 'pendingscheduling', 'upcoming', 'active', 'completed'] as StatusFilter[]).map(s => (
               <button
                 key={s}
                 onClick={() => setFilter(s)}

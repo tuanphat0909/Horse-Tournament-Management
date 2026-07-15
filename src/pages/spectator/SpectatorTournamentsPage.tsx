@@ -15,6 +15,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string 
   active: { label: 'Đang diễn ra', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', dot: 'bg-emerald-400' },
   upcoming: { label: 'Sắp diễn ra', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', dot: 'bg-blue-400' },
   completed: { label: 'Đã kết thúc', color: 'text-muted bg-white/5 border-glass-border', dot: 'bg-muted' },
+  pendingregistration: { label: 'Chờ người đăng ký', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
+  pendingscheduling: { label: 'Chờ xếp lịch', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', dot: 'bg-orange-400' },
 };
 
 type StatusFilter = 'all' | 'active' | 'upcoming' | 'completed';
