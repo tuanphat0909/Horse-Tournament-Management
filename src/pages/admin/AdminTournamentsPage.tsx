@@ -5,7 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { createTournament, generateTournamentRaces, generateFinalRace, closeTournamentRegistration } from '../../api/adminService';
+import { createTournament, generateTournamentRaces, generateFinalRace, closeTournamentRegistration, extendTournamentRegistration } from '../../api/adminService';
 import { getRaceSchedule, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { formatDateTime } from '../../utils/format';
@@ -21,6 +21,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string 
   upcoming: { label: 'Upcoming', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', dot: 'bg-blue-400' },
   completed: { label: 'Completed', color: 'text-muted bg-white/5 border-glass-border', dot: 'bg-muted' },
   'registration open': { label: 'Registration Open', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', dot: 'bg-emerald-400' },
+  'registration suspended': { label: 'Registration Suspended', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
   'registration closed': { label: 'Registration Closed', color: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20', dot: 'bg-zinc-400' },
   'medical checking': { label: 'Medical Checking', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', dot: 'bg-orange-400' },
   'ready to arrange': { label: 'Ready To Arrange', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20', dot: 'bg-indigo-400' },
@@ -64,6 +65,36 @@ export function AdminTournamentsPage() {
   const [races, setRaces] = useState<any[]>([]);
   const [loadingTournaments, setLoadingTournaments] = useState(true);
   const [generatingForTournament, setGeneratingForTournament] = useState<number | null>(null);
+
+  const [extendingTournament, setExtendingTournament] = useState<any>(null);
+  const [additionalDays, setAdditionalDays] = useState<number>(1);
+  const [extendLoading, setExtendLoading] = useState(false);
+
+  async function handleExtendRegistration() {
+    if (!extendingTournament) return;
+    
+    const currentRegistrationEndDate = new Date(extendingTournament.registrationEndDate);
+    const startDate = new Date(extendingTournament.startDate);
+    const newRegistrationEndDate = new Date(currentRegistrationEndDate.getTime() + additionalDays * 24 * 60 * 60 * 1000);
+    const limitDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+    
+    if (newRegistrationEndDate > limitDate) {
+      return;
+    }
+
+    setExtendLoading(true);
+    try {
+      await extendTournamentRegistration(extendingTournament.tournamentId, additionalDays);
+      showToast(t('Success'), "Gia hạn giải đấu thành công!");
+      setExtendingTournament(null);
+      setAdditionalDays(1);
+      await loadTournaments();
+    } catch (err: unknown) {
+      showToast(t('Error'), parseApiError(err as Error));
+    } finally {
+      setExtendLoading(false);
+    }
+  }
 
   async function loadTournaments() {
     setLoadingTournaments(true);
@@ -238,7 +269,7 @@ export function AdminTournamentsPage() {
     all: tournaments.length,
     active: tournaments.filter(t => {
       const s = (t.status ?? '').toLowerCase();
-      return s === 'active' || s === 'registration open' || s === 'registration closed' || s === 'medical checking' || s === 'ready to arrange' || s === 'pre round' || s === 'final round' || s === 'prize distribution';
+      return s === 'active' || s === 'registration open' || s === 'registration suspended' || s === 'registration closed' || s === 'medical checking' || s === 'ready to arrange' || s === 'pre round' || s === 'final round' || s === 'prize distribution';
     }).length,
     upcoming: tournaments.filter(t => (t.status ?? '').toLowerCase() === 'upcoming').length,
     completed: tournaments.filter(t => {
@@ -255,6 +286,7 @@ export function AdminTournamentsPage() {
       return matchesSearch && (
         s === 'active' ||
         s === 'registration open' ||
+        s === 'registration suspended' ||
         s === 'registration closed' ||
         s === 'medical checking' ||
         s === 'ready to arrange' ||
@@ -272,15 +304,16 @@ export function AdminTournamentsPage() {
   const STATUS_ORDER: Record<string, number> = {
     'active': 0,
     'registration open': 1,
-    'registration closed': 2,
-    'medical checking': 3,
-    'ready to arrange': 4,
-    'pre round': 5,
-    'final round': 6,
-    'prize distribution': 7,
-    'upcoming': 8,
-    'completed': 9,
-    'cancelled': 10
+    'registration suspended': 2,
+    'registration closed': 3,
+    'medical checking': 4,
+    'ready to arrange': 5,
+    'pre round': 6,
+    'final round': 7,
+    'prize distribution': 8,
+    'upcoming': 9,
+    'completed': 10,
+    'cancelled': 11
   };
   const sortedTournaments = [...filteredTournaments].sort((a, b) => {
     switch (sortBy) {
@@ -325,7 +358,9 @@ export function AdminTournamentsPage() {
     const canGenerateFinal = preFinished && finalRaces.length === 0;
 
     let statusLabel = '';
-    if (regNotStarted) {
+    if (tour.status?.toLowerCase() === 'registration suspended') {
+      statusLabel = 'Registration Suspended';
+    } else if (regNotStarted) {
       statusLabel = 'Registration not open';
     } else if (regOpen) {
       statusLabel = 'Đang mở đăng ký';
@@ -519,6 +554,19 @@ export function AdminTournamentsPage() {
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
+                      {tour.status?.toLowerCase() === 'registration suspended' && tour.cancelCount === 0 && (
+                        <button
+                          onClick={() => {
+                            setExtendingTournament(tour);
+                            setAdditionalDays(1);
+                          }}
+                          disabled={isGenerating}
+                          className="px-3 py-2 rounded-lg text-xs font-bold text-gold border border-gold/30 bg-gold/10 hover:bg-gold/20 disabled:opacity-60 transition-colors flex items-center gap-1.5"
+                        >
+                          <Clock size={13} />
+                          {t('Extend Registration')}
+                        </button>
+                      )}
                       {raceState.regOpen && (
                         <button
                           onClick={() => handleCloseRegistration(tour.tournamentId)}
@@ -674,6 +722,101 @@ export function AdminTournamentsPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Extend Registration Modal */}
+      {extendingTournament && (() => {
+        const currentRegistrationEndDate = new Date(extendingTournament.registrationEndDate);
+        const startDate = new Date(extendingTournament.startDate);
+        const newRegistrationEndDate = new Date(currentRegistrationEndDate.getTime() + additionalDays * 24 * 60 * 60 * 1000);
+        const limitDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+        const isValid = newRegistrationEndDate <= limitDate;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="glass-panel rounded-2xl p-8 w-full max-w-lg border border-gold/20 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
+              
+              <div className="relative flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
+                  <Clock size={15} className="text-gold" />
+                </div>
+                <h2 className="text-xl font-serif text-white">{t("Extend Registration")}</h2>
+                <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-white/[0.02] border border-glass-border/30 rounded-xl p-4 text-xs space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted">Giải đấu:</span>
+                    <span className="text-white font-bold">{extendingTournament.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Ngày đóng ĐK hiện tại:</span>
+                    <span className="text-white font-medium">{formatDateTime(extendingTournament.registrationEndDate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Ngày bắt đầu giải đấu:</span>
+                    <span className="text-white font-medium">{formatDateTime(extendingTournament.startDate)}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={LABEL}>{t("Số ngày gia hạn thêm")}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={additionalDays}
+                    onChange={e => setAdditionalDays(Math.max(1, parseInt(e.target.value) || 0))}
+                    className={INPUT}
+                  />
+                </div>
+
+                <div className="bg-white/[0.02] border border-glass-border/30 rounded-xl p-4 text-xs space-y-2">
+                  <div className="font-bold text-white uppercase tracking-wider text-[10px] mb-1">Dự kiến thay đổi</div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted">Ngày đóng ĐK cũ:</span>
+                    <span className="text-zinc-400 line-through">{formatDateTime(extendingTournament.registrationEndDate)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted">Ngày đóng ĐK mới:</span>
+                    <span className="text-gold font-bold text-sm">{formatDateTime(newRegistrationEndDate.toISOString())}</span>
+                  </div>
+                </div>
+
+                {!isValid && (
+                  <div className="text-xs px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-bold">
+                    Ngày kết thúc đăng ký gia hạn tối đa phải trước ngày bắt đầu giải đấu ít nhất 1 ngày!
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setExtendingTournament(null);
+                    setAdditionalDays(1);
+                  }}
+                  className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors"
+                >
+                  {t("Cancel")}
+                </button>
+                <button
+                  onClick={handleExtendRegistration}
+                  disabled={!isValid || extendLoading}
+                  className="flex-1 btn-gold py-2.5 rounded-lg text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {extendLoading ? t('Extending...') : t('Xác nhận')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
