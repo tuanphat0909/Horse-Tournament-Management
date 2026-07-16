@@ -92,7 +92,7 @@ export function AdminTournamentsPage() {
       setAdditionalDays(1);
       await loadTournaments();
     } catch (err: unknown) {
-      showToast(t('Error'), parseApiError(err as Error));
+      showToast(t('Error'), t(parseApiError(err as Error)));
     } finally {
       setExtendLoading(false);
     }
@@ -179,7 +179,7 @@ export function AdminTournamentsPage() {
       setShowModal(false);
       loadTournaments();
     } catch (err: unknown) {
-      setError(parseApiError(err as Error));
+      setError(t(parseApiError(err as Error)));
     } finally {
       setLoading(false);
     }
@@ -199,7 +199,7 @@ export function AdminTournamentsPage() {
       await loadTournaments();
     } catch (err: unknown) {
       const errorMsg = parseApiError(err as Error);
-      showToast(t('Failed'), errorMsg, 'error');
+      showToast(t('Failed'), t(errorMsg), 'error');
     } finally {
       setGeneratingForTournament(null);
     }
@@ -213,7 +213,7 @@ export function AdminTournamentsPage() {
       await loadTournaments();
     } catch (err: unknown) {
       const errorMsg = parseApiError(err as Error);
-      showToast(t('Failed'), errorMsg, 'error');
+      showToast(t('Failed'), t(errorMsg), 'error');
     } finally {
       setGeneratingForTournament(null);
     }
@@ -227,7 +227,7 @@ export function AdminTournamentsPage() {
       await loadTournaments();
     } catch (err: unknown) {
       const errorMsg = parseApiError(err as Error);
-      showToast(t('Failed'), errorMsg, 'error');
+      showToast(t('Failed'), t(errorMsg), 'error');
     } finally {
       setGeneratingForTournament(null);
     }

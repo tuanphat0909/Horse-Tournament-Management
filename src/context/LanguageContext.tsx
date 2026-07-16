@@ -88,6 +88,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "Thời gian bắt đầu giải đấu phải sau hoặc bằng thời hạn kết thúc đăng ký.": "Tournament start date must be on or after registration end date.",
     "Thời gian kết thúc giải đấu phải sau thời gian bắt đầu giải đấu.": "Tournament end date must be after tournament start date.",
     "Vui lòng điền đầy đủ tất cả các trường thông tin bắt buộc.": "Please fill in all required fields.",
+    "Thời gian diễn ra giải đấu bị lồng trùng với một giải đấu khác đang tồn tại.": "The tournament duration overlaps with another existing tournament.",
+    "Thời gian của giải đấu bị trùng lặp với một giải đấu khác đang diễn ra.": "The tournament duration overlaps with another ongoing tournament.",
     "Thành công": "Success",
     "Giải đấu đang ở trạng thái Sắp diễn ra (Upcoming).": "Tournament is now in Upcoming status.",
     "Đã đóng thời hạn đăng ký giải đấu thành công!": "Registration deadline closed successfully!",
