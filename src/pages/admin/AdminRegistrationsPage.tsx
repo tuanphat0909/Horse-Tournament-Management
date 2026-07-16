@@ -28,6 +28,7 @@ interface Registration {
   ownerName: string;
   status: string;
   registeredAt: string;
+  jockeyContractStatus?: string;
 }
 
 export function AdminRegistrationsPage() {
@@ -259,20 +260,31 @@ export function AdminRegistrationsPage() {
                           {reg.registeredAt ? new Date(reg.registeredAt).toLocaleDateString('vi-VN') : '—'}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            reg.status === 'Pending'  ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
-                            reg.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                            'bg-red-500/10 text-red-400 border border-red-500/20'
-                          }`}>
-                            {reg.status === 'Pending' ? 'Awaiting Approval' : reg.status === 'Approved' ? 'Approved' : 'Declined'}
-                          </span>
+                          {reg.status === 'Pending' ? (
+                            reg.jockeyContractStatus === 'Accepted' ? (
+                              <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                                Awaiting Approval
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                                Awaiting Jockey acceptance
+                              </span>
+                            )
+                          ) : (
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                              reg.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                              'bg-red-500/10 text-red-400 border border-red-500/20'
+                            }`}>
+                              {reg.status === 'Approved' ? 'Approved' : 'Declined'}
+                            </span>
+                          )}
                         </td>
                         {tab === 'pending' && (
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => handleReview(reg.registrationId, 'Approved')}
-                                disabled={processingId === reg.registrationId}
+                                disabled={processingId === reg.registrationId || reg.jockeyContractStatus !== 'Accepted'}
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                               >
                                 <Check size={12} />

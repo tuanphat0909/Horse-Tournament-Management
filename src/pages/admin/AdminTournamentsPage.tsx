@@ -5,7 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { createTournament, generateTournamentRaces, generateFinalRace, closeTournamentRegistration } from '../../api/adminService';
+import { createTournament, generateTournamentRaces, generateFinalRace, closeTournamentRegistration, extendTournamentRegistration } from '../../api/adminService';
 import { getRaceSchedule, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { formatDateTime } from '../../utils/format';
@@ -14,12 +14,23 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNotifications } from '../../context/NotificationContext';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
-type StatusFilter = 'all' | 'upcoming' | 'active' | 'completed';
+type StatusFilter = 'all' | 'pendingregistration' | 'pendingscheduling' | 'upcoming' | 'active' | 'completed';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   active: { label: 'Active', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', dot: 'bg-emerald-400' },
   upcoming: { label: 'Upcoming', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', dot: 'bg-blue-400' },
   completed: { label: 'Completed', color: 'text-muted bg-white/5 border-glass-border', dot: 'bg-muted' },
+  'registration open': { label: 'Registration Open', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', dot: 'bg-emerald-400' },
+  'registration suspended': { label: 'Registration Suspended', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
+  'registration closed': { label: 'Registration Closed', color: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20', dot: 'bg-zinc-400' },
+  'medical checking': { label: 'Medical Checking', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', dot: 'bg-orange-400' },
+  'ready to arrange': { label: 'Ready To Arrange', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20', dot: 'bg-indigo-400' },
+  'pre round': { label: 'Pre Round', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20', dot: 'bg-purple-400' },
+  'final round': { label: 'Final Round', color: 'text-pink-400 bg-pink-500/10 border-pink-500/20', dot: 'bg-pink-400' },
+  'prize distribution': { label: 'Prize Distribution', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
+  'cancelled': { label: 'Cancelled', color: 'text-red-400 bg-red-500/10 border-red-500/20', dot: 'bg-red-400' },
+  pendingregistration: { label: 'Awaiting Registrations', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', dot: 'bg-yellow-400' },
+  pendingscheduling: { label: 'Awaiting Scheduling', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', dot: 'bg-orange-400' },
 };
 
 const INPUT = 'w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
@@ -56,6 +67,36 @@ export function AdminTournamentsPage() {
   const [races, setRaces] = useState<any[]>([]);
   const [loadingTournaments, setLoadingTournaments] = useState(true);
   const [generatingForTournament, setGeneratingForTournament] = useState<number | null>(null);
+
+  const [extendingTournament, setExtendingTournament] = useState<any>(null);
+  const [additionalDays, setAdditionalDays] = useState<number>(1);
+  const [extendLoading, setExtendLoading] = useState(false);
+
+  async function handleExtendRegistration() {
+    if (!extendingTournament) return;
+    
+    const currentRegistrationEndDate = new Date(extendingTournament.registrationEndDate);
+    const startDate = new Date(extendingTournament.startDate);
+    const newRegistrationEndDate = new Date(currentRegistrationEndDate.getTime() + additionalDays * 24 * 60 * 60 * 1000);
+    const limitDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+    
+    if (newRegistrationEndDate > limitDate) {
+      return;
+    }
+
+    setExtendLoading(true);
+    try {
+      await extendTournamentRegistration(extendingTournament.tournamentId, additionalDays);
+      showToast(t('Success'), 'Registration extended successfully!');
+      setExtendingTournament(null);
+      setAdditionalDays(1);
+      await loadTournaments();
+    } catch (err: unknown) {
+      showToast(t('Error'), parseApiError(err as Error));
+    } finally {
+      setExtendLoading(false);
+    }
+  }
 
   async function loadTournaments() {
     setLoadingTournaments(true);
@@ -132,7 +173,7 @@ export function AdminTournamentsPage() {
       });
       const newId = data?.result?.id ?? data?.result?.tournamentId;
       showToast(t('Success'), newId != null
-        ? `${t('Tournament created successfully!')} ID = ${newId}. ${t('Tournament is now in Upcoming status.')}`
+        ? `${t('Tournament created successfully!')} ID = ${newId}. ${t('Tournament is now in Pending Registration status.')}`
         : t('Tournament created successfully!'));
       setForm(INIT_FORM);
       setShowModal(false);
@@ -194,22 +235,59 @@ export function AdminTournamentsPage() {
 
   const statsCounts: Record<StatusFilter, number> = {
     all: tournaments.length,
-    active: tournaments.filter(t => t.status === 'Active').length,
-    upcoming: tournaments.filter(t => t.status === 'Upcoming').length,
-    completed: tournaments.filter(t => t.status === 'Completed').length,
+    pendingregistration: tournaments.filter(t => {
+      const s = (t.status ?? '').toLowerCase();
+      return s === 'pendingregistration' || s === 'registration open' || s === 'registration suspended';
+    }).length,
+    pendingscheduling: tournaments.filter(t => (t.status ?? '').toLowerCase() === 'pendingscheduling').length,
+    upcoming: tournaments.filter(t => (t.status ?? '').toLowerCase() === 'upcoming').length,
+    active: tournaments.filter(t => {
+      const s = (t.status ?? '').toLowerCase();
+      return s === 'active' || s === 'registration closed' || s === 'medical checking' || s === 'ready to arrange' || s === 'pre round' || s === 'final round' || s === 'prize distribution';
+    }).length,
+    completed: tournaments.filter(t => {
+      const s = (t.status ?? '').toLowerCase();
+      return s === 'completed' || s === 'cancelled';
+    }).length,
   };
 
   const filteredTournaments = tournaments.filter(t => {
     const matchesSearch = (t.name ?? '').toLowerCase().includes(search.toLowerCase());
     if (filter === 'all') return matchesSearch;
-    if (filter === 'active') return matchesSearch && t.status === 'Active';
-    if (filter === 'upcoming') return matchesSearch && t.status === 'Upcoming';
-    if (filter === 'completed') return matchesSearch && t.status === 'Completed';
+    const s = (t.status ?? '').toLowerCase();
+    if (filter === 'pendingregistration') return matchesSearch && (s === 'pendingregistration' || s === 'registration open' || s === 'registration suspended');
+    if (filter === 'pendingscheduling') return matchesSearch && s === 'pendingscheduling';
+    if (filter === 'active') {
+      return matchesSearch && (
+        s === 'active' ||
+        s === 'registration closed' ||
+        s === 'medical checking' ||
+        s === 'ready to arrange' ||
+        s === 'pre round' ||
+        s === 'final round' ||
+        s === 'prize distribution'
+      );
+    }
+    if (filter === 'upcoming') return matchesSearch && s === 'upcoming';
+    if (filter === 'completed') return matchesSearch && (s === 'completed' || s === 'cancelled');
     return matchesSearch;
   });
 
   // Sắp xếp theo lựa chọn: mới nhất / cũ nhất (theo days bắt đầu), tên A-Z, trạng thái
-  const STATUS_ORDER: Record<string, number> = { Active: 0, Upcoming: 1, Completed: 2 };
+  const STATUS_ORDER: Record<string, number> = {
+    'active': 0,
+    'registration open': 1,
+    'registration suspended': 2,
+    'registration closed': 3,
+    'medical checking': 4,
+    'ready to arrange': 5,
+    'pre round': 6,
+    'final round': 7,
+    'prize distribution': 8,
+    'upcoming': 9,
+    'completed': 10,
+    'cancelled': 11
+  };
   const sortedTournaments = [...filteredTournaments].sort((a, b) => {
     switch (sortBy) {
       case 'oldest':
@@ -217,7 +295,7 @@ export function AdminTournamentsPage() {
       case 'name':
         return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'vi');
       case 'status':
-        return (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3);
+        return (STATUS_ORDER[(a.status ?? '').toLowerCase()] ?? 11) - (STATUS_ORDER[(b.status ?? '').toLowerCase()] ?? 11);
       case 'newest':
       default:
         return new Date(b.startDate ?? 0).getTime() - new Date(a.startDate ?? 0).getTime();
@@ -253,7 +331,12 @@ export function AdminTournamentsPage() {
     const canGenerateFinal = preFinished && finalRaces.length === 0;
 
     let statusLabel = '';
-    if (regNotStarted) {
+    const isSuspended = tour.status?.toLowerCase() === 'registration suspended' ||
+                        (tour.status?.toLowerCase() === 'registration open' && regEnded && tour.cancelCount === 0);
+
+    if (isSuspended) {
+      statusLabel = 'Registration Suspended';
+    } else if (regNotStarted) {
       statusLabel = 'Registration not open';
     } else if (regOpen) {
       statusLabel = 'Registration open';
@@ -300,7 +383,7 @@ export function AdminTournamentsPage() {
 
           {/* Status Filters */}
           <div className="flex items-center gap-2">
-            {(['all', 'active', 'upcoming', 'completed'] as StatusFilter[]).map(s => (
+            {(['all', 'pendingregistration', 'pendingscheduling', 'upcoming', 'active', 'completed'] as StatusFilter[]).map(s => (
               <button
                 key={s}
                 onClick={() => setFilter(s)}
@@ -347,7 +430,12 @@ export function AdminTournamentsPage() {
             <div className="overflow-y-auto pr-1.5 -mr-1.5 scrollbar-thin" style={{ maxHeight: 'calc(100vh - 330px)' }}>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {sortedTournaments.map((tour, i) => {
-                const s = tour.status?.toLowerCase() ?? 'upcoming';
+                const now = new Date();
+                const regEnd = tour.registrationEndDate ? new Date(tour.registrationEndDate) : null;
+                const regEnded = regEnd ? now >= regEnd : false;
+                const s = (tour.status?.toLowerCase() === 'registration open' && regEnded && tour.cancelCount === 0)
+                  ? 'registration suspended'
+                  : (tour.status?.toLowerCase() ?? 'upcoming');
                 const config = STATUS_CONFIG[s] ?? STATUS_CONFIG.upcoming;
                 const raceState = getTournamentRaceState(tour);
                 const isGenerating = generatingForTournament === tour.tournamentId;
@@ -446,6 +534,19 @@ export function AdminTournamentsPage() {
                     </div>
                     {/* mt-auto đẩy hàng nút xuống đáy card — các card trong cùng hàng luôn thẳng nhau */}
                     <div className="mt-auto pt-4 flex flex-wrap gap-2">
+                      {s === 'registration suspended' && tour.cancelCount === 0 && (
+                        <button
+                          onClick={() => {
+                            setExtendingTournament(tour);
+                            setAdditionalDays(1);
+                          }}
+                          disabled={isGenerating}
+                          className="px-3 py-2 rounded-lg text-xs font-bold text-gold border border-gold/30 bg-gold/10 hover:bg-gold/20 disabled:opacity-60 transition-colors flex items-center gap-1.5"
+                        >
+                          <Clock size={13} />
+                          {t('Extend Registration')}
+                        </button>
+                      )}
                       {raceState.regOpen && (
                         <button
                           onClick={() => handleCloseRegistration(tour.tournamentId)}
@@ -601,6 +702,101 @@ export function AdminTournamentsPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Extend Registration Modal */}
+      {extendingTournament && (() => {
+        const currentRegistrationEndDate = new Date(extendingTournament.registrationEndDate);
+        const startDate = new Date(extendingTournament.startDate);
+        const newRegistrationEndDate = new Date(currentRegistrationEndDate.getTime() + additionalDays * 24 * 60 * 60 * 1000);
+        const limitDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+        const isValid = newRegistrationEndDate <= limitDate;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="glass-panel rounded-2xl p-8 w-full max-w-lg border border-gold/20 relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
+              
+              <div className="relative flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
+                  <Clock size={15} className="text-gold" />
+                </div>
+                <h2 className="text-xl font-serif text-white">{t("Extend Registration")}</h2>
+                <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-white/[0.02] border border-glass-border/30 rounded-xl p-4 text-xs space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted">Tournament:</span>
+                    <span className="text-white font-bold">{extendingTournament.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Current reg. close date:</span>
+                    <span className="text-white font-medium">{formatDateTime(extendingTournament.registrationEndDate)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Tournament start date:</span>
+                    <span className="text-white font-medium">{formatDateTime(extendingTournament.startDate)}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={LABEL}>{t("Additional days")}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={additionalDays}
+                    onChange={e => setAdditionalDays(Math.max(1, parseInt(e.target.value) || 0))}
+                    className={INPUT}
+                  />
+                </div>
+
+                <div className="bg-white/[0.02] border border-glass-border/30 rounded-xl p-4 text-xs space-y-2">
+                  <div className="font-bold text-white uppercase tracking-wider text-[10px] mb-1">Expected change</div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted">Old reg. close date:</span>
+                    <span className="text-zinc-400 line-through">{formatDateTime(extendingTournament.registrationEndDate)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted">New reg. close date:</span>
+                    <span className="text-gold font-bold text-sm">{formatDateTime(newRegistrationEndDate.toISOString())}</span>
+                  </div>
+                </div>
+
+                {!isValid && (
+                  <div className="text-xs px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-bold">
+                    The extended registration end date must be at least 1 day before the tournament start date!
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setExtendingTournament(null);
+                    setAdditionalDays(1);
+                  }}
+                  className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors"
+                >
+                  {t("Cancel")}
+                </button>
+                <button
+                  onClick={handleExtendRegistration}
+                  disabled={!isValid || extendLoading}
+                  className="flex-1 btn-gold py-2.5 rounded-lg text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {extendLoading ? t('Extending...') : t('Confirm')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
