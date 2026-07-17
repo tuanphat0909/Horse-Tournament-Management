@@ -172,7 +172,7 @@ export function MedicalCheckPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!weight || parseFloat(weight) <= 0) { setError('Weight must be greater than 0.'); return; }
-    if (medicalResult === 'Fail' && modalType === 'recheck' && !failReason.trim()) {
+    if (medicalResult === 'Fail' && !failReason.trim()) {
       setError('FailReason is required when result is Fail.'); return;
     }
 
@@ -512,12 +512,14 @@ export function MedicalCheckPage() {
                     </div>
                   )}
 
-                  {/* FailReason — required for recheck with Fail result */}
-                  {modalType === 'recheck' && medicalResult === 'Fail' && (
+                  {/* FailReason — required for Fail result */}
+                  {medicalResult === 'Fail' && (
                     <div>
                       <label className="block text-xs font-bold text-muted uppercase mb-1">Reason Fail *</label>
                       <select value={failReason} onChange={e => setFailReason(e.target.value)} className={INPUT_CLS}>
                         <option value="" className="bg-[#0f172a]">— Select Reason —</option>
+                        <option value="Sick" className="bg-[#0f172a]">Sick</option>
+                        <option value="Injured" className="bg-[#0f172a]">Injured / Lameness</option>
                         <option value="FailedMedicalReCheck" className="bg-[#0f172a]">Failed Medical Re-inspection</option>
                         <option value="VeterinaryDecision" className="bg-[#0f172a]">Veterinary Decision</option>
                         <option value="HorseInjury" className="bg-[#0f172a]">Horse Injury</option>
