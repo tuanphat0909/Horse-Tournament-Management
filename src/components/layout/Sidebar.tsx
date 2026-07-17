@@ -58,7 +58,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { icon: Wallet, label: 'My Wallet', path: '/spectator/wallet' },
     { icon: Trophy, label: 'Tournaments & Schedule', path: '/spectator/tournaments' },
     { icon: Activity, label: 'Live Results', path: '/spectator/live' },
-    { icon: Target, label: 'My Predictions', path: '/spectator/predictions' },
+    { icon: Target, label: 'My Bets', path: '/spectator/predictions' },
     { icon: Bell, label: 'Notifications', path: '/spectator/notifications' },
   ],
   veterinarian: [
