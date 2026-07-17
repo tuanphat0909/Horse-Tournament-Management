@@ -132,7 +132,7 @@ export function OwnerRegistrationsPage() {
     rejected: registrations.filter(r => normalizeStatus(r.status) === 'rejected').length,
   };
 
-  const filteredTournamentsForRegister = form.horseId
+  const filteredTournamentsForRegister = (form.horseId
     ? tournaments.filter(t => 
         !registrations.some(r => 
           String(r.horseId) === String(form.horseId) && 
@@ -140,7 +140,23 @@ export function OwnerRegistrationsPage() {
           normalizeStatus(r.status) !== 'rejected'
         )
       )
-    : tournaments;
+    : tournaments
+  ).filter(t => {
+    const status = (t.status ?? '').toLowerCase();
+    if (status === 'completed' || status === 'cancelled' || status === 'finished' || status === 'ended') {
+      return false;
+    }
+    const now = new Date();
+    if (t.registrationStartDate) {
+      const regStart = new Date(t.registrationStartDate);
+      if (now < regStart) return false;
+    }
+    if (t.registrationEndDate) {
+      const regEnd = new Date(t.registrationEndDate);
+      if (now > regEnd) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
