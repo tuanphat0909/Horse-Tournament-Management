@@ -165,6 +165,34 @@ export function OwnerJockeysPage() {
         return;
       }
     }
+
+    if (selectedTournament?.registrationEndDate) {
+      const regEnd = new Date(selectedTournament.registrationEndDate);
+      const remainingMs = regEnd.getTime() - Date.now();
+      const remainingHours = remainingMs / (1000 * 60 * 60);
+
+      const inputHours = Number(form.expirationHours);
+      if (Number.isNaN(inputHours) || inputHours <= 0) {
+        setSubmitError('Response deadline must be a number greater than 0.');
+        return;
+      }
+
+      if (inputHours > remainingHours) {
+        if (remainingHours <= 0) {
+          setSubmitError('Registration for this tournament has already closed.');
+        } else {
+          const wholeHours = Math.floor(remainingHours);
+          if (wholeHours >= 1) {
+            setSubmitError(`Response deadline cannot exceed registration close time (max ${wholeHours} hours remaining).`);
+          } else {
+            const remainingMinutes = Math.max(1, Math.floor(remainingMs / (1000 * 60)));
+            setSubmitError(`Response deadline cannot exceed registration close time (max ${remainingMinutes} minutes remaining).`);
+          }
+        }
+        return;
+      }
+    }
+
     setSubmitLoading(true);
     try {
       const expirationDate = new Date(Date.now() + Number(form.expirationHours) * 60 * 60 * 1000).toISOString();
@@ -265,44 +293,6 @@ export function OwnerJockeysPage() {
         registrations.some((r: any) => String(r.horseId) === String(form.horseId) && r.tournamentId === t.tournamentId)
       )
     : [];
-
-  const getExpirationOptions = () => {
-    const selected = tournaments.find((t: any) => String(t.tournamentId) === String(form.tournamentId));
-    if (!selected || !selected.registrationEndDate) {
-      return [
-        { value: '24', label: '24 hours' },
-        { value: '48', label: '48 hours' },
-        { value: '72', label: '72 hours' }
-      ];
-    }
-    const regEnd = new Date(selected.registrationEndDate);
-    const remainingMs = regEnd.getTime() - Date.now();
-    const remainingHours = Math.max(0.1, remainingMs / (1000 * 60 * 60));
-
-    const defaultHours = [24, 48, 72];
-    const validHours = defaultHours.filter(h => h < remainingHours);
-
-    const opts = validHours.map(h => ({
-      value: String(h),
-      label: `${h} hours`
-    }));
-
-    if (remainingHours >= 1) {
-      const wholeHours = Math.floor(remainingHours);
-      opts.push({
-        value: String(remainingHours),
-        label: `Until registration close (${wholeHours} hours)`
-      });
-    } else {
-      const remainingMinutes = Math.max(1, Math.floor(remainingMs / (1000 * 60)));
-      opts.push({
-        value: String(remainingHours),
-        label: `Until registration close (${remainingMinutes} mins)`
-      });
-    }
-
-    return opts;
-  };
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
@@ -513,12 +503,31 @@ export function OwnerJockeysPage() {
                 </div>
               </div>
               <div>
-                <label className={LABEL}>Response Deadline *</label>
-                <select value={form.expirationHours} onChange={e => setForm(p => ({...p, expirationHours: e.target.value}))} className={INPUT}>
-                  {getExpirationOptions().map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                <label className={LABEL}>Response Deadline (hours) *</label>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="any"
+                  value={form.expirationHours}
+                  onChange={e => setForm(p => ({...p, expirationHours: e.target.value}))}
+                  placeholder="Enter deadline in hours (e.g. 24)"
+                  className={INPUT}
+                />
+                {selectedInviteTournament?.registrationEndDate && (() => {
+                  const regEnd = new Date(selectedInviteTournament.registrationEndDate);
+                  const remainingMs = regEnd.getTime() - Date.now();
+                  const remainingHours = remainingMs / (1000 * 60 * 60);
+                  if (remainingHours > 0) {
+                    const wholeHours = Math.floor(remainingHours);
+                    if (wholeHours >= 1) {
+                      return <p className="text-[10px] text-muted/70 mt-1">Maximum allowed: {wholeHours} hours (until registration close)</p>;
+                    } else {
+                      const remainingMinutes = Math.max(1, Math.floor(remainingMs / (1000 * 60)));
+                      return <p className="text-[10px] text-muted/70 mt-1">Maximum allowed: {remainingMinutes} minutes (until registration close)</p>;
+                    }
+                  }
+                  return <p className="text-[10px] text-red-400 mt-1">Registration for this tournament has closed.</p>;
+                })()}
               </div>
               {submitError &&<div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{submitError}</div>}
               {submitSuccess && <div className="text-sm px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{submitSuccess}</div>}
