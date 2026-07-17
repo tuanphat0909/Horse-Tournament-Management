@@ -17,7 +17,7 @@ type Tab = 'pending' | 'accepted' | 'rejected';
 function bucketOf(status: string): Tab {
   const s = (status ?? '').toLowerCase();
   if (s === 'active' || s === 'accepted') return 'accepted';
-  if (s === 'rejected' || s === 'declined') return 'rejected';
+  if (s === 'rejected' || s === 'declined' || s === 'cancelled') return 'rejected';
   return 'pending';
 }
 
@@ -52,7 +52,8 @@ export function JockeyInvitationsPage() {
     setRespondingId(id);
     try {
       await respondContract(id, status);
-      setInvitations(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+      const data = await getContracts();
+      setInvitations(data?.result ?? (Array.isArray(data) ? data : []));
     } catch (err: unknown) {
       alert(parseApiError(err as Error));
     } finally {
