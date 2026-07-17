@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Flag, UserCheck, ListOrdered, Trash2, Calendar, ChevronDown, ChevronUp, Trophy, Loader, Eye, X, CheckCircle2, AlertCircle, ArrowUpDown, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -82,6 +83,7 @@ function formatToDatetimeLocal(v: any): string {
 }
 
 export function AdminRacesPage() {
+  const location = useLocation();
   const { showToast } = useNotifications();
   const { t } = useLanguage();
   const [modal, setModal] = useState<Modal>('none');
@@ -230,6 +232,12 @@ export function AdminRacesPage() {
   useEffect(() => {
     loadAllData();
   }, []);
+
+  useEffect(() => {
+    if (location.state?.openTournamentId) {
+      setOpenTournaments(new Set([Number(location.state.openTournamentId)]));
+    }
+  }, [location.state]);
 
   async function handleGenerateRaces(tournamentId: number) {
     setGeneratingForTournament(tournamentId);
