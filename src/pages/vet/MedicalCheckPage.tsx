@@ -94,12 +94,17 @@ export function MedicalCheckPage() {
     parseFloat(weight)      >= 300  && parseFloat(weight)      <= 700 &&
     dopingResult === 'Negative';
 
-  // Auto-force medicalResult to 'Fail' if not eligible for Pass
+  const [prevEligible, setPrevEligible] = useState(false);
+
+  // Auto-force medicalResult based on eligibility transitions
   useEffect(() => {
-    if (!isEligibleForPass && medicalResult === 'Pass') {
+    if (isEligibleForPass && !prevEligible) {
+      setMedicalResult('Pass');
+    } else if (!isEligibleForPass && medicalResult === 'Pass') {
       setMedicalResult('Fail');
     }
-  }, [isEligibleForPass]);
+    setPrevEligible(isEligibleForPass);
+  }, [isEligibleForPass, medicalResult, prevEligible]);
 
   useEffect(() => { loadData(); }, []);
 
