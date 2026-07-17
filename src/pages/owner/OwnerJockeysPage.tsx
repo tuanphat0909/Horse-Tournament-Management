@@ -64,7 +64,7 @@ function contractBucket(status: string): ContractFilter {
 }
 
 export function OwnerJockeysPage() {
-  const { showToast } = useNotifications();
+  const { notifications, showToast } = useNotifications();
   const [proposals, setProposals] = useState<any[]>([]);
   const [horses, setHorses] = useState<any[]>([]);
   const [jockeys, setJockeys] = useState<any[]>([]);
@@ -80,8 +80,9 @@ export function OwnerJockeysPage() {
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
 
-  async function load() {
-    setLoading(true); setError('');
+  async function load(silent = false) {
+    if (!silent) setLoading(true); 
+    setError('');
     try {
       const [propData, horseData, jockeyData, tournamentData, regData] = await Promise.all([
         getMyProposals(),
@@ -105,11 +106,18 @@ export function OwnerJockeysPage() {
     } catch (err: unknown) {
       setError(parseApiError(err as Error));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => { load(); }, []);
+
+  // Auto-refresh list silently in the background when a new notification arrives (e.g. Jockey accepted/cancelled)
+  useEffect(() => {
+    if (notifications.length > 0) {
+      load(true);
+    }
+  }, [notifications]);
 
   async function handleInvite() {
     setSubmitError(''); setSubmitSuccess('');
