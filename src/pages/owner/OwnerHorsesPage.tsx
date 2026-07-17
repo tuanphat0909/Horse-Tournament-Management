@@ -17,14 +17,6 @@ const LABEL = 'block text-xs font-bold text-muted uppercase tracking-wider mb-1.
 const INIT_CREATE = { name: '', breed: '', age: '', gender: 'Male' };
 const INIT_EDIT   = { name: '', breed: '', age: '', gender: 'Male', healthStatus: 'Healthy' };
 
-// Giá trị lưu bằng tiếng Anh cho khớp dữ liệu BE (Horse.HealthStatus mặc định "Healthy")
-const HEALTH_OPTIONS = [
-  { value: 'Healthy',    label: 'Healthy' },
-  { value: 'Injured',    label: 'Injured' },
-  { value: 'Sick',       label: 'Sick' },
-  { value: 'Recovering', label: 'Recovering' },
-  { value: 'Retired',    label: 'Retired' },
-];
 
 export function OwnerHorsesPage() {
   const { showToast } = useNotifications();
@@ -329,13 +321,14 @@ export function OwnerHorsesPage() {
               </div>
               <div>
                 <label className={LABEL}>Health Status</label>
-                <select value={editForm.healthStatus} onChange={e => setEditForm(p => ({...p, healthStatus: e.target.value}))} className={INPUT} style={{colorScheme: 'dark'}}>
-                  {HEALTH_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  {/* Dữ liệu cũ nhập tay không nằm trong danh sách chuẩn — giữ lại để không bị mất khi lưu */}
-                  {editForm.healthStatus && !HEALTH_OPTIONS.some(o => o.value === editForm.healthStatus) && (
-                    <option value={editForm.healthStatus}>{editForm.healthStatus} (legacy value)</option>
-                  )}
-                </select>
+                <input 
+                  value={editForm.healthStatus} 
+                  disabled 
+                  className={`${INPUT} bg-navy/20 cursor-not-allowed opacity-75`} 
+                />
+                <p className="text-[11px] text-muted/70 italic mt-1">
+                  * Only Veterinarians can update health status via medical checkups.
+                </p>
               </div>
               {editError && <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{editError}</div>}
             </div>

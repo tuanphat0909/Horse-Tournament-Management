@@ -17,7 +17,7 @@ type Tab = 'pending' | 'accepted' | 'rejected';
 function bucketOf(status: string): Tab {
   const s = (status ?? '').toLowerCase();
   if (s === 'active' || s === 'accepted') return 'accepted';
-  if (s === 'rejected' || s === 'declined') return 'rejected';
+  if (s === 'rejected' || s === 'declined' || s === 'cancelled') return 'rejected';
   return 'pending';
 }
 
@@ -52,7 +52,8 @@ export function JockeyInvitationsPage() {
     setRespondingId(id);
     try {
       await respondContract(id, status);
-      setInvitations(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+      const data = await getContracts();
+      setInvitations(data?.result ?? (Array.isArray(data) ? data : []));
     } catch (err: unknown) {
       alert(parseApiError(err as Error));
     } finally {
@@ -121,6 +122,7 @@ export function JockeyInvitationsPage() {
                           <User size={11} className="text-gold/60" /> Owner horse: <span className="text-white font-medium">{inv.ownerName ?? `Owner #${inv.ownerId ?? '—'}`}</span>
                         </div>
                         <div className="flex flex-wrap gap-2.5 text-xs text-muted mb-4">
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-glass-border text-emerald-400 font-semibold">🏆 {inv.tournamentName ?? `Tournament #${inv.tournamentId}`}</span>
                           {(inv.startDate || inv.endDate) && (
                             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-glass-border"><Calendar size={11} className="text-gold/60" /> <span className="text-champagne font-semibold">Time: {formatDate(inv.startDate)} → {formatDate(inv.endDate)}</span></span>
                           )}

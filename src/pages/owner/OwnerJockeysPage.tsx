@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, CheckCircle, XCircle, Clock, Users, Calendar, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -64,7 +64,9 @@ function contractBucket(status: string): ContractFilter {
 }
 
 export function OwnerJockeysPage() {
-  const { showToast } = useNotifications();
+  const { notifications, showToast } = useNotifications();
+  const searchParams = new URLSearchParams(window.location.search);
+  const prefillApplied = useRef(false);
   const [proposals, setProposals] = useState<any[]>([]);
   const [horses, setHorses] = useState<any[]>([]);
   const [jockeys, setJockeys] = useState<any[]>([]);
@@ -80,8 +82,9 @@ export function OwnerJockeysPage() {
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
 
-  async function load() {
-    setLoading(true); setError('');
+  async function load(silent = false) {
+    if (!silent) setLoading(true); 
+    setError('');
     try {
       const [propData, horseData, jockeyData, tournamentData, regData] = await Promise.all([
         getMyProposals(),
@@ -105,11 +108,40 @@ export function OwnerJockeysPage() {
     } catch (err: unknown) {
       setError(parseApiError(err as Error));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
   useEffect(() => { load(); }, []);
+
+  // Auto-open invite modal when navigated from OwnerRegistrationsPage with query params
+  useEffect(() => {
+    if (prefillApplied.current || loading) return;
+    const horseId = searchParams.get('horseId');
+    const tournamentId = searchParams.get('tournamentId');
+    if (horseId && tournamentId) {
+      prefillApplied.current = true;
+      // Find the tournament to auto-fill dates
+      const t = tournaments.find((t: any) => String(t.tournamentId) === String(tournamentId));
+      setForm(prev => ({
+        ...prev,
+        horseId,
+        tournamentId,
+        startDate: t ? toDateInputValue(t.startDate) : '',
+        endDate: t ? toDateInputValue(t.endDate) : '',
+      }));
+      setShowInvite(true);
+      // Clear query params from URL without reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [loading, tournaments]);
+
+  // Auto-refresh list silently in the background when a new notification arrives (e.g. Jockey accepted/cancelled)
+  useEffect(() => {
+    if (notifications.length > 0) {
+      load(true);
+    }
+  }, [notifications]);
 
   async function handleInvite() {
     setSubmitError(''); setSubmitSuccess('');
@@ -133,6 +165,34 @@ export function OwnerJockeysPage() {
         return;
       }
     }
+
+    if (selectedTournament?.registrationEndDate) {
+      const regEnd = new Date(selectedTournament.registrationEndDate);
+      const remainingMs = regEnd.getTime() - Date.now();
+      const remainingHours = remainingMs / (1000 * 60 * 60);
+
+      const inputHours = Number(form.expirationHours);
+      if (Number.isNaN(inputHours) || inputHours <= 0) {
+        setSubmitError('Response deadline must be a number greater than 0.');
+        return;
+      }
+
+      if (inputHours > remainingHours) {
+        if (remainingHours <= 0) {
+          setSubmitError('Registration for this tournament has already closed.');
+        } else {
+          const wholeHours = Math.floor(remainingHours);
+          if (wholeHours >= 1) {
+            setSubmitError(`Response deadline cannot exceed registration close time (max ${wholeHours} hours remaining).`);
+          } else {
+            const remainingMinutes = Math.max(1, Math.floor(remainingMs / (1000 * 60)));
+            setSubmitError(`Response deadline cannot exceed registration close time (max ${remainingMinutes} minutes remaining).`);
+          }
+        }
+        return;
+      }
+    }
+
     setSubmitLoading(true);
     try {
       const expirationDate = new Date(Date.now() + Number(form.expirationHours) * 60 * 60 * 1000).toISOString();
@@ -308,6 +368,7 @@ export function OwnerJockeysPage() {
                         <div className="text-base font-serif text-white mb-1 group-hover:text-champagne transition-colors">{p.jockeyName ?? `Jockey #${p.jockeyId}`}</div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
                           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-champagne">🐴 {p.horseName ?? `Horse #${p.horseId}`}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-emerald-400">🏆 {p.tournamentName ?? `Tournament #${p.tournamentId}`}</span>
                           {p.startDate && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-muted inline-flex items-center gap-1"><Calendar size={9} className="text-gold/60" /> From: {formatDate(p.startDate)}</span>}
                           {p.endDate && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-muted inline-flex items-center gap-1"><Calendar size={9} className="text-gold/60" /> Until: {formatDate(p.endDate)}</span>}
                           {p.invitationExpiredAt && <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.04] border border-glass-border text-red-400 inline-flex items-center gap-1"><Clock size={9} className="text-red-400" /> Expires: {formatUtcDateTime(p.invitationExpiredAt)}</span>}
@@ -386,11 +447,23 @@ export function OwnerJockeysPage() {
                   onChange={e => {
                     const tId = e.target.value;
                     const selected = tournaments.find((t: any) => String(t.tournamentId) === String(tId));
+                    
+                    let defaultExp = '24';
+                    if (selected && selected.registrationEndDate) {
+                      const regEnd = new Date(selected.registrationEndDate);
+                      const remainingMs = regEnd.getTime() - Date.now();
+                      const remainingHours = Math.max(0.1, remainingMs / (1000 * 60 * 60));
+                      if (remainingHours < 24) {
+                        defaultExp = String(remainingHours);
+                      }
+                    }
+
                     setForm(p => ({
                       ...p, 
                       tournamentId: tId, 
                       startDate: selected ? toDateInputValue(selected.startDate) : '', 
-                      endDate: selected ? toDateInputValue(selected.endDate) : ''
+                      endDate: selected ? toDateInputValue(selected.endDate) : '',
+                      expirationHours: defaultExp
                     }));
                   }} 
                   className={INPUT}
@@ -430,12 +503,31 @@ export function OwnerJockeysPage() {
                 </div>
               </div>
               <div>
-                <label className={LABEL}>Response Deadline *</label>
-                <select value={form.expirationHours} onChange={e => setForm(p => ({...p, expirationHours: e.target.value}))} className={INPUT}>
-                  <option value="24">24 hours</option>
-                  <option value="48">48 hours</option>
-                  <option value="72">72 hours</option>
-                </select>
+                <label className={LABEL}>Response Deadline (hours) *</label>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="any"
+                  value={form.expirationHours}
+                  onChange={e => setForm(p => ({...p, expirationHours: e.target.value}))}
+                  placeholder="Enter deadline in hours (e.g. 24)"
+                  className={INPUT}
+                />
+                {selectedInviteTournament?.registrationEndDate && (() => {
+                  const regEnd = new Date(selectedInviteTournament.registrationEndDate);
+                  const remainingMs = regEnd.getTime() - Date.now();
+                  const remainingHours = remainingMs / (1000 * 60 * 60);
+                  if (remainingHours > 0) {
+                    const wholeHours = Math.floor(remainingHours);
+                    if (wholeHours >= 1) {
+                      return <p className="text-[10px] text-muted/70 mt-1">Maximum allowed: {wholeHours} hours (until registration close)</p>;
+                    } else {
+                      const remainingMinutes = Math.max(1, Math.floor(remainingMs / (1000 * 60)));
+                      return <p className="text-[10px] text-muted/70 mt-1">Maximum allowed: {remainingMinutes} minutes (until registration close)</p>;
+                    }
+                  }
+                  return <p className="text-[10px] text-red-400 mt-1">Registration for this tournament has closed.</p>;
+                })()}
               </div>
               {submitError &&<div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{submitError}</div>}
               {submitSuccess && <div className="text-sm px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{submitSuccess}</div>}

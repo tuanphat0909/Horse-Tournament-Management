@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Loader, Plus, Search, Shuffle, Trophy, Clock, ArrowUpDown, Calendar } from 'lucide-react';
+import { Loader, Plus, Search, Trophy, Clock, ArrowUpDown, Calendar, AlertCircle, AlertTriangle } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { createTournament, generateTournamentRaces, generateFinalRace, closeTournamentRegistration, extendTournamentRegistration, cancelTournament } from '../../api/adminService';
+import { createTournament, generateFinalRace, closeTournamentRegistration, extendTournamentRegistration, cancelTournament } from '../../api/adminService';
 import { getRaceSchedule, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { formatDateTime } from '../../utils/format';
@@ -21,6 +22,7 @@ const CUSTOM_STATUS_CONFIG: Record<string, { label: string; color: string; dot: 
   'Registration Open': { label: 'Registration Open', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', dot: 'bg-emerald-400' },
   'Registration Closed': { label: 'Registration Closed', color: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20', dot: 'bg-zinc-400' },
   'Scheduled': { label: 'Scheduled', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20', dot: 'bg-indigo-400' },
+  'Pending Admin Attention': { label: 'Referee assignment needed', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20 border-dashed animate-pulse', dot: 'bg-rose-400' },
   'Racing': { label: 'Racing', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', dot: 'bg-orange-400' },
   'Completed': { label: 'Completed', color: 'text-muted bg-white/5 border-glass-border', dot: 'bg-muted' },
   'Cancelled': { label: 'Cancelled', color: 'text-red-400 bg-red-500/10 border-red-500/20', dot: 'bg-red-400' }
@@ -33,6 +35,9 @@ function getTournamentCustomStatus(tour: any) {
   }
   if (status === 'completed' || status === 'finished') {
     return 'Completed';
+  }
+  if (status === 'pendingadminattention') {
+    return 'Pending Admin Attention';
   }
 
   const now = new Date();
@@ -93,6 +98,7 @@ const INIT_FORM = {
 };
 
 export function AdminTournamentsPage() {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { showToast } = useNotifications();
   const [filter, setFilter] = useState<StatusFilter>('all');
@@ -125,7 +131,7 @@ export function AdminTournamentsPage() {
     const now = new Date();
     const startDate = new Date(extendingTournament.startDate);
     const newRegistrationEndDate = new Date(now.getTime() + additionalDays * 24 * 60 * 60 * 1000);
-    const limitDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+    const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000); // Cách ngày thi đấu ít nhất 2 ngày
     
     if (newRegistrationEndDate > limitDate) {
       return;
@@ -146,26 +152,8 @@ export function AdminTournamentsPage() {
   }
 
   function handleCloseRegistrationClick(tour: any) {
-    const cancelCount = tour.cancelCount ?? tour.CancelCount ?? 0;
-    if (cancelCount >= 1) {
-      setCancelWarningTournament(tour);
-      return;
-    }
-    if (!tour.startDate) {
-      handleCloseRegistration(tour.tournamentId);
-      return;
-    }
-    const now = new Date();
-    const startDate = new Date(tour.startDate);
-    const diffMs = startDate.getTime() - now.getTime();
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-    if (diffDays >= 1) {
-      setExtendingTournament(tour);
-      setAdditionalDays(1);
-    } else {
-      setCancelWarningTournament(tour);
-    }
+    // Luôn đóng đăng ký ngay lập tức khi Admin chủ động bấm nút ở trạng thái Registration Open
+    handleCloseRegistration(tour.tournamentId);
   }
 
   async function handleCancelTournament() {
@@ -304,20 +292,6 @@ export function AdminTournamentsPage() {
     }
   }
 
-  async function handleGenerateRaces(tournamentId: number) {
-    setGeneratingForTournament(tournamentId);
-    try {
-      await generateTournamentRaces(tournamentId);
-      showToast(t('Success'), t('Races auto-assigned for tournament.'));
-      await loadTournaments();
-    } catch (err: unknown) {
-      const errorMsg = parseApiError(err as Error);
-      showToast(t('Failed'), t(errorMsg), 'error');
-    } finally {
-      setGeneratingForTournament(null);
-    }
-  }
-
   async function handleGenerateFinal(tournamentId: number) {
     setGeneratingForTournament(tournamentId);
     try {
@@ -337,7 +311,10 @@ export function AdminTournamentsPage() {
     upcoming_registration: tournaments.filter(t => getTournamentCustomStatus(t) === 'Upcoming Registration').length,
     registration_open: tournaments.filter(t => getTournamentCustomStatus(t) === 'Registration Open').length,
     registration_closed: tournaments.filter(t => getTournamentCustomStatus(t) === 'Registration Closed').length,
-    scheduled: tournaments.filter(t => getTournamentCustomStatus(t) === 'Scheduled').length,
+    scheduled: tournaments.filter(t => {
+      const cs = getTournamentCustomStatus(t);
+      return cs === 'Scheduled' || cs === 'Pending Admin Attention';
+    }).length,
     racing: tournaments.filter(t => getTournamentCustomStatus(t) === 'Racing').length,
     completed: tournaments.filter(t => getTournamentCustomStatus(t) === 'Completed').length,
     cancelled: tournaments.filter(t => getTournamentCustomStatus(t) === 'Cancelled').length,
@@ -352,7 +329,7 @@ export function AdminTournamentsPage() {
     if (filter === 'upcoming_registration') return customStatus === 'Upcoming Registration';
     if (filter === 'registration_open') return customStatus === 'Registration Open';
     if (filter === 'registration_closed') return customStatus === 'Registration Closed';
-    if (filter === 'scheduled') return customStatus === 'Scheduled';
+    if (filter === 'scheduled') return customStatus === 'Scheduled' || customStatus === 'Pending Admin Attention';
     if (filter === 'racing') return customStatus === 'Racing';
     if (filter === 'completed') return customStatus === 'Completed';
     if (filter === 'cancelled') return customStatus === 'Cancelled';
@@ -366,6 +343,7 @@ export function AdminTournamentsPage() {
     'registration open': 1,
     'registration closed': 2,
     'scheduled': 3,
+    'pending admin attention': 3.5,
     'racing': 4,
     'completed': 5,
     'cancelled': 6
@@ -531,6 +509,12 @@ export function AdminTournamentsPage() {
                 const config = CUSTOM_STATUS_CONFIG[customStatus] ?? CUSTOM_STATUS_CONFIG.Scheduled;
                 const raceState = getTournamentRaceState(tour);
                 const isGenerating = generatingForTournament === tour.tournamentId;
+                
+                const now = new Date();
+                const isScheduled = customStatus === 'Scheduled';
+                const startsInLessThan24h = tour.startDate && (new Date(tour.startDate).getTime() - now.getTime() < 24 * 60 * 60 * 1000);
+                const show24hWarning = isScheduled && tour.hasMissingReferees && startsInLessThan24h;
+
                 return (
                   <motion.div
                     key={tour.tournamentId ?? i}
@@ -569,7 +553,18 @@ export function AdminTournamentsPage() {
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-400 shrink-0">🔒 Reg. Closed</span>
                         )}
                         {customStatus === 'Scheduled' && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/40 bg-indigo-500/10 text-indigo-400 shrink-0">📅 Scheduled</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/40 bg-indigo-500/10 text-indigo-400 shrink-0">📅 Scheduled</span>
+                            {show24hWarning && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/15 text-red-400 shrink-0 flex items-center gap-1 animate-pulse">
+                                <AlertTriangle size={10} className="text-red-400 shrink-0" />
+                                {t("Missing referees!")}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {customStatus === 'Pending Admin Attention' && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-500/40 bg-rose-500/10 text-rose-400 shrink-0 animate-pulse">⚠️ {t("Referee assignment needed")}</span>
                         )}
                         {customStatus === 'Racing' && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-400 shrink-0">🏃 Racing</span>
@@ -609,6 +604,18 @@ export function AdminTournamentsPage() {
                         <span>{t("Races created:")}</span>
                         <span className="text-white font-medium">{raceState.totalRaces}</span>
                       </div>
+                      <div className="flex justify-between">
+                        <span>{t("Registered Horses:")}</span>
+                        <span className="text-white font-medium">{tour.approvedRegistration ?? 0}</span>
+                      </div>
+                      {(customStatus === 'Registration Closed' || customStatus === 'Scheduled' || customStatus === 'Racing' || customStatus === 'Completed') && (
+                        <div className="flex justify-between">
+                          <span>{t("Qualified Horses:")}</span>
+                          <span className={`font-bold ${((tour.qualifiedRegistration ?? 0) >= 12) ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {tour.qualifiedRegistration ?? 0} / 12
+                          </span>
+                        </div>
+                      )}
                       <div className="flex flex-col gap-1 pt-2.5 mt-2 border-t border-glass-border/30">
                         <span className="font-bold text-white text-[11px] uppercase tracking-wider">{t("Prizes:")}</span>
                         {/* min-h giữ chỗ bằng chiều cao lưới prize để card không có prize vẫn cao bằng card có prize */}
@@ -654,53 +661,130 @@ export function AdminTournamentsPage() {
                       )}
 
                       {customStatus === 'Registration Closed' && (
-                        <div className="flex gap-2 w-full">
-                          {raceState.canAutoArrange ? (
-                            <button
-                              onClick={() => handleGenerateRaces(tour.tournamentId)}
-                              disabled={isGenerating}
-                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-blue-400 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
-                            >
-                              {isGenerating ? <Loader size={13} className="animate-spin" /> : <Shuffle size={13} />}
-                              {isGenerating ? t('Assigning...') : t('Auto Assign Pre-lanes')}
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-muted border border-glass-border bg-white/[0.04] cursor-not-allowed text-center"
-                            >
-                              {t('Awaiting Scheduling')}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setCancelWarningTournament(tour)}
-                            disabled={isGenerating}
-                            className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            {t('Cancel')}
-                          </button>
+                        <div className="flex flex-col gap-2.5 w-full">
+                          {(tour.qualifiedRegistration ?? 0) >= 12 ? (
+                            <div className="flex gap-2 w-full">
+                              <button
+                                onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
+                                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-blue-400 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                <Calendar size={13} />
+                                {t('Schedule Races')}
+                              </button>
+                              <button
+                                onClick={() => setCancelWarningTournament(tour)}
+                                className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                {t('Cancel')}
+                              </button>
+                            </div>
+                          ) : (() => {
+                            const now = new Date();
+                            const startDate = new Date(tour.startDate);
+                            const diffMs = startDate.getTime() - now.getTime();
+                            const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                            const cancelCount = tour.cancelCount ?? tour.CancelCount ?? 0;
+                            const canExtend = diffDays >= 2 && cancelCount < 1;
+
+                            return (
+                              <div className="space-y-2 w-full">
+                                <div className="text-red-400 font-bold text-[11px] flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse">
+                                  <AlertCircle size={13} className="shrink-0" />
+                                  <span>{t('Not enough qualified horses')} ({tour.qualifiedRegistration ?? 0}/12)</span>
+                                </div>
+                                <div className="flex gap-2 w-full">
+                                  <button
+                                    onClick={() => {
+                                      setExtendingTournament(tour);
+                                      setAdditionalDays(1);
+                                    }}
+                                    disabled={!canExtend}
+                                    className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-amber-400 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                                    title={!canExtend ? (cancelCount >= 1 ? t('Already extended once, cannot extend again') : t('Tournament starts in less than 2 days, cannot extend')) : ''}
+                                  >
+                                    <Clock size={13} />
+                                    {t('Extend')}
+                                  </button>
+                                  <button
+                                    onClick={() => setCancelWarningTournament(tour)}
+                                    className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                                  >
+                                    {t('Cancel Tournament')}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
 
                       {customStatus === 'Scheduled' && (
-                        <div className="flex gap-2 w-full">
-                          {raceState.canGenerateFinal ? (
-                            <button
-                              onClick={() => handleGenerateFinal(tour.tournamentId)}
-                              disabled={isGenerating}
-                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-gold border border-gold/30 bg-gold/10 hover:bg-gold/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
-                            >
-                              {isGenerating ? <Loader size={13} className="animate-spin" /> : <Trophy size={13} />}
-                              {isGenerating ? t('Assigning...') : t('Auto Assign Final')}
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-muted border border-glass-border bg-white/[0.04] cursor-not-allowed text-center"
-                            >
-                              {t('Scheduled & Ready')}
-                            </button>
+                        <div className="flex flex-col gap-2 w-full">
+                          {show24hWarning && (
+                            <div className="text-red-400 font-bold text-[11px] flex items-start gap-1.5 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse mb-1">
+                              <AlertTriangle size={13} className="shrink-0 mt-0.5 text-red-400" />
+                              <span>{t("Urgent: referees must be assigned (less than 24h before the tournament starts!)")}</span>
+                            </div>
                           )}
+                          <div className="flex gap-2 w-full">
+                            {show24hWarning ? (
+                              <>
+                                <button
+                                  onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
+                                  className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-400 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5 animate-pulse"
+                                >
+                                  <Calendar size={13} />
+                                  {t('Assign referees')}
+                                </button>
+                                <button
+                                  onClick={() => setCancelWarningTournament(tour)}
+                                  className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                  {t('Cancel')}
+                                </button>
+                              </>
+                            ) : raceState.canGenerateFinal ? (
+                              <button
+                                onClick={() => handleGenerateFinal(tour.tournamentId)}
+                                disabled={isGenerating}
+                                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-gold border border-gold/30 bg-gold/10 hover:bg-gold/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                {isGenerating ? <Loader size={13} className="animate-spin" /> : <Trophy size={13} />}
+                                {isGenerating ? t('Assigning...') : t('Auto Assign Final')}
+                              </button>
+                            ) : (
+                              <button
+                                disabled
+                                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-muted border border-glass-border bg-white/[0.04] cursor-not-allowed text-center"
+                              >
+                                {t('Scheduled & Ready')}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {customStatus === 'Pending Admin Attention' && (
+                        <div className="flex flex-col gap-2.5 w-full">
+                          <div className="text-red-400 font-bold text-[11px] flex items-start gap-1.5 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse">
+                            <AlertCircle size={13} className="shrink-0 mt-0.5 text-red-400" />
+                            <span>{t("Some races have no referee assigned. Please assign referees so the tournament can start!")}</span>
+                          </div>
+                          <div className="flex gap-2 w-full">
+                            <button
+                              onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
+                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-400 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 animate-pulse transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              <Calendar size={13} />
+                              {t('Assign referees')}
+                            </button>
+                            <button
+                              onClick={() => setCancelWarningTournament(tour)}
+                              className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              {t('Cancel Tournament')}
+                            </button>
+                          </div>
                         </div>
                       )}
 
@@ -895,8 +979,11 @@ export function AdminTournamentsPage() {
         const now = new Date();
         const startDate = new Date(extendingTournament.startDate);
         const newRegistrationEndDate = new Date(now.getTime() + additionalDays * 24 * 60 * 60 * 1000);
-        const limitDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+        const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000); // Phải cách ngày thi đấu ít nhất 2 ngày
         const isValid = newRegistrationEndDate <= limitDate;
+
+        const diffMs = limitDate.getTime() - now.getTime();
+        const maxDays = Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)));
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -933,15 +1020,21 @@ export function AdminTournamentsPage() {
                 </div>
 
                 <div>
-                  <label className={LABEL}>{t("Additional days")}</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={additionalDays}
-                    onChange={e => setAdditionalDays(Math.max(1, parseInt(e.target.value) || 0))}
-                    className={INPUT}
-                  />
-                </div>
+                   <label className={LABEL}>
+                     {t("Additional days")} {maxDays > 0 && ` (Max ${maxDays} days)`}
+                   </label>
+                   <input
+                     type="number"
+                     min="1"
+                     max={maxDays > 0 ? maxDays : undefined}
+                     value={additionalDays}
+                     onChange={e => {
+                       const val = parseInt(e.target.value) || 0;
+                       setAdditionalDays(Math.max(1, maxDays > 0 ? Math.min(maxDays, val) : val));
+                     }}
+                     className={INPUT}
+                   />
+                 </div>
 
                 <div className="bg-white/[0.02] border border-glass-border/30 rounded-xl p-4 text-xs space-y-2">
                   <div className="font-bold text-white uppercase tracking-wider text-[10px] mb-1">Expected change</div>
@@ -957,7 +1050,7 @@ export function AdminTournamentsPage() {
 
                 {!isValid && (
                   <div className="text-xs px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-bold">
-                    The extended registration end date must be at least 1 day before the tournament start date!
+                    The extended registration end date must be at least 2 days before the tournament start date!
                   </div>
                 )}
               </div>
@@ -1021,7 +1114,7 @@ export function AdminTournamentsPage() {
                   {(cancelWarningTournament.cancelCount ?? cancelWarningTournament.CancelCount ?? 0) >= 1 ? (
                     <span>The tournament registration has closed for the second time, but it failed to reach the minimum number of registered horses. Please click Cancel Tournament to complete the cancellation process.</span>
                   ) : (
-                    <span>Registration cannot be extended because the tournament starts in less than 24 hours. The tournament must be cancelled.</span>
+                    <span>Registration cannot be extended because the tournament starts in less than 48 hours (2 days). The tournament must be cancelled.</span>
                   )}
                 </div>
               </div>
