@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Loader, Plus, Search, Shuffle, Trophy, Clock, ArrowUpDown, Calendar } from 'lucide-react';
+import { Loader, Plus, Search, Trophy, Clock, ArrowUpDown, Calendar, AlertCircle } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { createTournament, generateTournamentRaces, generateFinalRace, closeTournamentRegistration, extendTournamentRegistration, cancelTournament } from '../../api/adminService';
+import { createTournament, generateFinalRace, closeTournamentRegistration, extendTournamentRegistration, cancelTournament } from '../../api/adminService';
 import { getRaceSchedule, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { formatDateTime } from '../../utils/format';
@@ -93,7 +94,8 @@ const INIT_FORM = {
 };
 
 export function AdminTournamentsPage() {
-  const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const { showToast } = useNotifications();
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
@@ -125,7 +127,7 @@ export function AdminTournamentsPage() {
     const now = new Date();
     const startDate = new Date(extendingTournament.startDate);
     const newRegistrationEndDate = new Date(now.getTime() + additionalDays * 24 * 60 * 60 * 1000);
-    const limitDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+    const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000); // Cách ngày thi đấu ít nhất 2 ngày
     
     if (newRegistrationEndDate > limitDate) {
       return;
@@ -146,26 +148,8 @@ export function AdminTournamentsPage() {
   }
 
   function handleCloseRegistrationClick(tour: any) {
-    const cancelCount = tour.cancelCount ?? tour.CancelCount ?? 0;
-    if (cancelCount >= 1) {
-      setCancelWarningTournament(tour);
-      return;
-    }
-    if (!tour.startDate) {
-      handleCloseRegistration(tour.tournamentId);
-      return;
-    }
-    const now = new Date();
-    const startDate = new Date(tour.startDate);
-    const diffMs = startDate.getTime() - now.getTime();
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-    if (diffDays >= 1) {
-      setExtendingTournament(tour);
-      setAdditionalDays(1);
-    } else {
-      setCancelWarningTournament(tour);
-    }
+    // Luôn đóng đăng ký ngay lập tức khi Admin chủ động bấm nút ở trạng thái Registration Open
+    handleCloseRegistration(tour.tournamentId);
   }
 
   async function handleCancelTournament() {
@@ -295,20 +279,6 @@ export function AdminTournamentsPage() {
     try {
       await closeTournamentRegistration(tournamentId);
       showToast(t('Success'), t('Registration deadline closed successfully!'));
-      await loadTournaments();
-    } catch (err: unknown) {
-      const errorMsg = parseApiError(err as Error);
-      showToast(t('Failed'), t(errorMsg), 'error');
-    } finally {
-      setGeneratingForTournament(null);
-    }
-  }
-
-  async function handleGenerateRaces(tournamentId: number) {
-    setGeneratingForTournament(tournamentId);
-    try {
-      await generateTournamentRaces(tournamentId);
-      showToast(t('Success'), t('Races auto-assigned for tournament.'));
       await loadTournaments();
     } catch (err: unknown) {
       const errorMsg = parseApiError(err as Error);
@@ -609,6 +579,18 @@ export function AdminTournamentsPage() {
                         <span>{t("Races created:")}</span>
                         <span className="text-white font-medium">{raceState.totalRaces}</span>
                       </div>
+                      <div className="flex justify-between">
+                        <span>{t("Registered Horses:")}</span>
+                        <span className="text-white font-medium">{tour.approvedRegistration ?? 0}</span>
+                      </div>
+                      {(customStatus === 'Registration Closed' || customStatus === 'Scheduled' || customStatus === 'Racing' || customStatus === 'Completed') && (
+                        <div className="flex justify-between">
+                          <span>{t("Qualified Horses:")}</span>
+                          <span className={`font-bold ${((tour.qualifiedRegistration ?? 0) >= 12) ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {tour.qualifiedRegistration ?? 0} / 12
+                          </span>
+                        </div>
+                      )}
                       <div className="flex flex-col gap-1 pt-2.5 mt-2 border-t border-glass-border/30">
                         <span className="font-bold text-white text-[11px] uppercase tracking-wider">{t("Prizes:")}</span>
                         {/* min-h giữ chỗ bằng chiều cao lưới prize để card không có prize vẫn cao bằng card có prize */}
@@ -654,31 +636,60 @@ export function AdminTournamentsPage() {
                       )}
 
                       {customStatus === 'Registration Closed' && (
-                        <div className="flex gap-2 w-full">
-                          {raceState.canAutoArrange ? (
-                            <button
-                              onClick={() => handleGenerateRaces(tour.tournamentId)}
-                              disabled={isGenerating}
-                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-blue-400 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
-                            >
-                              {isGenerating ? <Loader size={13} className="animate-spin" /> : <Shuffle size={13} />}
-                              {isGenerating ? t('Assigning...') : t('Auto Assign Pre-lanes')}
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-muted border border-glass-border bg-white/[0.04] cursor-not-allowed text-center"
-                            >
-                              {t('Awaiting Scheduling')}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setCancelWarningTournament(tour)}
-                            disabled={isGenerating}
-                            className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            {t('Cancel')}
-                          </button>
+                        <div className="flex flex-col gap-2.5 w-full">
+                          {(tour.qualifiedRegistration ?? 0) >= 12 ? (
+                            <div className="flex gap-2 w-full">
+                              <button
+                                onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
+                                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-blue-400 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                <Calendar size={13} />
+                                {t('Xếp lịch đua')}
+                              </button>
+                              <button
+                                onClick={() => setCancelWarningTournament(tour)}
+                                className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                {t('Cancel')}
+                              </button>
+                            </div>
+                          ) : (() => {
+                            const now = new Date();
+                            const startDate = new Date(tour.startDate);
+                            const diffMs = startDate.getTime() - now.getTime();
+                            const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                            const cancelCount = tour.cancelCount ?? tour.CancelCount ?? 0;
+                            const canExtend = diffDays >= 2 && cancelCount < 1;
+
+                            return (
+                              <div className="space-y-2 w-full">
+                                <div className="text-red-400 font-bold text-[11px] flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse">
+                                  <AlertCircle size={13} className="shrink-0" />
+                                  <span>{t('Chưa đủ ngựa vào giải')} ({tour.qualifiedRegistration ?? 0}/12)</span>
+                                </div>
+                                <div className="flex gap-2 w-full">
+                                  <button
+                                    onClick={() => {
+                                      setExtendingTournament(tour);
+                                      setAdditionalDays(1);
+                                    }}
+                                    disabled={!canExtend}
+                                    className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-amber-400 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                                    title={!canExtend ? (cancelCount >= 1 ? t('Đã gia hạn 1 lần, không thể gia hạn thêm') : t('Thời gian bắt đầu giải đấu còn dưới 2 ngày, không thể gia hạn')) : ''}
+                                  >
+                                    <Clock size={13} />
+                                    {t('Gia hạn')}
+                                  </button>
+                                  <button
+                                    onClick={() => setCancelWarningTournament(tour)}
+                                    className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                                  >
+                                    {t('Hủy giải')}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
 
@@ -895,8 +906,11 @@ export function AdminTournamentsPage() {
         const now = new Date();
         const startDate = new Date(extendingTournament.startDate);
         const newRegistrationEndDate = new Date(now.getTime() + additionalDays * 24 * 60 * 60 * 1000);
-        const limitDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+        const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000); // Phải cách ngày thi đấu ít nhất 2 ngày
         const isValid = newRegistrationEndDate <= limitDate;
+
+        const diffMs = limitDate.getTime() - now.getTime();
+        const maxDays = Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)));
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -933,15 +947,21 @@ export function AdminTournamentsPage() {
                 </div>
 
                 <div>
-                  <label className={LABEL}>{t("Additional days")}</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={additionalDays}
-                    onChange={e => setAdditionalDays(Math.max(1, parseInt(e.target.value) || 0))}
-                    className={INPUT}
-                  />
-                </div>
+                   <label className={LABEL}>
+                     {t("Additional days")} {maxDays > 0 && (language === 'vi' ? ` (Tối đa ${maxDays} ngày)` : ` (Max ${maxDays} days)`)}
+                   </label>
+                   <input
+                     type="number"
+                     min="1"
+                     max={maxDays > 0 ? maxDays : undefined}
+                     value={additionalDays}
+                     onChange={e => {
+                       const val = parseInt(e.target.value) || 0;
+                       setAdditionalDays(Math.max(1, maxDays > 0 ? Math.min(maxDays, val) : val));
+                     }}
+                     className={INPUT}
+                   />
+                 </div>
 
                 <div className="bg-white/[0.02] border border-glass-border/30 rounded-xl p-4 text-xs space-y-2">
                   <div className="font-bold text-white uppercase tracking-wider text-[10px] mb-1">Expected change</div>
@@ -957,7 +977,7 @@ export function AdminTournamentsPage() {
 
                 {!isValid && (
                   <div className="text-xs px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-bold">
-                    The extended registration end date must be at least 1 day before the tournament start date!
+                    The extended registration end date must be at least 2 days before the tournament start date!
                   </div>
                 )}
               </div>
@@ -1021,7 +1041,7 @@ export function AdminTournamentsPage() {
                   {(cancelWarningTournament.cancelCount ?? cancelWarningTournament.CancelCount ?? 0) >= 1 ? (
                     <span>The tournament registration has closed for the second time, but it failed to reach the minimum number of registered horses. Please click Cancel Tournament to complete the cancellation process.</span>
                   ) : (
-                    <span>Registration cannot be extended because the tournament starts in less than 24 hours. The tournament must be cancelled.</span>
+                    <span>Registration cannot be extended because the tournament starts in less than 48 hours (2 days). The tournament must be cancelled.</span>
                   )}
                 </div>
               </div>
