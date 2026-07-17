@@ -329,7 +329,7 @@ export function OwnerHorsesPage() {
               </div>
               <div>
                 <label className={LABEL}>Health Status</label>
-                <select value={editForm.healthStatus} onChange={e => setEditForm(p => ({...p, healthStatus: e.target.value}))} className={INPUT} style={{colorScheme: 'dark'}}>
+                <select value={editForm.healthStatus} disabled className="flex w-full px-4 py-2.5 rounded-lg border border-glass-border bg-white/5 text-muted text-sm cursor-not-allowed" style={{colorScheme: 'dark'}}>
                   {HEALTH_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   {/* Dữ liệu cũ nhập tay không nằm trong danh sách chuẩn — giữ lại để không bị mất khi lưu */}
                   {editForm.healthStatus && !HEALTH_OPTIONS.some(o => o.value === editForm.healthStatus) && (
