@@ -7,7 +7,7 @@ import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getMyBets, placeBet, getMyPredictions, createPrediction } from '../../api/spectatorService';
 import { getRaceSchedule, getRaceEntries } from '../../api/publicService';
-import { parseApiError } from '../../api/authService';
+import { parseApiError, getCurrentUser } from '../../api/authService';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 type BetStatus = 'correct' | 'incorrect' | 'pending';
@@ -31,6 +31,9 @@ const TABS: [Tab, string][] = [['all', 'All'], ['pending', 'Pending'], ['correct
 const INPUT = 'w-full bg-[#0B1628] border border-glass-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
 
 export function SpectatorPredictionsPage() {
+  const user = getCurrentUser();
+  const statusLower = user?.status?.toLowerCase();
+  const isLocked = statusLower !== 'active';
   const [bets, setBets] = useState<any[]>([]);
   const [predictions, setPredictions] = useState<any[]>([]);
   const [viewType, setViewType] = useState<'bet'|'prediction'>('bet');
@@ -151,11 +154,27 @@ export function SpectatorPredictionsPage() {
             imagePosition="center 50%"
             actions={
               <div className="flex gap-2">
-                <button onClick={() => { setAddMode('prediction'); setShowAdd(true); }} className="px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-gold/30 text-gold hover:bg-gold/10 transition-colors">
-                  <Sparkles size={14} /> Free Predictions
+                <button 
+                  onClick={() => { if (!isLocked) { setAddMode('prediction'); setShowAdd(true); } }} 
+                  disabled={isLocked}
+                  className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-colors ${
+                    isLocked 
+                      ? 'border-glass-border text-muted/50 cursor-not-allowed bg-white/5' 
+                      : 'border-gold/30 text-gold hover:bg-gold/10'
+                  }`}
+                >
+                  <Sparkles size={14} /> Free Predictions {isLocked && '🔒'}
                 </button>
-                <button onClick={() => { setAddMode('bet'); setShowAdd(true); }} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
-                  <Plus size={14} /> Place Bet
+                <button 
+                  onClick={() => { if (!isLocked) { setAddMode('bet'); setShowAdd(true); } }} 
+                  disabled={isLocked}
+                  className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all ${
+                    isLocked 
+                      ? 'bg-white/5 border-glass-border text-muted/50 cursor-not-allowed' 
+                      : 'btn-gold'
+                  }`}
+                >
+                  <Plus size={14} /> Place Bet {isLocked && '🔒'}
                 </button>
               </div>
             }
