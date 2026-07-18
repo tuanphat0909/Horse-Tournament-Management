@@ -298,8 +298,28 @@ export function OwnerRegistrationsPage() {
                       clickable: true,
                       action: 'pending-modal',
                     };
+                  } else if (resolvedStatus === 'rejected' || resolvedStatus === 'declined') {
+                    customStatus = {
+                      label: 'Jockey Declined',
+                      color: 'text-red-400 bg-red-500/10 border-red-500/20 cursor-pointer hover:bg-red-500/20',
+                      clickable: true,
+                      action: 'invite',
+                    };
+                  } else if (resolvedStatus === 'cancelled') {
+                    customStatus = {
+                      label: 'Invitation Cancelled',
+                      color: 'text-red-400 bg-red-500/10 border-red-500/20 cursor-pointer hover:bg-red-500/20',
+                      clickable: true,
+                      action: 'invite',
+                    };
+                  } else if (resolvedStatus === 'expired') {
+                    customStatus = {
+                      label: 'Invitation Expired',
+                      color: 'text-red-400 bg-red-500/10 border-red-500/20 cursor-pointer hover:bg-red-500/20',
+                      clickable: true,
+                      action: 'invite',
+                    };
                   } else {
-                    // Default to no jockey (e.g. status is empty, expired, or declined)
                     customStatus = {
                       label: 'No Jockey Yet',
                       color: 'text-red-400 bg-red-500/10 border-red-500/20 cursor-pointer hover:bg-red-500/20',
