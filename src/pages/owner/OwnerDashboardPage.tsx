@@ -2,15 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Trophy, Activity, Calendar, ChevronRight, TrendingUp,
-  Star, Clock, ShieldCheck, Flag,
+  Trophy, Calendar, ChevronRight, TrendingUp,
+  Star, Clock, ShieldCheck, Flag, Wallet,
 } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser, parseApiError } from '../../api/authService';
-import { getMyHorses } from '../../api/ownerService';
+import { getMyHorses, getOwnerWalletBalance } from '../../api/ownerService';
 import { getRaceSchedule } from '../../api/publicService';
 import { calculateAge, formatDateTime } from '../../utils/format';
 import { useLanguage } from '../../context/LanguageContext';
@@ -36,6 +36,7 @@ export function OwnerDashboardPage() {
   const [horsesLoading, setHorsesLoading] = useState(true);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
     getMyHorses()
@@ -49,6 +50,15 @@ export function OwnerDashboardPage() {
       .then((d: any) => setSchedule(d?.result ?? (Array.isArray(d) ? d : [])))
       .catch((err: Error) => { console.error(parseApiError(err)); setSchedule([]); })
       .finally(() => setScheduleLoading(false));
+  }, []);
+
+  useEffect(() => {
+    getOwnerWalletBalance()
+      .then((d: any) => {
+        const bal = d?.result?.balance ?? d?.result ?? (typeof d === 'number' ? d : 0);
+        setWalletBalance(Number(bal) || 0);
+      })
+      .catch(() => setWalletBalance(0));
   }, []);
 
   return (
@@ -85,6 +95,12 @@ export function OwnerDashboardPage() {
                   {t('Manage Horses')} {isLocked ? '🔒' : <ChevronRight size={14} />}
                 </button>
                 <button
+                  onClick={() => navigate('/owner/wallet')}
+                  className="px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 border border-gold/25 text-champagne bg-gold/5 hover:bg-gold/10 transition-all"
+                >
+                  <Wallet size={13} /> {t('My Wallet')}
+                </button>
+                <button
                   onClick={() => { if (!isLocked) navigate('/owner/registrations'); }}
                   disabled={isLocked}
                   className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all ${isLocked
@@ -102,7 +118,7 @@ export function OwnerDashboardPage() {
           <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-4 gap-4">
             {[
               { title: t('My Horses'), value: String(horses.length), trend: '+12%', icon: Star, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', spark: SPARKS[0], to: '/owner/horses' },
-              { title: t('Competing'), value: '—', trend: '+1', icon: Activity, color: 'text-emerald-400', bg: 'from-emerald-500/15 to-emerald-900/20', spark: SPARKS[1], to: '/owner/registrations' },
+              { title: t('Wallet Balance'), value: walletBalance === null ? '…' : `${walletBalance.toLocaleString()} ¢`, trend: '', icon: Wallet, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[1], to: '/owner/wallet' },
               { title: t('Upcoming'), value: scheduleLoading ? '…' : String(schedule.length), trend: t('3 days left'), icon: Calendar, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', spark: SPARKS[2], to: '/owner/tournaments' },
               { title: t('Prize Money'), value: '—', trend: '+18%', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[3], to: '/owner/results' },
             ].map((m, i) => {
