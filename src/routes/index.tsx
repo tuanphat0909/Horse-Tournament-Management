@@ -41,6 +41,7 @@ import { RefereeHorseCheckPage } from '../pages/referee/RefereeHorseCheckPage';
 import { RefereeViolationsPage } from '../pages/referee/RefereeViolationsPage';
 import { RefereeConfirmResultsPage } from '../pages/referee/RefereeConfirmResultsPage';
 import { RefereeReportsPage } from '../pages/referee/RefereeReportsPage';
+import { RefereeSchedulePage } from '../pages/referee/RefereeSchedulePage';
 
 // Spectator
 import { SpectatorDashboardPage } from '../pages/spectator/SpectatorDashboardPage';
@@ -110,6 +111,7 @@ export function AppRoutes() {
         <Route path="/referee/violations" element={<PrivateRoute><RefereeViolationsPage /></PrivateRoute>} />
         <Route path="/referee/confirm-results" element={<PrivateRoute><RefereeConfirmResultsPage /></PrivateRoute>} />
         <Route path="/referee/reports" element={<PrivateRoute><RefereeReportsPage /></PrivateRoute>} />
+        <Route path="/referee/schedule" element={<PrivateRoute><RefereeSchedulePage /></PrivateRoute>} />
 
         {/* Spectator — wallet sub-routes (/spectator/wallet → redirect to /withdraw) */}
         <Route path="/spectator/dashboard" element={<PrivateRoute><SpectatorDashboardPage /></PrivateRoute>} />
