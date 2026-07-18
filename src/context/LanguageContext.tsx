@@ -120,6 +120,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "Đã kết thúc": "Completed",
     "Đã hủy": "Cancelled",
     "Tìm giải đấu...": "Search tournaments...",
+    "Giải đấu sắp tới có ngựa tham gia": "My Participating Tournaments",
+    "Ngựa của tôi đã đăng ký:": "My registered horses:",
     "Đang tải danh sách giải đấu...": "Loading tournaments list...",
     "Ngày bắt đầu:": "Start Date:",
     "Ngày kết thúc:": "End Date:",
