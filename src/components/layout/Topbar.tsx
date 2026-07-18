@@ -7,7 +7,7 @@ import { useNotifications } from '../../context/NotificationContext';
 export function Topbar() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, fetchRecent } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +90,13 @@ export function Topbar() {
       <div className="flex items-center gap-4 relative" ref={dropdownRef}>
         {/* Bell Button */}
         <button 
-          onClick={() => setDropdownOpen(!dropdownOpen)}
+          onClick={() => {
+            const nextOpen = !dropdownOpen;
+            setDropdownOpen(nextOpen);
+            if (nextOpen) {
+              fetchRecent();
+            }
+          }}
           className={`relative text-muted hover:text-white transition-colors p-2 rounded-lg hover:bg-white/[0.04] ${dropdownOpen ? 'text-white bg-white/[0.04]' : ''}`}
         >
           <Bell size={18} />
