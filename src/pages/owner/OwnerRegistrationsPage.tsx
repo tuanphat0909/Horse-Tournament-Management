@@ -11,7 +11,7 @@ import { getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { useNotifications } from '../../context/NotificationContext';
 import { CountdownTimer } from '../../components/ui/CountdownTimer';
-import { formatUtcDateTime } from '../../utils/format';
+import { formatUtcDateTime, formatDateOnly } from '../../utils/format';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 type Tab = 'pending' | 'approved' | 'rejected' | 'pending_vet';
@@ -135,7 +135,7 @@ export function OwnerRegistrationsPage() {
     rejected: registrations.filter(r => normalizeStatus(r.status) === 'rejected').length,
   };
 
-  const filteredTournamentsForRegister = form.horseId
+  const filteredTournamentsForRegister = (form.horseId
     ? tournaments.filter(t => 
         !registrations.some(r => 
           String(r.horseId) === String(form.horseId) && 
@@ -143,7 +143,27 @@ export function OwnerRegistrationsPage() {
           normalizeStatus(r.status) !== 'rejected'
         )
       )
-    : tournaments;
+    : tournaments
+  ).filter(t => {
+    const status = (t.status ?? '').toLowerCase();
+    if (status === 'completed' || status === 'cancelled' || status === 'finished' || status === 'ended') {
+      return false;
+    }
+    const now = new Date();
+    if (t.registrationStartDate) {
+      const regStart = new Date(t.registrationStartDate);
+      if (now < regStart) return false;
+    }
+    if (t.registrationEndDate) {
+      const regEnd = new Date(t.registrationEndDate);
+      if (now > regEnd) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    const dateA = a.startDate ? new Date(a.startDate).getTime() : Infinity;
+    const dateB = b.startDate ? new Date(b.startDate).getTime() : Infinity;
+    return dateA - dateB;
+  });
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
@@ -448,6 +468,7 @@ export function OwnerRegistrationsPage() {
                   {filteredTournamentsForRegister.map(t => (
                     <option key={t.tournamentId} value={t.tournamentId}>
                       {t.name}
+                      {t.startDate && t.endDate ? ` (${formatDateOnly(t.startDate)} - ${formatDateOnly(t.endDate)})` : ''}
                     </option>
                   ))}
                 </select>
