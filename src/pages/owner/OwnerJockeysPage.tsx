@@ -58,8 +58,8 @@ const CONTRACT_FILTER_LABELS: Record<ContractFilter, string> = {
 function contractBucket(status: string): ContractFilter {
   const s = (status ?? '').toLowerCase();
   if (s === 'active' || s === 'accepted') return 'accepted';
-  if (s === 'rejected' || s === 'declined' || s === 'cancelled') return 'rejected';
-  if (s === 'expired') return 'expired';
+  if (s === 'rejected' || s === 'declined') return 'rejected';
+  if (s === 'expired' || s === 'cancelled') return 'expired';
   return 'pending';
 }
 

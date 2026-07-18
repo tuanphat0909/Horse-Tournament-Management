@@ -19,7 +19,7 @@ type Tab = 'pending_jockey' | 'pending_admin' | 'approved' | 'rejected' | 'pendi
 function normalizeStatus(s: string): 'pending' | 'approved' | 'rejected' | 'pending_vet' {
   const key = (s ?? '').toLowerCase();
   if (key === 'approved') return 'approved';
-  if (key === 'rejected') return 'rejected';
+  if (key === 'rejected' || key === 'disqualified' || key === 'cancelled') return 'rejected';
   if (key === 'pendingvet' || key === 'pending_vet') return 'pending_vet';
   return 'pending';
 }
@@ -329,7 +329,7 @@ export function OwnerRegistrationsPage() {
                   }
                 } else {
                   const cfg = STATUS_CONFIG[statusKey];
-                  customStatus = { ...cfg, clickable: false, action: 'none' };
+                  customStatus = { ...cfg, label: r.status, clickable: false, action: 'none' };
                 }
 
                 const handleBadgeClick = () => {
