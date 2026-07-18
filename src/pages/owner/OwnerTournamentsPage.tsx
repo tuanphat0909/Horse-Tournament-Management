@@ -6,6 +6,7 @@ import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getTournaments } from '../../api/publicService';
+import { getMyRegistrations } from '../../api/ownerService';
 import { formatDateTime } from '../../utils/format';
 import { CountdownTimer } from '../../components/ui/CountdownTimer';
 import { useLanguage } from '../../context/LanguageContext';
@@ -52,14 +53,22 @@ export function OwnerTournamentsPage() {
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [sortBy, setSortBy] = useState<SortKey>('newest');
   const [tournaments, setTournaments] = useState<any[]>([]);
+  const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getTournaments()
-      .then((d: any) => setTournaments(d?.result ?? (Array.isArray(d) ? d : [])))
+    Promise.all([
+      getTournaments(),
+      getMyRegistrations().catch(() => ({ result: [] }))
+    ])
+      .then(([tourData, regData]: any) => {
+        setTournaments(tourData?.result ?? (Array.isArray(tourData) ? tourData : []));
+        setMyRegistrations(regData?.result ?? (Array.isArray(regData) ? regData : []));
+      })
       .catch((err) => {
         console.error(err);
         setTournaments([]);
+        setMyRegistrations([]);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -102,6 +111,24 @@ export function OwnerTournamentsPage() {
       }
     });
 
+  const myParticipatingTournaments = tournaments.filter(tour => {
+    const isCompletedOrCancelled = tour.status?.toLowerCase() === 'completed' || tour.status?.toLowerCase() === 'cancelled';
+    if (isCompletedOrCancelled) return false;
+
+    return myRegistrations.some(reg => 
+      reg.tournamentId === tour.tournamentId && 
+      !['rejected', 'disqualified', 'cancelled'].includes((reg.status ?? '').toLowerCase())
+    );
+  }).map(tour => {
+    const myHorses = myRegistrations
+      .filter(reg => reg.tournamentId === tour.tournamentId && !['rejected', 'disqualified', 'cancelled'].includes((reg.status ?? '').toLowerCase()))
+      .map(reg => ({
+        horseName: reg.horseName ?? `Horse #${reg.horseId}`,
+        status: reg.status
+      }));
+    return { ...tour, myHorses };
+  });
+
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
       <Sidebar />
@@ -116,6 +143,76 @@ export function OwnerTournamentsPage() {
             imageUrl="/images/hero-owner.jpg"
             imagePosition="center 58%"
           />
+
+          {/* My Participating Tournaments Section */}
+          {myParticipatingTournaments.length > 0 && (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-2 border-b border-glass-border/30 pb-2">
+                <span className="text-lg font-serif text-white font-bold flex items-center gap-2">
+                  🏆 {t("Giải đấu sắp tới có ngựa tham gia")}
+                </span>
+                <span className="bg-gold/10 text-gold border border-gold/20 text-xs px-2 py-0.5 rounded-full font-bold">
+                  {myParticipatingTournaments.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {myParticipatingTournaments.map((tour, i) => {
+                  const s = tour.status?.toLowerCase() ?? 'upcoming';
+                  const config = STATUS_CONFIG[s] ?? STATUS_CONFIG.upcoming;
+                  return (
+                    <motion.div
+                      key={`my-tour-${tour.tournamentId}`}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="glass-panel rounded-2xl p-5 border border-gold/30 hover:border-gold/50 transition-all group relative overflow-hidden text-left h-full flex flex-col justify-between"
+                      style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.03) 0%, rgba(255,255,255,0.01) 100%)' }}
+                    >
+                      <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                      <div>
+                        <div className="flex justify-between items-center gap-2 mb-3">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${config.color} flex items-center gap-1.5 whitespace-nowrap shrink-0`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} /> {t(config.label)}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-serif text-white font-bold group-hover:text-champagne transition-colors mb-1 line-clamp-1">{tour.name}</h3>
+                        <p className="text-xs text-muted/80 line-clamp-2 min-h-[32px] mb-3">{tour.description || t("No detailed description available.")}</p>
+                      </div>
+
+                      <div className="space-y-2 pt-3 border-t border-glass-border/40 text-xs">
+                        <div className="flex flex-col gap-1.5 bg-white/[0.02] border border-glass-border/30 rounded-lg p-2.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
+                            🐴 {t("Ngựa của tôi đã đăng ký:")}
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {tour.myHorses.map((h: any, idx: number) => {
+                              const isAppr = (h.status ?? '').toLowerCase() === 'approved';
+                              const isVet = (h.status ?? '').toLowerCase() === 'pendingvet';
+                              const statusColor = isAppr 
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                                : isVet 
+                                ? 'bg-purple-500/10 border-purple-500/20 text-purple-300'
+                                : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300';
+                              return (
+                                <span key={idx} className={`text-[9px] font-medium px-2 py-0.5 rounded border ${statusColor}`}>
+                                  {h.horseName} ({t(h.status)})
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between pt-1">
+                          <span className="text-muted">{t("Bắt đầu lúc:")}</span>
+                          <span className="text-white font-medium">{formatDateTime(tour.startDate)}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 flex-wrap">
             {(['all', 'active', 'upcoming', 'completed'] as StatusFilter[]).map(s => (
