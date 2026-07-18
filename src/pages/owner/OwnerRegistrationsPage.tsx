@@ -14,9 +14,9 @@ import { CountdownTimer } from '../../components/ui/CountdownTimer';
 import { formatUtcDateTime, formatDateOnly } from '../../utils/format';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
-type Tab = 'pending' | 'approved' | 'rejected' | 'pending_vet';
+type Tab = 'pending_jockey' | 'pending_admin' | 'approved' | 'rejected' | 'pending_vet';
 
-function normalizeStatus(s: string): Tab {
+function normalizeStatus(s: string): 'pending' | 'approved' | 'rejected' | 'pending_vet' {
   const key = (s ?? '').toLowerCase();
   if (key === 'approved') return 'approved';
   if (key === 'rejected') return 'rejected';
@@ -40,7 +40,7 @@ export function OwnerRegistrationsPage() {
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<Tab>('pending');
+  const [tab, setTab] = useState<Tab>('pending_vet');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ horseId: '', tournamentId: '' });
@@ -110,7 +110,31 @@ export function OwnerRegistrationsPage() {
   }
 
   const filtered = registrations.filter(r => {
-    if (normalizeStatus(r.status) !== tab) return false;
+    const statusKey = normalizeStatus(r.status);
+
+    // Find all matching contracts for this horse and tournament
+    const matchingContracts = proposals.filter(
+      p => String(p.horseId) === String(r.horseId) && String(p.tournamentId) === String(r.tournamentId)
+    );
+    // Sort by ID descending so the latest proposal is first
+    matchingContracts.sort((a, b) => (b.contractId ?? b.id ?? 0) - (a.contractId ?? a.id ?? 0));
+    
+    // Prefer finding an Accepted, Active, or Pending contract first
+    const contract = matchingContracts.find(
+      p => ['accepted', 'active', 'pending'].includes((p.status ?? '').toLowerCase())
+    ) || matchingContracts[0];
+
+    const contractStatus = (contract?.status ?? '').toLowerCase();
+    const resolvedStatus = contractStatus || (r.jockeyName ? 'accepted' : '');
+    const isJockeyAccepted = (resolvedStatus === 'accepted' || resolvedStatus === 'active');
+
+    if (tab === 'pending_jockey') {
+      if (statusKey !== 'pending' || isJockeyAccepted) return false;
+    } else if (tab === 'pending_admin') {
+      if (statusKey !== 'pending' || !isJockeyAccepted) return false;
+    } else {
+      if (statusKey !== tab) return false;
+    }
 
     // Filter out past (completed/cancelled) tournaments for the approved tab
     if (tab === 'approved') {
@@ -128,9 +152,35 @@ export function OwnerRegistrationsPage() {
     return (r.horseName ?? '').toLowerCase().includes(q)
       || (r.tournamentName ?? '').toLowerCase().includes(q);
   });
+
   const counts = {
     pending_vet: registrations.filter(r => normalizeStatus(r.status) === 'pending_vet').length,
-    pending:  registrations.filter(r => normalizeStatus(r.status) === 'pending').length,
+    pending_jockey: registrations.filter(r => {
+      if (normalizeStatus(r.status) !== 'pending') return false;
+      const matchingContracts = proposals.filter(
+        p => String(p.horseId) === String(r.horseId) && String(p.tournamentId) === String(r.tournamentId)
+      );
+      matchingContracts.sort((a, b) => (b.contractId ?? b.id ?? 0) - (a.contractId ?? a.id ?? 0));
+      const contract = matchingContracts.find(
+        p => ['accepted', 'active', 'pending'].includes((p.status ?? '').toLowerCase())
+      ) || matchingContracts[0];
+      const contractStatus = (contract?.status ?? '').toLowerCase();
+      const resolvedStatus = contractStatus || (r.jockeyName ? 'accepted' : '');
+      return !(resolvedStatus === 'accepted' || resolvedStatus === 'active');
+    }).length,
+    pending_admin: registrations.filter(r => {
+      if (normalizeStatus(r.status) !== 'pending') return false;
+      const matchingContracts = proposals.filter(
+        p => String(p.horseId) === String(r.horseId) && String(p.tournamentId) === String(r.tournamentId)
+      );
+      matchingContracts.sort((a, b) => (b.contractId ?? b.id ?? 0) - (a.contractId ?? a.id ?? 0));
+      const contract = matchingContracts.find(
+        p => ['accepted', 'active', 'pending'].includes((p.status ?? '').toLowerCase())
+      ) || matchingContracts[0];
+      const contractStatus = (contract?.status ?? '').toLowerCase();
+      const resolvedStatus = contractStatus || (r.jockeyName ? 'accepted' : '');
+      return (resolvedStatus === 'accepted' || resolvedStatus === 'active');
+    }).length,
     approved: registrations.filter(r => normalizeStatus(r.status) === 'approved').length,
     rejected: registrations.filter(r => normalizeStatus(r.status) === 'rejected').length,
   };
@@ -188,7 +238,7 @@ export function OwnerRegistrationsPage() {
           {error && <div className="glass-panel rounded-xl p-5 text-red-400 text-sm border border-red-500/20">{error}</div>}
 
           <div className="flex items-center gap-1 border-b border-glass-border pb-0">
-            {([['pending_vet', 'Vet Check'], ['pending', 'Awaiting Approval'], ['approved', 'Approved'], ['rejected', 'Rejected']] as [Tab, string][]).map(([t, label]) => (
+            {([['pending_vet', 'Vet Check'], ['pending_jockey', 'Hire Jockey'], ['pending_admin', 'Awaiting Approval'], ['approved', 'Approved'], ['rejected', 'Rejected']] as [Tab, string][]).map(([t, label]) => (
               <button key={t} onClick={() => setTab(t)}
                 className={`px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-all ${tab === t ? 'text-gold border-gold' : 'text-muted border-transparent hover:text-white'}`}>
                 {label}
@@ -214,10 +264,15 @@ export function OwnerRegistrationsPage() {
             <div className="space-y-3">
               {filtered.map((r, i) => {
                 const statusKey = normalizeStatus(r.status);
-                // Find matching contract for this horse+tournament
-                const contract = proposals.find(
+                // Find all matching contracts for this horse and tournament
+                const matchingContracts = proposals.filter(
                   p => String(p.horseId) === String(r.horseId) && String(p.tournamentId) === String(r.tournamentId)
                 );
+                matchingContracts.sort((a, b) => (b.contractId ?? b.id ?? 0) - (a.contractId ?? a.id ?? 0));
+                const contract = matchingContracts.find(
+                  p => ['accepted', 'active', 'pending'].includes((p.status ?? '').toLowerCase())
+                ) || matchingContracts[0];
+
                 const contractStatus = (contract?.status ?? '').toLowerCase();
                 const resolvedStatus = contractStatus || (r.jockeyName ? 'accepted' : '');
 
