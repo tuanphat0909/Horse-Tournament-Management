@@ -212,12 +212,12 @@ export function SpectatorRaceDetailPage() {
 
                       <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-glass-border/20 text-center mb-3">
                         <div>
-                          <div className="text-[10px] text-muted">Avg Time</div>
-                          <div className="text-xs text-white font-medium">{e.averageTime ? `${e.averageTime.toFixed(2)}s` : '—'}</div>
+                          <div className="text-[10px] text-muted">Avg Speed</div>
+                          <div className="text-xs text-white font-medium">{e.averageTime ? `${e.averageTime.toFixed(2)} m/s` : '—'}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] text-muted">Recent Avg</div>
-                          <div className="text-xs text-white font-medium">{e.recentAverageTime ? `${e.recentAverageTime.toFixed(2)}s` : '—'}</div>
+                          <div className="text-[10px] text-muted">Recent Avg Speed</div>
+                          <div className="text-xs text-white font-medium">{e.recentAverageTime ? `${e.recentAverageTime.toFixed(2)} m/s` : '—'}</div>
                         </div>
                         <div>
                           <div className="text-[10px] text-muted">Win Rate</div>
