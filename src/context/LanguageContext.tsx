@@ -383,6 +383,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "Horse Owner": "Chủ ngựa",
     "Referee": "Trọng tài",
     "Spectator": "Khán giả",
+    "My Assignment": "Nhiệm vụ của tôi",
+    "My Assignments": "Nhiệm vụ của tôi",
     // Landing page — Navbar (English keys → Vietnamese)
     "Leaderboard": "Bảng xếp hạng",
     "Features": "Tính năng",

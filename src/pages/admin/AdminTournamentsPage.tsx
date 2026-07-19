@@ -127,12 +127,12 @@ export function AdminTournamentsPage() {
 
   async function handleExtendRegistration() {
     if (!extendingTournament) return;
-    
+
     const now = new Date();
     const startDate = new Date(extendingTournament.startDate);
     const newRegistrationEndDate = new Date(now.getTime() + additionalDays * 24 * 60 * 60 * 1000);
     const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000); // Cách ngày thi đấu ít nhất 2 ngày
-    
+
     if (newRegistrationEndDate > limitDate) {
       return;
     }
@@ -223,17 +223,29 @@ export function AdminTournamentsPage() {
     const startVal = new Date(form.startDate);
     const endVal = new Date(form.endDate);
     const now = new Date();
-
     if (regStartVal.getTime() < now.getTime() - 5 * 60 * 1000) {
       setError(t('Registration start date cannot be in the past.'));
       return;
     }
+    if (regEndVal.getTime() < now.getTime() - 5 * 60 * 1000) {
+      setError(t('Registration end date cannot be in the past.'));
+      return;
+    }
+    if (startVal.getTime() < now.getTime() - 5 * 60 * 1000) {
+      setError(t('Tournament start date cannot be in the past.'));
+      return;
+    }
+    if (endVal.getTime() < now.getTime() - 5 * 60 * 1000) {
+      setError(t('Tournament end date cannot be in the past.'));
+      return;
+    }
+
     if (regEndVal <= regStartVal) {
       setError(t('Registration end date must be after registration start date.'));
       return;
     }
-    if (startVal < regEndVal) {
-      setError(t('Tournament start date must be on or after registration end date.'));
+    if (startVal.getTime() < regEndVal.getTime() + 48 * 60 * 60 * 1000) {
+      setError(t('Tournament start date must be at least 48 hours after registration end date.'));
       return;
     }
     if (endVal <= startVal) {
@@ -324,7 +336,7 @@ export function AdminTournamentsPage() {
     const matchesSearch = (t.name ?? '').toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
     if (filter === 'all') return true;
-    
+
     const customStatus = getTournamentCustomStatus(t);
     if (filter === 'upcoming_registration') return customStatus === 'Upcoming Registration';
     if (filter === 'registration_open') return customStatus === 'Registration Open';
@@ -333,7 +345,7 @@ export function AdminTournamentsPage() {
     if (filter === 'racing') return customStatus === 'Racing';
     if (filter === 'completed') return customStatus === 'Completed';
     if (filter === 'cancelled') return customStatus === 'Cancelled';
-    
+
     return true;
   });
 
@@ -367,7 +379,7 @@ export function AdminTournamentsPage() {
   function getTournamentRaceState(tour: any) {
     const tournamentRaces = races.filter(r => r.tournamentId === tour.tournamentId);
     const rounds = tour.rounds ?? [];
-    
+
     // Check registration date: phân biệt CHƯA MỞ / ĐANG MỞ / ĐÃ ĐÓNG
     const now = new Date();
     const regStart = tour.registrationStartDate ? new Date(tour.registrationStartDate) : null;
@@ -395,7 +407,7 @@ export function AdminTournamentsPage() {
     let statusLabel = '';
     const cancelCount = tour.cancelCount ?? tour.CancelCount ?? 0;
     const isSuspended = tour.status?.toLowerCase() === 'registration suspended' ||
-                        (tour.status?.toLowerCase() === 'registration open' && regEnded && cancelCount === 0);
+      (tour.status?.toLowerCase() === 'registration open' && regEnded && cancelCount === 0);
 
     if (isSuspended) {
       statusLabel = 'Registration Suspended';
@@ -461,9 +473,8 @@ export function AdminTournamentsPage() {
                 <button
                   key={s}
                   onClick={() => setFilter(s)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                    filter === s ? 'border-gold/40 bg-gold/10 text-champagne' : 'border-glass-border text-muted hover:text-white hover:bg-white/[0.04]'
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${filter === s ? 'border-gold/40 bg-gold/10 text-champagne' : 'border-glass-border text-muted hover:text-white hover:bg-white/[0.04]'
+                    }`}
                 >
                   {t(labelMap[s])}
                   <span className="ml-2 text-[11px] font-bold text-current opacity-60">
@@ -504,237 +515,172 @@ export function AdminTournamentsPage() {
           ) : (
             <div className="overflow-y-auto pr-1.5 -mr-1.5 scrollbar-thin" style={{ maxHeight: 'calc(100vh - 330px)' }}>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {sortedTournaments.map((tour, i) => {
-                const customStatus = getTournamentCustomStatus(tour);
-                const config = CUSTOM_STATUS_CONFIG[customStatus] ?? CUSTOM_STATUS_CONFIG.Scheduled;
-                const raceState = getTournamentRaceState(tour);
-                const isGenerating = generatingForTournament === tour.tournamentId;
-                
-                const now = new Date();
-                const isScheduled = customStatus === 'Scheduled';
-                const startsInLessThan24h = tour.startDate && (new Date(tour.startDate).getTime() - now.getTime() < 24 * 60 * 60 * 1000);
-                const show24hWarning = isScheduled && tour.hasMissingReferees && startsInLessThan24h;
+                {sortedTournaments.map((tour, i) => {
+                  const customStatus = getTournamentCustomStatus(tour);
+                  const config = CUSTOM_STATUS_CONFIG[customStatus] ?? CUSTOM_STATUS_CONFIG.Scheduled;
+                  const raceState = getTournamentRaceState(tour);
+                  const isGenerating = generatingForTournament === tour.tournamentId;
 
-                return (
-                  <motion.div
-                    key={tour.tournamentId ?? i}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="glass-panel rounded-2xl p-5 border border-glass-border hover:border-gold/25 transition-all group relative overflow-hidden text-left h-full flex flex-col"
-                  >
-                    <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                    <div className="mb-3 space-y-1.5">
-                      {/* Hàng 1: badge trạng thái tổng quát */}
-                      <div>
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${config.color} inline-flex items-center gap-1.5 w-fit`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} /> {t(config.label)}
-                        </span>
-                      </div>
-                      {/* Hàng 2: badge loại rounds + đếm ngược thời gian — min-h giữ chỗ để card không bị lệch khi thiếu badge */}
-                      <div className="flex items-center gap-2 flex-wrap min-h-[26px]">
-                        {customStatus === 'Upcoming Registration' && (
-                          <>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-500/30 bg-blue-500/8 text-blue-400 shrink-0">Reg. Upcoming</span>
-                            {tour.registrationStartDate && (
-                              <CountdownTimer target={tour.registrationStartDate} utc={false} label="Opens in:" />
-                            )}
-                          </>
-                        )}
-                        {customStatus === 'Registration Open' && (
-                          <>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/8 text-emerald-400 shrink-0">Reg. Open</span>
-                            {tour.registrationEndDate && (
-                              <CountdownTimer target={tour.registrationEndDate} utc={false} label="Remaining:" />
-                            )}
-                          </>
-                        )}
-                        {customStatus === 'Registration Closed' && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-400 shrink-0">🔒 Reg. Closed</span>
-                        )}
-                        {customStatus === 'Scheduled' && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/40 bg-indigo-500/10 text-indigo-400 shrink-0">📅 Scheduled</span>
-                            {show24hWarning && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/15 text-red-400 shrink-0 flex items-center gap-1 animate-pulse">
-                                <AlertTriangle size={10} className="text-red-400 shrink-0" />
-                                {t("Missing referees!")}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {customStatus === 'Pending Admin Attention' && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-500/40 bg-rose-500/10 text-rose-400 shrink-0 animate-pulse">⚠️ {t("Referee assignment needed")}</span>
-                        )}
-                        {customStatus === 'Racing' && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-400 shrink-0">🏃 Racing</span>
-                        )}
-                        {customStatus === 'Completed' && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-500/40 bg-zinc-500/10 text-zinc-400 shrink-0">🏆 Completed</span>
-                        )}
-                        {customStatus === 'Cancelled' && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-400 shrink-0">❌ Cancelled</span>
-                        )}
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-serif text-white font-bold group-hover:text-champagne transition-colors mb-1 line-clamp-1">{tour.name}</h3>
-                    <p className="text-xs text-muted/80 line-clamp-2 min-h-[32px] mb-3">{tour.description || t("No detailed description available.")}</p>
-                    <div className="space-y-1.5 text-xs text-muted pt-3 border-t border-glass-border/40">
-                      <div className="flex justify-between">
-                        <span>{t("Reg. opens:")}</span>
-                        <span className="text-white font-medium">{formatDateTime(tour.registrationStartDate)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t("Reg. closes:")}</span>
-                        <span className="text-white font-medium">{formatDateTime(tour.registrationEndDate)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t("Start Date:")}</span>
-                        <span className="text-white font-medium">{formatDateTime(tour.startDate)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t("End Date:")}</span>
-                        <span className="text-white font-medium">{formatDateTime(tour.endDate)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t("Race status:")}</span>
-                        <span className="text-gold font-bold">{t(raceState.statusLabel)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t("Races created:")}</span>
-                        <span className="text-white font-medium">{raceState.totalRaces}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{t("Registered Horses:")}</span>
-                        <span className="text-white font-medium">{tour.approvedRegistration ?? 0}</span>
-                      </div>
-                      {(customStatus === 'Registration Closed' || customStatus === 'Scheduled' || customStatus === 'Racing' || customStatus === 'Completed') && (
-                        <div className="flex justify-between">
-                          <span>{t("Qualified Horses:")}</span>
-                          <span className={`font-bold ${((tour.qualifiedRegistration ?? 0) >= 12) ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {tour.qualifiedRegistration ?? 0} / 12
+                  const now = new Date();
+                  const isScheduled = customStatus === 'Scheduled';
+                  const startsInLessThan24h = tour.startDate && (new Date(tour.startDate).getTime() - now.getTime() < 24 * 60 * 60 * 1000);
+                  const show24hWarning = isScheduled && tour.hasMissingReferees && startsInLessThan24h;
+
+                  return (
+                    <motion.div
+                      key={tour.tournamentId ?? i}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="glass-panel rounded-2xl p-5 border border-glass-border hover:border-gold/25 transition-all group relative overflow-hidden text-left h-full flex flex-col"
+                    >
+                      <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+                      <div className="mb-3 space-y-1.5">
+                        {/* Hàng 1: badge trạng thái tổng quát */}
+                        <div>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${config.color} inline-flex items-center gap-1.5 w-fit`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} /> {t(config.label)}
                           </span>
                         </div>
-                      )}
-                      <div className="flex flex-col gap-1 pt-2.5 mt-2 border-t border-glass-border/30">
-                        <span className="font-bold text-white text-[11px] uppercase tracking-wider">{t("Prizes:")}</span>
-                        {/* min-h giữ chỗ bằng chiều cao lưới prize để card không có prize vẫn cao bằng card có prize */}
-                        <div className="min-h-[46px] flex flex-col justify-center">
-                          {tour.prizes && tour.prizes.length > 0 ? (
-                            <div className="grid grid-cols-3 gap-1.5 text-center mt-1">
-                              {tour.prizes
-                                .slice()
-                                .sort((a: any, b: any) => a.rankPosition - b.rankPosition)
-                                .map((p: any) => (
-                                  <div key={p.id} className="bg-white/[0.03] border border-glass-border/40 rounded px-1 py-1">
-                                    <div className="text-[9px] text-muted font-semibold">Rank {p.rankPosition}</div>
-                                    <div className="text-gold font-bold text-[10px] whitespace-nowrap">{Number(p.amount).toLocaleString('vi-VN')} đ</div>
-                                  </div>
-                                ))}
+                        {/* Hàng 2: badge loại rounds + đếm ngược thời gian — min-h giữ chỗ để card không bị lệch khi thiếu badge */}
+                        <div className="flex items-center gap-2 flex-wrap min-h-[26px]">
+                          {customStatus === 'Upcoming Registration' && (
+                            <>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-500/30 bg-blue-500/8 text-blue-400 shrink-0">Reg. Upcoming</span>
+                              {tour.registrationStartDate && (
+                                <CountdownTimer target={tour.registrationStartDate} utc={false} label="Opens in:" />
+                              )}
+                            </>
+                          )}
+                          {customStatus === 'Registration Open' && (
+                            <>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/8 text-emerald-400 shrink-0">Reg. Open</span>
+                              {tour.registrationEndDate && (
+                                <CountdownTimer target={tour.registrationEndDate} utc={false} label="Remaining:" />
+                              )}
+                            </>
+                          )}
+                          {customStatus === 'Registration Closed' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-400 shrink-0">🔒 Reg. Closed</span>
+                          )}
+                          {customStatus === 'Scheduled' && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/40 bg-indigo-500/10 text-indigo-400 shrink-0">📅 Scheduled</span>
+                              {show24hWarning && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/15 text-red-400 shrink-0 flex items-center gap-1 animate-pulse">
+                                  <AlertTriangle size={10} className="text-red-400 shrink-0" />
+                                  {t("Missing referees!")}
+                                </span>
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-red-400 font-semibold italic text-[11px]">{t("Prizes not configured yet")}</span>
+                          )}
+                          {customStatus === 'Pending Admin Attention' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-500/40 bg-rose-500/10 text-rose-400 shrink-0 animate-pulse">⚠️ {t("Referee assignment needed")}</span>
+                          )}
+                          {customStatus === 'Racing' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-400 shrink-0">🏃 Racing</span>
+                          )}
+                          {customStatus === 'Completed' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-zinc-500/40 bg-zinc-500/10 text-zinc-400 shrink-0">🏆 Completed</span>
+                          )}
+                          {customStatus === 'Cancelled' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/40 bg-red-500/10 text-red-400 shrink-0">❌ Cancelled</span>
                           )}
                         </div>
                       </div>
-                    </div>
-                    {/* mt-auto đẩy hàng nút xuống đáy card — các card trong cùng hàng luôn thẳng nhau */}
-                    <div className="mt-auto pt-4 flex flex-wrap gap-2 w-full">
-                      {customStatus === 'Registration Open' && (
-                        <div className="flex gap-2 w-full">
-                          <button
-                            onClick={() => handleCloseRegistrationClick(tour)}
-                            disabled={isGenerating}
-                            className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-400 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            {isGenerating ? <Loader size={13} className="animate-spin" /> : <Clock size={13} />}
-                            {isGenerating ? t('Closing...') : t('Close Registration')}
-                          </button>
-                          <button
-                            onClick={() => setCancelWarningTournament(tour)}
-                            disabled={isGenerating}
-                            className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            {t('Cancel')}
-                          </button>
+                      <h3 className="text-lg font-serif text-white font-bold group-hover:text-champagne transition-colors mb-1 line-clamp-1">{tour.name}</h3>
+                      <p className="text-xs text-muted/80 line-clamp-2 min-h-[32px] mb-3">{tour.description || t("No detailed description available.")}</p>
+                      <div className="space-y-1.5 text-xs text-muted pt-3 border-t border-glass-border/40">
+                        <div className="flex justify-between">
+                          <span>{t("Reg. opens:")}</span>
+                          <span className="text-white font-medium">{formatDateTime(tour.registrationStartDate)}</span>
                         </div>
-                      )}
-
-                      {customStatus === 'Registration Closed' && (
-                        <div className="flex flex-col gap-2.5 w-full">
-                          {(tour.qualifiedRegistration ?? 0) >= 12 ? (
-                            <div className="flex gap-2 w-full">
-                              <button
-                                onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
-                                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-blue-400 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-colors flex items-center justify-center gap-1.5"
-                              >
-                                <Calendar size={13} />
-                                {t('Schedule Races')}
-                              </button>
-                              <button
-                                onClick={() => setCancelWarningTournament(tour)}
-                                className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
-                              >
-                                {t('Cancel')}
-                              </button>
-                            </div>
-                          ) : (() => {
-                            const now = new Date();
-                            const startDate = new Date(tour.startDate);
-                            const diffMs = startDate.getTime() - now.getTime();
-                            const diffDays = diffMs / (1000 * 60 * 60 * 24);
-                            const cancelCount = tour.cancelCount ?? tour.CancelCount ?? 0;
-                            const canExtend = diffDays >= 2 && cancelCount < 1;
-
-                            return (
-                              <div className="space-y-2 w-full">
-                                <div className="text-red-400 font-bold text-[11px] flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse">
-                                  <AlertCircle size={13} className="shrink-0" />
-                                  <span>{t('Not enough qualified horses')} ({tour.qualifiedRegistration ?? 0}/12)</span>
-                                </div>
-                                <div className="flex gap-2 w-full">
-                                  <button
-                                    onClick={() => {
-                                      setExtendingTournament(tour);
-                                      setAdditionalDays(1);
-                                    }}
-                                    disabled={!canExtend}
-                                    className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-amber-400 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
-                                    title={!canExtend ? (cancelCount >= 1 ? t('Already extended once, cannot extend again') : t('Tournament starts in less than 2 days, cannot extend')) : ''}
-                                  >
-                                    <Clock size={13} />
-                                    {t('Extend')}
-                                  </button>
-                                  <button
-                                    onClick={() => setCancelWarningTournament(tour)}
-                                    className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
-                                  >
-                                    {t('Cancel Tournament')}
-                                  </button>
-                                </div>
+                        <div className="flex justify-between">
+                          <span>{t("Reg. closes:")}</span>
+                          <span className="text-white font-medium">{formatDateTime(tour.registrationEndDate)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{t("Start Date:")}</span>
+                          <span className="text-white font-medium">{formatDateTime(tour.startDate)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{t("End Date:")}</span>
+                          <span className="text-white font-medium">{formatDateTime(tour.endDate)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{t("Race status:")}</span>
+                          <span className="text-gold font-bold">{t(raceState.statusLabel)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{t("Races created:")}</span>
+                          <span className="text-white font-medium">{raceState.totalRaces}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>{t("Registered Horses:")}</span>
+                          <span className="text-white font-medium">{tour.approvedRegistration ?? 0}</span>
+                        </div>
+                        {(customStatus === 'Registration Closed' || customStatus === 'Scheduled' || customStatus === 'Racing' || customStatus === 'Completed') && (
+                          <div className="flex justify-between">
+                            <span>{t("Qualified Horses:")}</span>
+                            <span className={`font-bold ${((tour.qualifiedRegistration ?? 0) >= 12) ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {tour.qualifiedRegistration ?? 0} / 12
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex flex-col gap-1 pt-2.5 mt-2 border-t border-glass-border/30">
+                          <span className="font-bold text-white text-[11px] uppercase tracking-wider">{t("Prizes:")}</span>
+                          {/* min-h giữ chỗ bằng chiều cao lưới prize để card không có prize vẫn cao bằng card có prize */}
+                          <div className="min-h-[46px] flex flex-col justify-center">
+                            {tour.prizes && tour.prizes.length > 0 ? (
+                              <div className="grid grid-cols-3 gap-1.5 text-center mt-1">
+                                {tour.prizes
+                                  .slice()
+                                  .sort((a: any, b: any) => a.rankPosition - b.rankPosition)
+                                  .map((p: any) => (
+                                    <div key={p.id} className="bg-white/[0.03] border border-glass-border/40 rounded px-1 py-1">
+                                      <div className="text-[9px] text-muted font-semibold">Rank {p.rankPosition}</div>
+                                      <div className="text-gold font-bold text-[10px] whitespace-nowrap">{Number(p.amount).toLocaleString('vi-VN')} đ</div>
+                                    </div>
+                                  ))}
                               </div>
-                            );
-                          })()}
+                            ) : (
+                              <span className="text-red-400 font-semibold italic text-[11px]">{t("Prizes not configured yet")}</span>
+                            )}
+                          </div>
                         </div>
-                      )}
-
-                      {customStatus === 'Scheduled' && (
-                        <div className="flex flex-col gap-2 w-full">
-                          {show24hWarning && (
-                            <div className="text-red-400 font-bold text-[11px] flex items-start gap-1.5 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse mb-1">
-                              <AlertTriangle size={13} className="shrink-0 mt-0.5 text-red-400" />
-                              <span>{t("Urgent: referees must be assigned (less than 24h before the tournament starts!)")}</span>
-                            </div>
-                          )}
+                      </div>
+                      {/* mt-auto đẩy hàng nút xuống đáy card — các card trong cùng hàng luôn thẳng nhau */}
+                      <div className="mt-auto pt-4 flex flex-wrap gap-2 w-full">
+                        {customStatus === 'Registration Open' && (
                           <div className="flex gap-2 w-full">
-                            {show24hWarning ? (
-                              <>
+                            <button
+                              onClick={() => handleCloseRegistrationClick(tour)}
+                              disabled={isGenerating}
+                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-400 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              {isGenerating ? <Loader size={13} className="animate-spin" /> : <Clock size={13} />}
+                              {isGenerating ? t('Closing...') : t('Close Registration')}
+                            </button>
+                            <button
+                              onClick={() => setCancelWarningTournament(tour)}
+                              disabled={isGenerating}
+                              className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              {t('Cancel')}
+                            </button>
+                          </div>
+                        )}
+
+                        {customStatus === 'Registration Closed' && (
+                          <div className="flex flex-col gap-2.5 w-full">
+                            {(tour.qualifiedRegistration ?? 0) >= 12 ? (
+                              <div className="flex gap-2 w-full">
                                 <button
                                   onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
-                                  className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-400 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5 animate-pulse"
+                                  className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-blue-400 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-colors flex items-center justify-center gap-1.5"
                                 >
                                   <Calendar size={13} />
-                                  {t('Assign referees')}
+                                  {t('Schedule Races')}
                                 </button>
                                 <button
                                   onClick={() => setCancelWarningTournament(tour)}
@@ -742,76 +688,141 @@ export function AdminTournamentsPage() {
                                 >
                                   {t('Cancel')}
                                 </button>
-                              </>
-                            ) : raceState.canGenerateFinal ? (
-                              <button
-                                onClick={() => handleGenerateFinal(tour.tournamentId)}
-                                disabled={isGenerating}
-                                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-gold border border-gold/30 bg-gold/10 hover:bg-gold/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
-                              >
-                                {isGenerating ? <Loader size={13} className="animate-spin" /> : <Trophy size={13} />}
-                                {isGenerating ? t('Assigning...') : t('Auto Assign Final')}
-                              </button>
-                            ) : (
-                              <button
-                                disabled
-                                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-muted border border-glass-border bg-white/[0.04] cursor-not-allowed text-center"
-                              >
-                                {t('Scheduled & Ready')}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                              </div>
+                            ) : (() => {
+                              const now = new Date();
+                              const startDate = new Date(tour.startDate);
+                              const diffMs = startDate.getTime() - now.getTime();
+                              const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                              const cancelCount = tour.cancelCount ?? tour.CancelCount ?? 0;
+                              const canExtend = diffDays >= 2 && cancelCount < 1;
 
-                      {customStatus === 'Pending Admin Attention' && (
-                        <div className="flex flex-col gap-2.5 w-full">
-                          <div className="text-red-400 font-bold text-[11px] flex items-start gap-1.5 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse">
-                            <AlertCircle size={13} className="shrink-0 mt-0.5 text-red-400" />
-                            <span>{t("Some races have no referee assigned. Please assign referees so the tournament can start!")}</span>
+                              return (
+                                <div className="space-y-2 w-full">
+                                  <div className="text-red-400 font-bold text-[11px] flex items-center gap-1 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse">
+                                    <AlertCircle size={13} className="shrink-0" />
+                                    <span>{t('Not enough qualified horses')} ({tour.qualifiedRegistration ?? 0}/12)</span>
+                                  </div>
+                                  <div className="flex gap-2 w-full">
+                                    <button
+                                      onClick={() => {
+                                        setExtendingTournament(tour);
+                                        setAdditionalDays(1);
+                                      }}
+                                      disabled={!canExtend}
+                                      className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-amber-400 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                                      title={!canExtend ? (cancelCount >= 1 ? t('Already extended once, cannot extend again') : t('Tournament starts in less than 2 days, cannot extend')) : ''}
+                                    >
+                                      <Clock size={13} />
+                                      {t('Extend')}
+                                    </button>
+                                    <button
+                                      onClick={() => setCancelWarningTournament(tour)}
+                                      className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                                    >
+                                      {t('Cancel Tournament')}
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
+                        )}
+
+                        {customStatus === 'Scheduled' && (
+                          <div className="flex flex-col gap-2 w-full">
+                            {show24hWarning && (
+                              <div className="text-red-400 font-bold text-[11px] flex items-start gap-1.5 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse mb-1">
+                                <AlertTriangle size={13} className="shrink-0 mt-0.5 text-red-400" />
+                                <span>{t("Urgent: referees must be assigned (less than 24h before the tournament starts!)")}</span>
+                              </div>
+                            )}
+                            <div className="flex gap-2 w-full">
+                              {show24hWarning ? (
+                                <>
+                                  <button
+                                    onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
+                                    className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-400 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5 animate-pulse"
+                                  >
+                                    <Calendar size={13} />
+                                    {t('Assign referees')}
+                                  </button>
+                                  <button
+                                    onClick={() => setCancelWarningTournament(tour)}
+                                    className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                                  >
+                                    {t('Cancel')}
+                                  </button>
+                                </>
+                              ) : raceState.canGenerateFinal ? (
+                                <button
+                                  onClick={() => handleGenerateFinal(tour.tournamentId)}
+                                  disabled={isGenerating}
+                                  className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-gold border border-gold/30 bg-gold/10 hover:bg-gold/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                  {isGenerating ? <Loader size={13} className="animate-spin" /> : <Trophy size={13} />}
+                                  {isGenerating ? t('Assigning...') : t('Auto Assign Final')}
+                                </button>
+                              ) : (
+                                <button
+                                  disabled
+                                  className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-muted border border-glass-border bg-white/[0.04] cursor-not-allowed text-center"
+                                >
+                                  {t('Scheduled & Ready')}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {customStatus === 'Pending Admin Attention' && (
+                          <div className="flex flex-col gap-2.5 w-full">
+                            <div className="text-red-400 font-bold text-[11px] flex items-start gap-1.5 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-1.5 animate-pulse">
+                              <AlertCircle size={13} className="shrink-0 mt-0.5 text-red-400" />
+                              <span>{t("Some races have no referee assigned. Please assign referees so the tournament can start!")}</span>
+                            </div>
+                            <div className="flex gap-2 w-full">
+                              <button
+                                onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
+                                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-400 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 animate-pulse transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                <Calendar size={13} />
+                                {t('Assign referees')}
+                              </button>
+                              <button
+                                onClick={() => setCancelWarningTournament(tour)}
+                                className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                {t('Cancel Tournament')}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {customStatus === 'Upcoming Registration' && (
                           <div className="flex gap-2 w-full">
                             <button
-                              onClick={() => navigate('/admin/races', { state: { openTournamentId: tour.tournamentId } })}
-                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-400 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 animate-pulse transition-colors flex items-center justify-center gap-1.5"
-                            >
-                              <Calendar size={13} />
-                              {t('Assign referees')}
-                            </button>
-                            <button
                               onClick={() => setCancelWarningTournament(tour)}
-                              className="px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1.5"
+                              disabled={isGenerating}
+                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
                             >
-                              {t('Cancel Tournament')}
+                              {t('Cancel')}
                             </button>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {customStatus === 'Upcoming Registration' && (
-                        <div className="flex gap-2 w-full">
+                        {customStatus !== 'Registration Open' && customStatus !== 'Registration Closed' && customStatus !== 'Scheduled' && customStatus !== 'Upcoming Registration' && (
                           <button
-                            onClick={() => setCancelWarningTournament(tour)}
-                            disabled={isGenerating}
-                            className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 transition-colors flex items-center justify-center gap-1.5"
+                            disabled
+                            className="w-full px-3 py-2 rounded-lg text-xs font-bold text-muted border border-glass-border bg-white/[0.04] cursor-not-allowed text-center"
                           >
-                            {t('Cancel')}
+                            {t(customStatus)}
                           </button>
-                        </div>
-                      )}
-
-                      {customStatus !== 'Registration Open' && customStatus !== 'Registration Closed' && customStatus !== 'Scheduled' && customStatus !== 'Upcoming Registration' && (
-                        <button
-                          disabled
-                          className="w-full px-3 py-2 rounded-lg text-xs font-bold text-muted border border-glass-border bg-white/[0.04] cursor-not-allowed text-center"
-                        >
-                          {t(customStatus)}
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -994,7 +1005,7 @@ export function AdminTournamentsPage() {
             >
               <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
-              
+
               <div className="relative flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
                   <Clock size={15} className="text-gold" />
@@ -1020,21 +1031,21 @@ export function AdminTournamentsPage() {
                 </div>
 
                 <div>
-                   <label className={LABEL}>
-                     {t("Additional days")} {maxDays > 0 && ` (Max ${maxDays} days)`}
-                   </label>
-                   <input
-                     type="number"
-                     min="1"
-                     max={maxDays > 0 ? maxDays : undefined}
-                     value={additionalDays}
-                     onChange={e => {
-                       const val = parseInt(e.target.value) || 0;
-                       setAdditionalDays(Math.max(1, maxDays > 0 ? Math.min(maxDays, val) : val));
-                     }}
-                     className={INPUT}
-                   />
-                 </div>
+                  <label className={LABEL}>
+                    {t("Additional days")} {maxDays > 0 && ` (Max ${maxDays} days)`}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={maxDays > 0 ? maxDays : undefined}
+                    value={additionalDays}
+                    onChange={e => {
+                      const val = parseInt(e.target.value) || 0;
+                      setAdditionalDays(Math.max(1, maxDays > 0 ? Math.min(maxDays, val) : val));
+                    }}
+                    className={INPUT}
+                  />
+                </div>
 
                 <div className="bg-white/[0.02] border border-glass-border/30 rounded-xl p-4 text-xs space-y-2">
                   <div className="font-bold text-white uppercase tracking-wider text-[10px] mb-1">Expected change</div>
@@ -1089,7 +1100,7 @@ export function AdminTournamentsPage() {
             >
               <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent pointer-events-none" />
               <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-red-500/10 to-transparent blur-[40px] pointer-events-none" />
-              
+
               <div className="relative flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
                   <Trophy size={15} className="text-red-400" />
