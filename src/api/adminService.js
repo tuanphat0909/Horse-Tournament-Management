@@ -60,3 +60,5 @@ export const withdrawRaceEntry = (raceEntryId, reason) =>
 
 export const getAdminWalletBalance = () => api.get('/admin/wallet/balance');
 export const getAdminWalletHistory = () => api.get('/admin/wallet/history');
+export const depositAdminWallet = (amount) => api.post('/admin/wallet/deposit', { amount });
+export const withdrawAdminWallet = (amount) => api.post('/admin/wallet/withdraw', { amount });

@@ -11,7 +11,9 @@ import { PageAmbience } from '../../components/layout/PageAmbience';
 import { 
   getAdminWalletBalance, 
   getAdminWalletHistory, 
-  getDashboardStats 
+  getDashboardStats,
+  depositAdminWallet,
+  withdrawAdminWallet
 } from '../../api/adminService';
 import { parseApiError } from '../../api/authService';
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
@@ -44,6 +46,12 @@ export function AdminWalletPage() {
   const [pageError, setPageError] = useState('');
   const [txFilter, setTxFilter] = useState<TxType | 'all'>('all');
 
+  // Modal States for Deposit / Withdraw
+  const [modalType, setModalType] = useState<'deposit' | 'withdraw' | null>(null);
+  const [amountInput, setAmountInput] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   async function loadAll() {
     setPageLoading(true);
     setPageError('');
@@ -68,6 +76,37 @@ export function AdminWalletPage() {
   useEffect(() => {
     loadAll();
   }, []);
+
+  async function handleActionSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseFloat(amountInput);
+    if (isNaN(val) || val <= 0) {
+      setActionMessage({ type: 'error', text: 'Please enter a valid amount greater than 0.' });
+      return;
+    }
+
+    setActionLoading(true);
+    setActionMessage(null);
+    try {
+      if (modalType === 'deposit') {
+        await depositAdminWallet(val);
+        setActionMessage({ type: 'success', text: `Successfully deposited $${val.toFixed(2)} into Treasury!` });
+      } else if (modalType === 'withdraw') {
+        await withdrawAdminWallet(val);
+        setActionMessage({ type: 'success', text: `Successfully withdrew $${val.toFixed(2)} from Treasury!` });
+      }
+      setAmountInput('');
+      await loadAll();
+      setTimeout(() => {
+        setModalType(null);
+        setActionMessage(null);
+      }, 1200);
+    } catch (err: unknown) {
+      setActionMessage({ type: 'error', text: parseApiError(err as Error) });
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   const filteredTx = transactions.filter(tx => {
     if (txFilter === 'all') return true;
@@ -118,10 +157,28 @@ export function AdminWalletPage() {
                       <Wallet size={18} />
                     </div>
                   </div>
-                  <div className="text-3xl font-extrabold text-white tracking-tight tabular-nums mb-1">
+                  <div className="text-3xl font-extrabold text-white tracking-tight tabular-nums mb-3">
                     ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
-                  <div className="text-[10px] text-muted">Administrative operational liquidity</div>
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-gold/10">
+                    <div className="text-[10px] text-muted">Operational Liquidity</div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => { setModalType('deposit'); setAmountInput(''); setActionMessage(null); }}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <ArrowDownLeft size={12} />
+                        Deposit
+                      </button>
+                      <button
+                        onClick={() => { setModalType('withdraw'); setAmountInput(''); setActionMessage(null); }}
+                        className="px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <ArrowUpRight size={12} />
+                        Withdraw
+                      </button>
+                    </div>
+                  </div>
                 </motion.div>
 
                 {/* House Profit Card */}
@@ -239,6 +296,97 @@ export function AdminWalletPage() {
           </div>
         </main>
       </div>
+
+      {/* Deposit / Withdraw Action Modal */}
+      {modalType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md p-6 rounded-2xl glass-panel-elevated border border-gold-border/40 space-y-6 shadow-2xl relative"
+          >
+            <div className="flex items-center justify-between border-b border-glass-border/60 pb-4">
+              <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-xl border ${modalType === 'deposit' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+                  {modalType === 'deposit' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white uppercase tracking-wider">
+                    {modalType === 'deposit' ? 'Treasury Deposit' : 'Treasury Withdraw'}
+                  </h3>
+                  <p className="text-[11px] text-muted">
+                    {modalType === 'deposit' ? 'Add operational funds into administrative treasury balance' : 'Withdraw funds out of administrative treasury balance'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalType(null)}
+                className="text-muted hover:text-white transition-colors cursor-pointer text-sm font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {actionMessage && (
+              <div className={`p-3.5 rounded-xl text-xs font-semibold ${actionMessage.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}>
+                {actionMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleActionSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-champagne mb-1 uppercase tracking-wider">
+                  Amount ($ USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted font-bold text-sm">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    value={amountInput}
+                    onChange={(e) => setAmountInput(e.target.value)}
+                    required
+                    className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-rich-black/60 border border-glass-border focus:border-gold/60 text-white font-mono text-sm outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Amount Presets */}
+              <div className="flex items-center gap-2">
+                {[100, 500, 1000, 5000].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setAmountInput(preset.toString())}
+                    className="flex-1 py-1.5 rounded-lg bg-white/[0.03] hover:bg-gold/10 border border-glass-border/60 hover:border-gold/30 text-xs text-champagne font-mono font-semibold transition-all cursor-pointer"
+                  >
+                    +${preset}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-glass-border/40">
+                <button
+                  type="button"
+                  onClick={() => setModalType(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted hover:text-white transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className={`px-5 py-2 rounded-xl text-xs font-bold text-rich-black transition-all cursor-pointer shadow-lg ${modalType === 'deposit' ? 'bg-emerald-400 hover:bg-emerald-300' : 'bg-gold hover:bg-amber-300'} disabled:opacity-50`}
+                >
+                  {actionLoading ? 'Processing...' : modalType === 'deposit' ? 'Confirm Deposit' : 'Confirm Withdraw'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
