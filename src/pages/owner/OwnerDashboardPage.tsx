@@ -247,10 +247,13 @@ export function OwnerDashboardPage() {
                 ) : schedule.map((r, i) => (
                   <div key={r.id ?? i} onClick={() => navigate('/owner/tournaments')} className="relative overflow-hidden p-4 rounded-xl bg-white/[0.02] border border-glass-border hover:border-gold/30 hover:bg-gold/[0.04] transition-all group cursor-pointer">
                     <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full bg-gradient-to-b from-gold/60 to-transparent" />
-                    <div className="flex items-center justify-between mb-2">
+                    {/* Badge xuống dòng riêng: tên giải dài không còn bị bóp làm thẻ cao thấp lệch nhau */}
+                    <div className="mb-2 space-y-1.5">
                       <h3 className="text-sm font-semibold text-white group-hover:text-champagne transition-colors">{r.name}</h3>
                       {r.tournamentName && (
-                        <span className="text-[10px] bg-gold/15 text-gold font-bold px-2 py-0.5 rounded-full border border-gold/25 uppercase tracking-wider">{r.tournamentName}</span>
+                        <span className="block w-fit max-w-full text-[10px] bg-gold/15 text-gold font-bold px-2 py-0.5 rounded-full border border-gold/25 uppercase tracking-wider truncate" title={r.tournamentName}>
+                          {r.tournamentName}
+                        </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-muted">
