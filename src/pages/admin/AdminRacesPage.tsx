@@ -656,18 +656,26 @@ export function AdminRacesPage() {
     return matchesSearch && getFilterType(t) === statusFilter;
   });
 
-  // Sắp xếp
-  const STATUS_ORDER: Record<string, number> = { active: 0, upcoming: 1, pendingscheduling: 2, completed: 3 };
+  // Sắp xếp — dùng chính nhóm của thanh filter để thứ tự khớp với các tab
+  const STATUS_ORDER: Record<StatusFilter, number> = {
+    all: 9, upcoming: 0, active: 1, pending_scheduling: 2, completed: 3,
+  };
+  const statusRank = (t: any) => STATUS_ORDER[getFilterType(t)] ?? 4;
+
   const sortedTournaments = [...filteredTournaments].sort((a, b) => {
+    // Tab "All" gom theo trạng thái trước (Upcoming → Active → Pending Scheduling
+    // → Completed) để cùng trạng thái nằm liền nhau, rồi mới xếp theo tiêu chí chọn.
+    if (statusFilter === 'all') {
+      const rankDiff = statusRank(a) - statusRank(b);
+      if (rankDiff !== 0) return rankDiff;
+    }
     switch (sortBy) {
       case 'oldest':
         return new Date(a.startDate ?? 0).getTime() - new Date(b.startDate ?? 0).getTime();
       case 'name':
         return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'vi');
       case 'status':
-        const statusA = (a.status ?? '').toLowerCase();
-        const statusB = (b.status ?? '').toLowerCase();
-        return (STATUS_ORDER[statusA] ?? 4) - (STATUS_ORDER[statusB] ?? 4);
+        return statusRank(a) - statusRank(b);
       case 'newest':
       default:
         return new Date(b.startDate ?? 0).getTime() - new Date(a.startDate ?? 0).getTime();
