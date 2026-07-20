@@ -12,6 +12,7 @@ import { CountdownTimer } from '../../components/ui/CountdownTimer';
 import { useLanguage } from '../../context/LanguageContext';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
+import { Pager, paginate } from '../../components/ui/Pager';
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   active: { label: 'Active', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', dot: 'bg-emerald-400' },
   upcoming: { label: 'Upcoming', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', dot: 'bg-blue-400' },
@@ -47,6 +48,19 @@ const STATUS_ORDER: Record<string, number> = {
   'cancelled': 10
 };
 
+// Giải đang mở đăng ký được xếp lên đầu — đó là việc chủ ngựa cần xử lý ngay.
+function isRegistrationOpen(tour: any): boolean {
+  const s = (tour.status ?? '').toLowerCase();
+  if (s === 'registration open' || s === 'pendingregistration') {
+    const end = tour.registrationEndDate ? new Date(tour.registrationEndDate) : null;
+    const start = tour.registrationStartDate ? new Date(tour.registrationStartDate) : null;
+    const now = new Date();
+    if (start && now < start) return false;
+    return !end || now < end;
+  }
+  return false;
+}
+
 export function OwnerTournamentsPage() {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
@@ -55,6 +69,8 @@ export function OwnerTournamentsPage() {
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [myRegistrations, setMyRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [myPage, setMyPage] = useState(1);
 
   useEffect(() => {
     Promise.all([
@@ -102,6 +118,9 @@ export function OwnerTournamentsPage() {
       return false;
     })
     .sort((a, b) => {
+      // Ưu tiên tuyệt đối: giải đang mở đăng ký luôn nằm trên, rồi mới tới tiêu chí sort
+      const regDiff = Number(isRegistrationOpen(b)) - Number(isRegistrationOpen(a));
+      if (regDiff !== 0) return regDiff;
       switch (sortBy) {
         case 'oldest': return new Date(a.startDate ?? 0).getTime() - new Date(b.startDate ?? 0).getTime();
         case 'name': return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'vi');
@@ -127,7 +146,16 @@ export function OwnerTournamentsPage() {
         status: reg.status
       }));
     return { ...tour, myHorses };
-  });
+  }).sort((a, b) => Number(isRegistrationOpen(b)) - Number(isRegistrationOpen(a)));
+
+  // Phân trang 2 danh sách (6 thẻ/trang = 2 hàng lưới 3 cột)
+  const { paged: pagedTournaments, totalPages, total, page: safePage } = paginate(filtered, page, 6);
+  const {
+    paged: pagedMyTournaments,
+    totalPages: myTotalPages,
+    total: myTotal,
+    page: safeMyPage,
+  } = paginate(myParticipatingTournaments, myPage, 6);
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
@@ -149,14 +177,14 @@ export function OwnerTournamentsPage() {
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-2 border-b border-glass-border/30 pb-2">
                 <span className="text-lg font-serif text-white font-bold flex items-center gap-2">
-                  🏆 {t("Giải đấu sắp tới có ngựa tham gia")}
+                  🏆 {t("Upcoming tournaments with my horses")}
                 </span>
                 <span className="bg-gold/10 text-gold border border-gold/20 text-xs px-2 py-0.5 rounded-full font-bold">
                   {myParticipatingTournaments.length}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {myParticipatingTournaments.map((tour, i) => {
+                {pagedMyTournaments.map((tour, i) => {
                   const s = tour.status?.toLowerCase() ?? 'upcoming';
                   const config = STATUS_CONFIG[s] ?? STATUS_CONFIG.upcoming;
                   return (
@@ -182,7 +210,7 @@ export function OwnerTournamentsPage() {
                       <div className="space-y-2 pt-3 border-t border-glass-border/40 text-xs">
                         <div className="flex flex-col gap-1.5 bg-white/[0.02] border border-glass-border/30 rounded-lg p-2.5">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-gold flex items-center gap-1.5">
-                            🐴 {t("Ngựa của tôi đã đăng ký:")}
+                            🐴 {t("My registered horses:")}
                           </span>
                           <div className="flex flex-wrap gap-1">
                             {tour.myHorses.map((h: any, idx: number) => {
@@ -211,6 +239,9 @@ export function OwnerTournamentsPage() {
                   );
                 })}
               </div>
+              {myTotalPages > 1 && (
+                <Pager page={safeMyPage} totalPages={myTotalPages} total={myTotal} onChange={setMyPage} />
+              )}
             </div>
           )}
 
@@ -257,7 +288,7 @@ export function OwnerTournamentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filtered.map((tour, i) => {
+              {pagedTournaments.map((tour, i) => {
                 const s = tour.status?.toLowerCase() ?? 'upcoming';
                 const config = STATUS_CONFIG[s] ?? STATUS_CONFIG.upcoming;
                 const regNotStarted = tour.registrationStartDate && new Date() < new Date(tour.registrationStartDate);
@@ -327,6 +358,10 @@ export function OwnerTournamentsPage() {
                 );
               })}
             </div>
+          )}
+
+          {!loading && totalPages > 1 && (
+            <Pager page={safePage} totalPages={totalPages} total={total} onChange={setPage} />
           )}
 
         </main>

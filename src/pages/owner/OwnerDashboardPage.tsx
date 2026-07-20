@@ -10,7 +10,7 @@ import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser, parseApiError } from '../../api/authService';
-import { getMyHorses, getOwnerWalletBalance } from '../../api/ownerService';
+import { getMyHorses, getOwnerWalletBalance, getOwnerResults } from '../../api/ownerService';
 import { getRaceSchedule } from '../../api/publicService';
 import { calculateAge, formatDateTime } from '../../utils/format';
 import { useLanguage } from '../../context/LanguageContext';
@@ -37,6 +37,7 @@ export function OwnerDashboardPage() {
   const [schedule, setSchedule] = useState<any[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [prizeTotal, setPrizeTotal] = useState<number | null>(null);
 
   useEffect(() => {
     getMyHorses()
@@ -50,6 +51,18 @@ export function OwnerDashboardPage() {
       .then((d: any) => setSchedule(d?.result ?? (Array.isArray(d) ? d : [])))
       .catch((err: Error) => { console.error(parseApiError(err)); setSchedule([]); })
       .finally(() => setScheduleLoading(false));
+  }, []);
+
+  // Tổng tiền thưởng đã nhận — cộng dồn prizeAmount của các kết quả đã hoàn tất
+  useEffect(() => {
+    getOwnerResults()
+      .then((d: any) => {
+        const list = d?.result ?? (Array.isArray(d) ? d : []);
+        const sum = (Array.isArray(list) ? list : [])
+          .reduce((acc: number, r: any) => acc + (Number(r?.prizeAmount) || 0), 0);
+        setPrizeTotal(sum);
+      })
+      .catch(() => setPrizeTotal(0));
   }, []);
 
   useEffect(() => {
@@ -120,7 +133,7 @@ export function OwnerDashboardPage() {
               { title: t('My Horses'), value: String(horses.length), trend: '+12%', icon: Star, color: 'text-blue-400', bg: 'from-blue-500/15 to-blue-900/20', spark: SPARKS[0], to: '/owner/horses' },
               { title: t('Wallet Balance'), value: walletBalance === null ? '…' : `${walletBalance.toLocaleString()} ¢`, trend: '', icon: Wallet, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[1], to: '/owner/wallet' },
               { title: t('Upcoming'), value: scheduleLoading ? '…' : String(schedule.length), trend: t('3 days left'), icon: Calendar, color: 'text-purple-400', bg: 'from-purple-500/15 to-purple-900/20', spark: SPARKS[2], to: '/owner/tournaments' },
-              { title: t('Prize Money'), value: '—', trend: '+18%', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[3], to: '/owner/results' },
+              { title: t('Prize Money'), value: prizeTotal === null ? '…' : `${prizeTotal.toLocaleString()} ¢`, trend: '', icon: Trophy, color: 'text-gold', bg: 'from-gold/15 to-amber-900/20', spark: SPARKS[3], to: '/owner/results' },
             ].map((m, i) => {
               const isForbidden = isLocked && (m.to === '/owner/horses' || m.to === '/owner/registrations' || m.to === '/owner/tournaments');
               return (
@@ -175,7 +188,8 @@ export function OwnerDashboardPage() {
                   {t('View all')} <ChevronRight size={14} />
                 </button>
               </div>
-              <div className="relative z-10 flex-1 space-y-2 overflow-y-auto">
+              {/* Cuộn trong khối thay vì kéo dài trang khi có nhiều ngựa */}
+              <div className="relative z-10 flex-1 space-y-2 overflow-y-auto max-h-[420px] pr-1 scrollbar-thin">
                 {horsesLoading ? (
                   <LoadingSkeleton />
                 ) : horses.length === 0 ? (
@@ -220,7 +234,8 @@ export function OwnerDashboardPage() {
                   {t('View Schedule')} <ChevronRight size={14} />
                 </button>
               </div>
-              <div className="relative z-10 flex-1 space-y-3">
+              {/* Cuộn trong khối thay vì kéo dài trang khi lịch nhiều mục */}
+              <div className="relative z-10 flex-1 space-y-3 overflow-y-auto max-h-[420px] pr-1 scrollbar-thin">
                 {scheduleLoading ? (
                   <LoadingSkeleton />
                 ) : schedule.length === 0 ? (

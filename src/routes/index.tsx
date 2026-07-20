@@ -17,7 +17,7 @@ import { AdminResultsPage } from '../pages/admin/AdminResultsPage';
 import { AdminPredictionsPage } from '../pages/admin/AdminPredictionsPage';
 import { AdminViolationsPage } from '../pages/admin/AdminViolationsPage';
 import { AdminWalletPage } from '../pages/admin/AdminWalletPage';
-import { AdminNotificationsPage } from '../pages/admin/AdminNotificationsPage';
+import { NotificationsPage } from '../pages/NotificationsPage';
 
 // Owner
 import { OwnerDashboardPage } from '../pages/owner/OwnerDashboardPage';
@@ -53,7 +53,6 @@ import { SpectatorTournamentDetailPage } from '../pages/spectator/SpectatorTourn
 import { SpectatorRaceDetailPage } from '../pages/spectator/SpectatorRaceDetailPage';
 import { SpectatorLiveResultsPage } from '../pages/spectator/SpectatorLiveResultsPage';
 import { SpectatorPredictionsPage } from '../pages/spectator/SpectatorPredictionsPage';
-import { SpectatorNotificationsPage } from '../pages/spectator/SpectatorNotificationsPage';
 import { SpectatorWalletOverviewPage } from '../pages/spectator/SpectatorWalletOverviewPage';
 import { SpectatorDepositPage } from '../pages/spectator/SpectatorDepositPage';
 import { SpectatorWithdrawPage } from '../pages/spectator/SpectatorWithdrawPage';
@@ -89,7 +88,7 @@ export function AppRoutes() {
         <Route path="/admin/predictions" element={<PrivateRoute><AdminPredictionsPage /></PrivateRoute>} />
         <Route path="/admin/violations" element={<PrivateRoute><AdminViolationsPage /></PrivateRoute>} />
         <Route path="/admin/wallet" element={<PrivateRoute><AdminWalletPage /></PrivateRoute>} />
-        <Route path="/admin/notifications" element={<PrivateRoute><AdminNotificationsPage /></PrivateRoute>} />
+        <Route path="/admin/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
 
         {/* Owner — wallet sub-routes (/owner/wallet → redirect to /withdraw) */}
         <Route path="/owner/dashboard" element={<PrivateRoute><OwnerDashboardPage /></PrivateRoute>} />
@@ -102,6 +101,7 @@ export function AppRoutes() {
         <Route path="/owner/registrations" element={<PrivateRoute><OwnerRegistrationsPage /></PrivateRoute>} />
         <Route path="/owner/results" element={<PrivateRoute><OwnerResultsPage /></PrivateRoute>} />
         <Route path="/owner/tournaments" element={<PrivateRoute><OwnerTournamentsPage /></PrivateRoute>} />
+        <Route path="/owner/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
 
         {/* Jockey */}
         <Route path="/jockey/dashboard" element={<PrivateRoute><JockeyDashboardPage /></PrivateRoute>} />
@@ -110,6 +110,7 @@ export function AppRoutes() {
         <Route path="/jockey/schedule" element={<PrivateRoute><JockeySchedulePage /></PrivateRoute>} />
         <Route path="/jockey/stats" element={<PrivateRoute><JockeyStatsPage /></PrivateRoute>} />
         <Route path="/jockey/violations" element={<PrivateRoute><JockeyViolationsPage /></PrivateRoute>} />
+        <Route path="/jockey/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
 
         {/* Referee */}
         <Route path="/referee/dashboard" element={<PrivateRoute><RefereeDashboardPage /></PrivateRoute>} />
@@ -118,6 +119,7 @@ export function AppRoutes() {
         <Route path="/referee/confirm-results" element={<PrivateRoute><RefereeConfirmResultsPage /></PrivateRoute>} />
         <Route path="/referee/reports" element={<PrivateRoute><RefereeReportsPage /></PrivateRoute>} />
         <Route path="/referee/schedule" element={<PrivateRoute><RefereeSchedulePage /></PrivateRoute>} />
+        <Route path="/referee/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
 
         {/* Spectator — wallet sub-routes (/spectator/wallet → redirect to /withdraw) */}
         <Route path="/spectator/dashboard" element={<PrivateRoute><SpectatorDashboardPage /></PrivateRoute>} />
@@ -130,14 +132,15 @@ export function AppRoutes() {
         <Route path="/spectator/races/:raceId" element={<PrivateRoute><SpectatorRaceDetailPage /></PrivateRoute>} />
         <Route path="/spectator/live" element={<PrivateRoute><SpectatorLiveResultsPage /></PrivateRoute>} />
         <Route path="/spectator/predictions" element={<PrivateRoute><SpectatorPredictionsPage /></PrivateRoute>} />
-        <Route path="/spectator/notifications" element={<PrivateRoute><SpectatorNotificationsPage /></PrivateRoute>} />
+        <Route path="/spectator/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
         
         {/* Veterinarian */}
         <Route path="/vet/dashboard" element={<PrivateRoute><VetDashboardPage /></PrivateRoute>} />
         <Route path="/vet/medical-check" element={<PrivateRoute><MedicalCheckPage /></PrivateRoute>} />
+        <Route path="/vet/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
 
         {/* Core notifications route accessible by all roles */}
-        <Route path="/notifications" element={<PrivateRoute><SpectatorNotificationsPage /></PrivateRoute>} />
+        <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
       </Routes>
     </NotificationProvider>
   );

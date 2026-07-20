@@ -5,6 +5,8 @@
 // chạy `npm run dev` là kết nối được ngay, không cần chạy BE local.
 // Muốn dev với BE local: tạo file .env.local với  VITE_API_URL=http://localhost:5000/api
 
+import { fixMojibakeDeep } from '../utils/encoding';
+
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://hrms-backend-a4dwfmgmgfagf7ax.southeastasia-01.azurewebsites.net/api';
 
 async function request(method, endpoint, data) {
@@ -40,7 +42,9 @@ async function request(method, endpoint, data) {
     throw new Error(message || `HTTP error ${res.status}`);
   }
 
-  return res.json();
+  // Tên giải/ngựa/cuộc đua lưu ở BE hay bị lỗi encoding UTF-8 → sửa tại một chỗ
+  // cho toàn app thay vì xử lý ở từng trang.
+  return fixMojibakeDeep(await res.json());
 }
 
 export const api = {

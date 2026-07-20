@@ -41,6 +41,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { icon: ClipboardList, label: 'Race Entry', path: '/owner/registrations' },
     { icon: Users, label: 'Jockey', path: '/owner/jockeys' },
     { icon: BarChart3, label: 'Results & Prizes', path: '/owner/results' },
+    { icon: Bell, label: 'Notifications', path: '/owner/notifications' },
   ],
   jockey: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/jockey/dashboard' },
@@ -49,6 +50,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { icon: Calendar, label: 'Schedule', path: '/jockey/schedule' },
     { icon: Star, label: 'Achievements', path: '/jockey/stats' },
     { icon: AlertTriangle, label: 'My Violations', path: '/jockey/violations' },
+    { icon: Bell, label: 'Notifications', path: '/jockey/notifications' },
   ],
   referee: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/referee/dashboard' },
@@ -58,6 +60,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { icon: Activity, label: 'Record Violations', path: '/referee/violations' },
     { icon: Flag, label: 'Confirm Results', path: '/referee/confirm-results' },
     { icon: FileText, label: 'Reports', path: '/referee/reports' },
+    { icon: Bell, label: 'Notifications', path: '/referee/notifications' },
   ],
   spectator: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/spectator/dashboard' },
@@ -70,6 +73,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   veterinarian: [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/vet/dashboard' },
     { icon: ClipboardList, label: 'Medical Check', path: '/vet/medical-check' },
+    { icon: Bell, label: 'Notifications', path: '/vet/notifications' },
   ],
 };
 

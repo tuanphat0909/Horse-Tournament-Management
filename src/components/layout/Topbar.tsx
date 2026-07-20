@@ -5,6 +5,17 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { getCurrentUser } from '../../api/authService';
 import { HighlightQuoted } from '../ui/HighlightQuoted';
+import { toRoleKey } from '../../utils/notificationFilter';
+
+// Mỗi role có trang thông báo riêng — chuông và nút "View all" trỏ đúng trang đó.
+const NOTIFICATIONS_PATH: Record<string, string> = {
+  admin: '/admin/notifications',
+  owner: '/owner/notifications',
+  jockey: '/jockey/notifications',
+  referee: '/referee/notifications',
+  spectator: '/spectator/notifications',
+  veterinarian: '/vet/notifications',
+};
 
 export function Topbar() {
   const { t, language } = useLanguage();
@@ -12,6 +23,7 @@ export function Topbar() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, fetchRecent } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsPath = NOTIFICATIONS_PATH[toRoleKey(getCurrentUser()?.role)] ?? '/notifications';
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -33,12 +45,10 @@ export function Topbar() {
     if (!noti.isRead) {
       await markAsRead(noti.id);
     }
-    const user = getCurrentUser();
-    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'systemadministrator';
     if (noti.actionUrl) {
       navigate(noti.actionUrl);
     } else {
-      navigate(isAdmin ? '/admin/notifications' : '/notifications');
+      navigate(notificationsPath);
     }
   };
 
@@ -111,8 +121,8 @@ export function Topbar() {
           >
             <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center border border-[#0B1628]">
-                {unreadCount}
+              <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-gradient-to-br from-gold to-champagne text-[#0b101e] text-[9px] font-bold flex items-center justify-center ring-2 ring-[#0B1628] shadow-[0_0_8px_rgba(201,168,76,0.5)]">
+                {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </button>
@@ -180,9 +190,7 @@ export function Topbar() {
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
-                    const user = getCurrentUser();
-                    const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'systemadministrator';
-                    navigate(isAdmin ? '/admin/notifications' : '/notifications');
+                    navigate(notificationsPath);
                   }}
                   className="w-full py-2.5 text-[11px] font-bold text-champagne hover:text-white transition-colors cursor-pointer"
                 >

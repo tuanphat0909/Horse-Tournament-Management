@@ -10,6 +10,7 @@ import {
   deleteNotification
 } from '../api/publicService';
 import { getCurrentUser } from '../api/authService';
+import { filterNotisForRole, isNotiForRole, toRoleKey } from '../utils/notificationFilter';
 
 interface NotificationItem {
   id: number;
@@ -80,32 +81,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const res = await getNotifications({ page: 1, pageSize: 10 });
       const items = res?.result?.items || res?.result || [];
       
-      const isAdmin = currentUser.role?.toLowerCase() === 'admin' || currentUser.role?.toLowerCase() === 'systemadministrator';
-      let filteredItems = Array.isArray(items) ? items : [];
-      if (isAdmin) {
-        filteredItems = filteredItems.filter(noti => 
-          noti.type?.toLowerCase() !== 'race' && 
-          noti.title !== 'Race Results Published' &&
-          !(noti.actionUrl && noti.actionUrl.toLowerCase().includes('/spectator/'))
-        );
-      }
-      setNotifications(filteredItems);
+      // Chỉ hiện thông báo liên quan tới vai trò đang đăng nhập
+      const roleKey = toRoleKey(currentUser.role);
+      setNotifications(filterNotisForRole(Array.isArray(items) ? items : [], roleKey));
 
       // Also get all unread to get the accurate count
       const allRes = await getNotifications({ page: 1, pageSize: 100, isRead: false });
       const unreadItems = allRes?.result?.items || allRes?.result || [];
-      
-      let filteredUnread = Array.isArray(unreadItems) ? unreadItems : [];
-      if (isAdmin) {
-        filteredUnread = filteredUnread.filter(noti => 
-          noti.type?.toLowerCase() !== 'race' && 
-          noti.title !== 'Race Results Published' &&
-          !(noti.actionUrl && noti.actionUrl.toLowerCase().includes('/spectator/'))
-        );
-      }
-      const count = filteredUnread.length;
-      
-      setUnreadCount(count);
+
+      setUnreadCount(filterNotisForRole(Array.isArray(unreadItems) ? unreadItems : [], roleKey).length);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     } finally {
@@ -178,14 +162,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     newConnection.on('ReceiveNotification', (noti: NotificationItem) => {
       const currentUser = getCurrentUser();
-      const isAdmin = currentUser?.role?.toLowerCase() === 'admin' || currentUser?.role?.toLowerCase() === 'systemadministrator';
-      if (isAdmin && (
-        noti.type?.toLowerCase() === 'race' || 
-        noti.title === 'Race Results Published' ||
-        (noti.actionUrl && noti.actionUrl.toLowerCase().includes('/spectator/'))
-      )) {
-        return; // Ignore spectator race notifications for Admin
-      }
+      // Bỏ qua thông báo không thuộc vai trò đang đăng nhập
+      if (!isNotiForRole(noti, toRoleKey(currentUser?.role))) return;
       showToast(noti.title || 'New Notification', noti.content || noti.message, 'info');
       fetchRecent();
     });
