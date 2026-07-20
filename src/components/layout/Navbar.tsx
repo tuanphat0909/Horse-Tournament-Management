@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { BrandLogo } from '../ui/BrandLogo';
 import { useLanguage } from '../../context/LanguageContext';
 
+// href bắt đầu bằng '#' là section trên landing page, còn lại là trang riêng.
 const NAV_LINKS = [
   { label: 'Tournaments', href: '#tournaments' },
-  { label: 'Leaderboard', href: '#leaderboard' },
+  { label: 'Leaderboard', href: '/leaderboard' },
   { label: 'Features', href: '#features' },
-  { label: 'About', href: '#about' },
+  { label: 'About', href: '/about' },
 ];
 
 export function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
@@ -22,6 +24,25 @@ export function Navbar() {
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 50);
   });
+
+  // Link dạng '#section' chỉ cuộn được khi đang ở landing page — từ trang khác
+  // phải quay về '/' rồi mới cuộn tới đúng khối.
+  function handleNavClick(e: React.MouseEvent, href: string) {
+    setMobileOpen(false);
+    if (!href.startsWith('#')) {
+      e.preventDefault();
+      navigate(href);
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    if (location.pathname !== '/') {
+      e.preventDefault();
+      navigate('/');
+      setTimeout(() => {
+        document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }
 
   return (
     <motion.nav
@@ -48,6 +69,7 @@ export function Navbar() {
             <a
               key={item.label}
               href={item.href}
+              onClick={(e) => handleNavClick(e, item.href)}
               className="text-sm font-medium text-body hover:text-white transition-colors relative group"
             >
               {t(item.label)}
@@ -98,7 +120,7 @@ export function Navbar() {
                 <a
                   key={item.label}
                   href={item.href}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={(e) => handleNavClick(e, item.href)}
                   className="text-sm font-medium text-body hover:text-white transition-colors py-2 border-b border-glass-border/40 last:border-0"
                 >
                   {t(item.label)}

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Globe, Mail, MessageCircle } from 'lucide-react';
 import { BrandLogo } from '../ui/BrandLogo';
 import { useLanguage } from '../../context/LanguageContext';
@@ -16,44 +17,42 @@ export function Footer() {
           </div>
           <p className="text-sm text-muted mb-6">{t('The ultimate management platform for elite equestrian tournaments.')}</p>
           <div className="flex items-center gap-4">
-            <a href="/" className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-muted hover:text-gold hover:border-gold/50 transition-all" aria-label="Home">
+            <Link to="/" className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-muted hover:text-gold hover:border-gold/50 transition-all" aria-label="Home">
               <Globe className="w-4 h-4" />
-            </a>
-            <a href="#about" className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-muted hover:text-gold hover:border-gold/50 transition-all" aria-label="Contact">
+            </Link>
+            <Link to="/about" className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-muted hover:text-gold hover:border-gold/50 transition-all" aria-label="About">
               <MessageCircle className="w-4 h-4" />
-            </a>
+            </Link>
             <a href="https://mail.google.com/mail/?view=cm&fs=1&to=dackimvo@gmail.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-muted hover:text-gold hover:border-gold/50 transition-all" aria-label="Email">
               <Mail className="w-4 h-4" />
             </a>
           </div>
         </div>
 
+        {/* Chỉ giữ những mục dẫn tới nội dung có thật trong hệ thống */}
         <div>
           <h4 className="text-white font-bold mb-6">{t('Platform')}</h4>
           <ul className="space-y-3 text-sm text-muted">
-            <li><a href="#tournaments" className="hover:text-gold transition-colors">{t('Tournaments')}</a></li>
-            <li><a href="#leaderboard" className="hover:text-gold transition-colors">{t('Leaderboards')}</a></li>
-            <li><a href="#features" className="hover:text-gold transition-colors">{t('AI Analytics')}</a></li>
-            <li><a href="#features" className="hover:text-gold transition-colors">{t('Live Tracking')}</a></li>
+            <li><Link to="/" className="hover:text-gold transition-colors">{t('Tournaments')}</Link></li>
+            <li><Link to="/leaderboard" className="hover:text-gold transition-colors">{t('Leaderboard')}</Link></li>
+            <li><Link to="/login" className="hover:text-gold transition-colors">{t('Live Results')}</Link></li>
           </ul>
         </div>
 
         <div>
           <h4 className="text-white font-bold mb-6">{t('Company')}</h4>
           <ul className="space-y-3 text-sm text-muted">
-            <li><a href="#about" className="hover:text-gold transition-colors">{t('About Us')}</a></li>
-            <li><a href="#about" className="hover:text-gold transition-colors">{t('Careers')}</a></li>
-            <li><a href="#about" className="hover:text-gold transition-colors">{t('Partners')}</a></li>
-            <li><a href="#about" className="hover:text-gold transition-colors">{t('Contact')}</a></li>
+            <li><Link to="/about" className="hover:text-gold transition-colors">{t('About Us')}</Link></li>
+            <li><Link to="/register" className="hover:text-gold transition-colors">{t('Register')}</Link></li>
           </ul>
         </div>
 
         <div>
           <h4 className="text-white font-bold mb-6">{t('Legal')}</h4>
           <ul className="space-y-3 text-sm text-muted">
-            <li><a href="#" className="hover:text-gold transition-colors">{t('Privacy Policy')}</a></li>
-            <li><a href="#" className="hover:text-gold transition-colors">{t('Terms of Service')}</a></li>
-            <li><a href="#" className="hover:text-gold transition-colors">{t('Cookie Policy')}</a></li>
+            <li><Link to="/legal#privacy" className="hover:text-gold transition-colors">{t('Privacy Policy')}</Link></li>
+            <li><Link to="/legal#terms" className="hover:text-gold transition-colors">{t('Terms of Service')}</Link></li>
+            <li><Link to="/legal#cookies" className="hover:text-gold transition-colors">{t('Cookie Policy')}</Link></li>
           </ul>
         </div>
       </div>

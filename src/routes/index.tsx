@@ -61,6 +61,11 @@ import { SpectatorWithdrawPage } from '../pages/spectator/SpectatorWithdrawPage'
 import { VetDashboardPage } from '../pages/vet/VetDashboardPage';
 import { MedicalCheckPage } from '../pages/vet/MedicalCheckPage';
 
+// Public pages (no login required)
+import { LeaderboardPage } from '../pages/LeaderboardPage';
+import { AboutPage } from '../pages/AboutPage';
+import { LegalPage } from '../pages/LegalPage';
+
 import { PrivateRoute } from './PrivateRoute';
 import { NotificationProvider } from '../context/NotificationContext';
 
@@ -72,6 +77,9 @@ export function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/legal" element={<LegalPage />} />
         <Route path="/payment/vnpay/return" element={<PrivateRoute><PaymentReturnPage /></PrivateRoute>} />
 
         {/* Horse Owner (legacy route kept for backward compat) */}
