@@ -299,29 +299,30 @@ export function AdminWalletPage() {
 
       {/* Deposit / Withdraw Action Modal */}
       {modalType && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md p-6 rounded-2xl glass-panel-elevated border border-gold-border/40 space-y-6 shadow-2xl relative"
+            className="w-full max-w-lg p-6 rounded-2xl glass-panel-elevated border border-gold-border/40 space-y-5 shadow-2xl relative my-8"
           >
             <div className="flex items-center justify-between border-b border-glass-border/60 pb-4">
-              <div className="flex items-center gap-2">
-                <div className={`p-2 rounded-xl border ${modalType === 'deposit' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
-                  {modalType === 'deposit' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl border ${modalType === 'deposit' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+                  {modalType === 'deposit' ? <ArrowDownLeft size={22} /> : <ArrowUpRight size={22} />}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white uppercase tracking-wider">
-                    {modalType === 'deposit' ? 'Treasury Deposit' : 'Treasury Withdraw'}
+                  <h3 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    {modalType === 'deposit' ? 'Treasury VietQR Deposit' : 'Treasury Withdraw'}
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">Official</span>
                   </h3>
                   <p className="text-[11px] text-muted">
-                    {modalType === 'deposit' ? 'Add operational funds into administrative treasury balance' : 'Withdraw funds out of administrative treasury balance'}
+                    {modalType === 'deposit' ? 'Scan VietQR code or transfer funds directly to Admin Treasury bank account' : 'Withdraw liquidity from administrative treasury wallet to bank account'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setModalType(null)}
-                className="text-muted hover:text-white transition-colors cursor-pointer text-sm font-bold p-1"
+                className="text-muted hover:text-white transition-colors cursor-pointer text-sm font-bold p-1 rounded-lg bg-white/5 hover:bg-white/10"
               >
                 ✕
               </button>
@@ -333,13 +334,17 @@ export function AdminWalletPage() {
               </div>
             )}
 
-            <form onSubmit={handleActionSubmit} className="space-y-4">
+            <form onSubmit={handleActionSubmit} className="space-y-5">
+              {/* Amount Input */}
               <div>
-                <label className="block text-xs font-semibold text-champagne mb-1 uppercase tracking-wider">
-                  Amount ($ USD)
+                <label className="block text-xs font-semibold text-champagne mb-1.5 uppercase tracking-wider flex justify-between">
+                  <span>Enter Amount ($ USD)</span>
+                  <span className="text-gold font-normal font-mono text-[11px]">
+                    ≈ {((parseFloat(amountInput) || 0) * 25000).toLocaleString('vi-VN')} VND
+                  </span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted font-bold text-sm">$</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold font-bold text-sm">$</span>
                   <input
                     type="number"
                     step="0.01"
@@ -348,7 +353,7 @@ export function AdminWalletPage() {
                     value={amountInput}
                     onChange={(e) => setAmountInput(e.target.value)}
                     required
-                    className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-rich-black/60 border border-glass-border focus:border-gold/60 text-white font-mono text-sm outline-none transition-all"
+                    className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-rich-black/60 border border-glass-border focus:border-gold/60 text-white font-mono text-sm outline-none transition-all shadow-inner"
                   />
                 </div>
               </div>
@@ -360,14 +365,94 @@ export function AdminWalletPage() {
                     key={preset}
                     type="button"
                     onClick={() => setAmountInput(preset.toString())}
-                    className="flex-1 py-1.5 rounded-lg bg-white/[0.03] hover:bg-gold/10 border border-glass-border/60 hover:border-gold/30 text-xs text-champagne font-mono font-semibold transition-all cursor-pointer"
+                    className="flex-1 py-1.5 rounded-lg bg-white/[0.03] hover:bg-gold/15 border border-glass-border/60 hover:border-gold/40 text-xs text-champagne font-mono font-semibold transition-all cursor-pointer"
                   >
                     +${preset}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-glass-border/40">
+              {/* QR Code and Admin Bank Information Block */}
+              {modalType === 'deposit' && (
+                <div className="space-y-4 pt-2 border-t border-glass-border/40">
+                  <div className="bg-white/5 rounded-2xl p-4 border border-gold-border/30 flex flex-col md:flex-row items-center gap-4">
+                    {/* VietQR Dynamic Code Image */}
+                    <div className="flex flex-col items-center justify-center shrink-0">
+                      <div className="p-2.5 bg-white rounded-xl border border-glass-border shadow-lg">
+                        <img
+                          src={`https://img.vietqr.io/image/vietinbank-888899996666-print.png?amount=${Math.round((parseFloat(amountInput) || 100) * 25000)}&addInfo=DEPOSIT_TREASURY_ADMIN&accountName=EQUESTRIA%20TREASURY%20ADMIN`}
+                          alt="VietQR Admin Bank Deposit"
+                          className="w-36 h-36 object-contain"
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted italic mt-1.5">Scan VietQR via Mobile Banking</span>
+                    </div>
+
+                    {/* Bank Transfer Details */}
+                    <div className="flex-1 space-y-2 text-xs w-full">
+                      <div className="flex items-center justify-between py-1 border-b border-glass-border/30">
+                        <span className="text-muted">Bank Name:</span>
+                        <span className="text-white font-bold">VietinBank (ICB)</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1 border-b border-glass-border/30">
+                        <span className="text-muted">Account Number:</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gold font-mono font-bold tracking-wider">888899996666</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText('888899996666');
+                              setActionMessage({ type: 'success', text: 'Account number copied to clipboard!' });
+                            }}
+                            className="px-1.5 py-0.5 rounded bg-gold/10 hover:bg-gold/20 text-gold text-[10px] font-bold transition-all cursor-pointer border border-gold/20"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between py-1 border-b border-glass-border/30">
+                        <span className="text-muted">Account Name:</span>
+                        <span className="text-white font-semibold uppercase">EQUESTRIA TREASURY ADMIN</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-muted">Transfer Memo:</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-emerald-400 font-mono font-bold">DEPOSIT_TREASURY_ADMIN</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText('DEPOSIT_TREASURY_ADMIN');
+                              setActionMessage({ type: 'success', text: 'Transfer memo copied to clipboard!' });
+                            }}
+                            className="px-1.5 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-bold transition-all cursor-pointer border border-emerald-500/20"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {modalType === 'withdraw' && (
+                <div className="bg-white/5 rounded-2xl p-4 border border-blue-500/30 text-xs space-y-2">
+                  <div className="flex items-center justify-between py-1 border-b border-glass-border/30">
+                    <span className="text-muted">Destination Bank:</span>
+                    <span className="text-white font-bold">VietinBank (Default Admin Settlement)</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1 border-b border-glass-border/30">
+                    <span className="text-muted">Account Number:</span>
+                    <span className="text-gold font-mono font-bold">888899996666</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-muted">Account Holder:</span>
+                    <span className="text-white font-semibold">EQUESTRIA TREASURY ADMIN</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-glass-border/40">
                 <button
                   type="button"
                   onClick={() => setModalType(null)}
@@ -378,9 +463,9 @@ export function AdminWalletPage() {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className={`px-5 py-2 rounded-xl text-xs font-bold text-rich-black transition-all cursor-pointer shadow-lg ${modalType === 'deposit' ? 'bg-emerald-400 hover:bg-emerald-300' : 'bg-gold hover:bg-amber-300'} disabled:opacity-50`}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold text-rich-black transition-all cursor-pointer shadow-lg flex items-center gap-1.5 ${modalType === 'deposit' ? 'bg-emerald-400 hover:bg-emerald-300' : 'bg-gold hover:bg-amber-300'} disabled:opacity-50`}
                 >
-                  {actionLoading ? 'Processing...' : modalType === 'deposit' ? 'Confirm Deposit' : 'Confirm Withdraw'}
+                  {actionLoading ? 'Processing...' : modalType === 'deposit' ? `Confirm Deposit ($${(parseFloat(amountInput) || 0).toLocaleString()})` : `Confirm Withdraw ($${(parseFloat(amountInput) || 0).toLocaleString()})`}
                 </button>
               </div>
             </form>
