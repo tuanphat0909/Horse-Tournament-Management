@@ -51,7 +51,7 @@ export function JockeyViolationsPage() {
             title="My Violations"
             subtitle="Violations and appeals recorded against you"
             imageUrl="/images/hero-jockey.jpg"
-            imagePosition="center 25%"
+            imagePosition="center 12%"
           />
 
           {/* Info */}

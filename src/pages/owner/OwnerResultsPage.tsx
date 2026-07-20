@@ -54,7 +54,7 @@ export function OwnerResultsPage() {
             title="Race Results"
             subtitle="Race results and season achievements of owned horses"
             imageUrl="/images/hero-owner.jpg"
-            imagePosition="center 58%"
+            imagePosition="center 5%"
           />
 
           {/* Error Message */}

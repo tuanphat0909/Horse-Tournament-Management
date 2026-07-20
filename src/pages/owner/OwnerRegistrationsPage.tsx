@@ -227,7 +227,7 @@ export function OwnerRegistrationsPage() {
             title="Race Registration"
             subtitle="Manage tournament registrations"
             imageUrl="/images/hero-owner.jpg"
-            imagePosition="center 58%"
+            imagePosition="center 5%"
             actions={
               <button onClick={() => setShowModal(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
                 <Plus size={16} /> Register horse

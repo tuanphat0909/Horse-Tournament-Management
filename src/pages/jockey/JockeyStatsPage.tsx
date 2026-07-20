@@ -65,7 +65,7 @@ export function JockeyStatsPage() {
             title="Achievements"
             subtitle="Personal racing statistics and performance"
             imageUrl="/images/hero-jockey.jpg"
-            imagePosition="center 25%"
+            imagePosition="center 12%"
           />
 
           {error && (

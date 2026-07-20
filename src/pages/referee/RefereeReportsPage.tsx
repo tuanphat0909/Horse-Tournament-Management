@@ -156,7 +156,7 @@ export function RefereeReportsPage() {
             title="Report"
             subtitle="Report history and referee documents"
             imageUrl="/images/hero-referee.jpg"
-            imagePosition="right 52%"
+            imagePosition="right 28%"
             actions={
               <button 
                 onClick={() => {

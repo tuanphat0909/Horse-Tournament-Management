@@ -49,7 +49,7 @@ export function RefereeSchedulePage() {
             title={t('Race Schedule')}
             subtitle={t('Manage and monitor your assigned races')}
             imageUrl="/images/hero-referee.jpg"
-            imagePosition="right 40%"
+            imagePosition="right 28%"
           />
 
           {error && (

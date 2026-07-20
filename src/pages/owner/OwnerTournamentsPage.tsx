@@ -169,7 +169,7 @@ export function OwnerTournamentsPage() {
             title={t("Tournaments")}
             subtitle={t("Active and upcoming tournaments")}
             imageUrl="/images/hero-owner.jpg"
-            imagePosition="center 58%"
+            imagePosition="center 5%"
           />
 
           {/* My Participating Tournaments Section */}

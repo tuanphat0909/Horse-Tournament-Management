@@ -243,7 +243,7 @@ export function MedicalCheckPage() {
             title="Horse Health Inspection"
             subtitle="Medical record, doping test and entry eligibility check - re-inspection of scheduled horses"
             imageUrl="/images/hero-referee.jpg"
-            imagePosition="right 52%"
+            imagePosition="right 28%"
           />
 
           {error && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">{error}</div>}

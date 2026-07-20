@@ -81,7 +81,7 @@ export function JockeyInvitationsPage() {
             title="Race Invitations"
             subtitle="Manage invitations from horse owners"
             imageUrl="/images/hero-jockey.jpg"
-            imagePosition="center 25%"
+            imagePosition="center 12%"
           />
 
           <div className="flex items-center gap-1 border-b border-glass-border pb-0">

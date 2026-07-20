@@ -33,36 +33,43 @@ const FILTERS_BY_ROLE: Record<string, FilterType[]> = {
   spectator:    ['all', 'unread', 'tournament', 'race', 'bet', 'wallet', 'system'],
 };
 
-const HERO_BY_ROLE: Record<string, { title: string; subtitle: string; image: string }> = {
+// Ảnh + vị trí crop giống hệt các trang khác của cùng role để hero không bị lệch
+const HERO_BY_ROLE: Record<string, { title: string; subtitle: string; image: string; position: string }> = {
   admin: {
     title: 'System Alerts & Notifications',
     subtitle: 'Admin logs, assignment reminders and tournament system activities.',
     image: '/images/hero-admin.jpg',
+    position: 'center center',
   },
   owner: {
     title: 'Notifications',
     subtitle: 'Updates about your horses, registrations, jockey contracts and prizes.',
     image: '/images/hero-owner.jpg',
+    position: 'center 5%',
   },
   jockey: {
     title: 'Notifications',
     subtitle: 'Contract invitations, race schedules and your results.',
     image: '/images/hero-jockey.jpg',
+    position: 'center 12%',
   },
   referee: {
     title: 'Notifications',
     subtitle: 'Race assignments, inspection duties and result confirmations.',
     image: '/images/hero-referee.jpg',
+    position: 'right 28%',
   },
   veterinarian: {
     title: 'Notifications',
     subtitle: 'Medical check requests and horse health updates.',
     image: '/images/hero-referee.jpg',
+    position: 'right 28%',
   },
   spectator: {
     title: 'Notifications',
     subtitle: 'Tournament updates, race results, bets and wallet activities.',
     image: '/images/hero-spectator.jpg',
+    position: 'center 50%',
   },
 };
 
@@ -205,7 +212,7 @@ export function NotificationsPage() {
             title={hero.title}
             subtitle={hero.subtitle}
             imageUrl={hero.image}
-            imagePosition="center center"
+            imagePosition={hero.position}
             actions={
               <button
                 onClick={handleMarkAllRead}

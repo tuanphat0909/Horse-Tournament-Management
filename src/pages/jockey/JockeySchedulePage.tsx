@@ -47,7 +47,7 @@ export function JockeySchedulePage() {
             title="Race Schedule"
             subtitle="Your upcoming race schedule"
             imageUrl="/images/hero-jockey.jpg"
-            imagePosition="center 25%"
+            imagePosition="center 12%"
           />
 
           {loading ? (

@@ -261,7 +261,7 @@ export function RefereeConfirmResultsPage() {
             title="Confirm Results"
             subtitle="Confirm official race times and publish leaderboard"
             imageUrl="/images/hero-referee.jpg"
-            imagePosition="right 52%"
+            imagePosition="right 28%"
           />
 
           <div className={`grid grid-cols-1 ${form.raceId ? 'lg:grid-cols-12' : 'max-w-2xl'} gap-6 mx-auto transition-all duration-300`}>

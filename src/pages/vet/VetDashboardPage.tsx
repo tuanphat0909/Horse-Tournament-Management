@@ -49,7 +49,7 @@ export function VetDashboardPage() {
             title={t('Veterinary Dashboard')}
             subtitle={t('Medical check management and biosafety system for racehorses')}
             imageUrl="/images/hero-referee.jpg"
-            imagePosition="right 52%"
+            imagePosition="right 28%"
           />
 
           {loading ? (

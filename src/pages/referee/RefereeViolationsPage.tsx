@@ -151,7 +151,7 @@ export function RefereeViolationsPage() {
             title="Handle Violations"
             subtitle="Manage and resolve violations"
             imageUrl="/images/hero-referee.jpg"
-            imagePosition="right 52%"
+            imagePosition="right 28%"
             actions={
               <button onClick={() => setShowAdd(true)} className="btn-gold px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5">
                 <Plus size={14} /> Record Violation

@@ -314,7 +314,7 @@ export function OwnerJockeysPage() {
             title="Jockey"
             subtitle="Manage jockey contracts"
             imageUrl="/images/hero-owner.jpg"
-            imagePosition="center 58%"
+            imagePosition="center 5%"
             actions={
               <button onClick={() => setShowInvite(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
                 <Plus size={16} /> Invite Jockey

@@ -163,7 +163,7 @@ export function OwnerHorsesPage() {
             title="Manage Horses"
             subtitle="Horses in your stable"
             imageUrl="/images/hero-owner.jpg"
-            imagePosition="center 58%"
+            imagePosition="center 5%"
             actions={
               <button onClick={() => setShowCreate(true)} className="btn-gold px-5 py-2.5 rounded-lg text-sm flex items-center gap-2 font-bold">
                 <Plus size={16} /> Add Horse

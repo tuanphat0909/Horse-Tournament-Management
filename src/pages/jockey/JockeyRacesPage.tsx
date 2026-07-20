@@ -73,7 +73,7 @@ export function JockeyRacesPage() {
             title="My Races"
             subtitle="Your race history and results"
             imageUrl="/images/hero-jockey.jpg"
-            imagePosition="center 25%"
+            imagePosition="center 12%"
           />
 
           <div className="flex items-center gap-1 border-b border-glass-border pb-0">

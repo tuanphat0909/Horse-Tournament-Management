@@ -135,7 +135,7 @@ export function RefereeHorseCheckPage() {
             title="Horse Inspection"
             subtitle="Review and approve competing horse profiles by race"
             imageUrl="/images/hero-referee.jpg"
-            imagePosition="right 52%"
+            imagePosition="right 28%"
           />
 
           {error && (
