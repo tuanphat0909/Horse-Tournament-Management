@@ -150,29 +150,43 @@ export function AdminWalletPage() {
               >
                 {/* Admin Wallet Balance Card */}
                 <motion.div variants={child} className="glass-panel-elevated rounded-2xl p-6 border border-gold-border/30 relative overflow-hidden group">
-                  <div className="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-gold/5 blur-2xl group-hover:bg-gold/10 transition-colors" />
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-gold/5 blur-2xl group-hover:bg-gold/10 transition-colors pointer-events-none" />
+                  <div className="flex items-center justify-between mb-4 relative z-10">
                     <span className="text-xs font-semibold text-gold tracking-wider uppercase">Treasury Cash Balance</span>
                     <div className="p-2 rounded-lg bg-gold/10 border border-gold/20 text-gold">
                       <Wallet size={18} />
                     </div>
                   </div>
-                  <div className="text-3xl font-extrabold text-white tracking-tight tabular-nums mb-3">
+                  <div className="text-3xl font-extrabold text-white tracking-tight tabular-nums mb-3 relative z-10">
                     ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-gold/10">
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-gold/10 relative z-10">
                     <div className="text-[10px] text-muted">Operational Liquidity</div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 relative z-20">
                       <button
-                        onClick={() => { setModalType('deposit'); setAmountInput(''); setActionMessage(null); }}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setModalType('deposit');
+                          setAmountInput('');
+                          setActionMessage(null);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer select-none"
                       >
                         <ArrowDownLeft size={12} />
                         Deposit
                       </button>
                       <button
-                        onClick={() => { setModalType('withdraw'); setAmountInput(''); setActionMessage(null); }}
-                        className="px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setModalType('withdraw');
+                          setAmountInput('');
+                          setActionMessage(null);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer select-none"
                       >
                         <ArrowUpRight size={12} />
                         Withdraw
