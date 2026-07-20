@@ -23,6 +23,25 @@ import { useNotifications } from '../context/NotificationContext';
 import { filterNotisForRole, toRoleKey } from '../utils/notificationFilter';
 
 type FilterType = 'all' | 'unread' | 'tournament' | 'race' | 'bet' | 'wallet' | 'system';
+type TabCategory = Exclude<FilterType, 'all' | 'unread'>;
+
+/**
+ * Quy thông báo về đúng tab. BE dùng nhiều giá trị type khác nhau (Registration,
+ * Contract, Health, Prize...) nên không thể nhờ server lọc theo tên tab — mọi
+ * type không khớp nhóm nào sẽ gom vào "system" để không có thông báo nào bị mất.
+ */
+function categoryOf(noti: any): TabCategory {
+  const type = `${noti?.type ?? ''}`.toLowerCase();
+  if (type.includes('tournament')) return 'tournament';
+  if (type.includes('race')) return 'race';
+  if (type.includes('bet') || type.includes('prediction')) return 'bet';
+  if (
+    type.includes('wallet') || type.includes('transaction') ||
+    type.includes('deposit') || type.includes('withdraw') ||
+    type.includes('payment') || type.includes('prize')
+  ) return 'wallet';
+  return 'system';
+}
 
 // Mỗi role chỉ quan tâm một số loại thông báo — tab lọc bám theo đó.
 const FILTERS_BY_ROLE: Record<string, FilterType[]> = {
@@ -92,18 +111,13 @@ export function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Tải một lần rồi lọc phía client (theo role + theo tab) để tab nào cũng khớp
+  // đúng dữ liệu đang có, không phụ thuộc cách BE đặt tên type.
   async function loadNotifications() {
     setLoading(true);
     setError('');
     try {
-      const params: any = { page: 1, pageSize: 200 };
-      if (activeFilter === 'unread') {
-        params.isRead = false;
-      } else if (activeFilter !== 'all') {
-        params.type = activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1);
-      }
-
-      const res = await getNotifications(params);
+      const res = await getNotifications({ page: 1, pageSize: 200 });
       const items = res?.result?.items ?? res?.result?.Items ?? (Array.isArray(res?.result) ? res.result : []);
 
       setNotifications(filterNotisForRole(Array.isArray(items) ? items : [], roleKey));
@@ -118,11 +132,17 @@ export function NotificationsPage() {
   useEffect(() => {
     loadNotifications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilter]);
+  }, []);
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
     setCurrentPage(1);
+  };
+
+  const matchesFilter = (noti: any, filter: FilterType) => {
+    if (filter === 'all') return true;
+    if (filter === 'unread') return !noti.isRead;
+    return categoryOf(noti) === filter;
   };
 
   const handleMarkRead = async (id: number) => {
@@ -193,14 +213,16 @@ export function NotificationsPage() {
     }
   };
 
-  // Phân trang trên danh sách đã lọc theo role — tổng số luôn khớp số thẻ hiển thị
+  // Phân trang trên danh sách đã lọc — tổng số luôn khớp số thẻ hiển thị
+  const visibleNotifications = notifications.filter(n => matchesFilter(n, activeFilter));
   const {
     paged: pagedNotifications,
     totalPages,
     total: totalCount,
     page: safePage,
-  } = paginate(notifications, currentPage, PAGE_SIZE);
+  } = paginate(visibleNotifications, currentPage, PAGE_SIZE);
   const unreadOnPage = notifications.filter(n => !n.isRead).length;
+  const filterCount = (filter: FilterType) => notifications.filter(n => matchesFilter(n, filter)).length;
 
   const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
   const itemVar = { hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0, transition: { duration: 0.25 } } };
@@ -222,19 +244,27 @@ export function NotificationsPage() {
 
           {/* Filter tabs — nút Mark all as read nằm cuối hàng, canh phải */}
           <div className="flex flex-wrap items-center gap-2 p-1 bg-white/[0.02] border border-glass-border rounded-xl">
-            {filters.map(filter => (
-              <button
-                key={filter}
-                onClick={() => handleFilterChange(filter)}
-                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all capitalize ${
-                  activeFilter === filter
-                    ? 'bg-gold text-[#0b101e] shadow-lg shadow-gold/20'
-                    : 'text-muted hover:text-white hover:bg-white/[0.03]'
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
+            {filters.map(filter => {
+              const count = filterCount(filter);
+              return (
+                <button
+                  key={filter}
+                  onClick={() => handleFilterChange(filter)}
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all capitalize flex items-center gap-1.5 ${
+                    activeFilter === filter
+                      ? 'bg-gold text-[#0b101e] shadow-lg shadow-gold/20'
+                      : count === 0
+                        ? 'text-muted/40 hover:text-muted hover:bg-white/[0.02]'
+                        : 'text-muted hover:text-white hover:bg-white/[0.03]'
+                  }`}
+                >
+                  {filter}
+                  <span className={`text-[10px] font-bold ${activeFilter === filter ? 'opacity-70' : 'opacity-60'}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
             <button
               onClick={handleMarkAllRead}
               disabled={unreadOnPage === 0}
