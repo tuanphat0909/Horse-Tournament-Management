@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
@@ -69,9 +70,26 @@ import { LegalPage } from '../pages/LegalPage';
 import { PrivateRoute } from './PrivateRoute';
 import { NotificationProvider } from '../context/NotificationContext';
 
+/**
+ * Chuyển trang thì luôn về đầu trang — nếu không, bấm link ở footer sẽ mở trang
+ * mới ngay tại vị trí cuộn cũ (tức là ở tận cuối trang).
+ * Link có anchor (vd /legal#privacy) được bỏ qua để trang tự cuộn tới đúng mục.
+ */
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) return;
+    window.scrollTo({ top: 0, left: 0 });
+  }, [pathname, hash]);
+
+  return null;
+}
+
 export function AppRoutes() {
   return (
     <NotificationProvider>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
