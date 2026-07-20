@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, Trophy, Activity, Sparkles, Wallet, Info, CheckCheck, AlertTriangle } from 'lucide-react';
+import { Bell, Trophy, Activity, Sparkles, Wallet, Info, CheckCheck, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { getCurrentUser } from '../../api/authService';
@@ -93,16 +93,7 @@ export function Topbar() {
           </span>
         </div>
       )}
-      <header className="h-16 border-b border-glass-border bg-[#0B1628]/90 backdrop-blur-xl flex items-center px-8 justify-between">
-        <div className="flex items-center gap-3 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-80">
-          <Search size={16} className="text-muted" />
-          <input
-            type="text"
-            placeholder={t("Search horses, races, tournaments...")}
-            className="bg-transparent text-sm text-white placeholder:text-muted/60 outline-none w-full"
-          />
-        </div>
-
+      <header className="h-16 border-b border-glass-border bg-[#0B1628]/90 backdrop-blur-xl flex items-center px-8 justify-end">
         <div className="flex items-center gap-4 relative" ref={dropdownRef}>
           {/* Bell Button */}
           <button 
