@@ -8,9 +8,10 @@ import { PageHero } from '../../components/layout/PageHero';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../../api/authService';
 import { getBalance, getMyBets } from '../../api/spectatorService';
-import { getNotifications, getRaceSchedule, getTournaments } from '../../api/publicService';
+import { getRaceSchedule, getTournaments } from '../../api/publicService';
 import { formatDateTime } from '../../utils/format';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 const child = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.35 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
@@ -21,9 +22,10 @@ export function SpectatorDashboardPage() {
   const statusLower = user?.status?.toLowerCase();
   const isLocked = statusLower !== 'active';
   const { t, language } = useLanguage();
+  // Lấy từ context để khớp với badge trên chuông (đã lọc theo role, tự cập nhật realtime)
+  const { unreadCount: notifCount } = useNotifications();
   const [balance, setBalance] = useState(0);
   const [bets, setBets] = useState<any[]>([]);
-  const [notifCount, setNotifCount] = useState(0);
   const [upcoming, setUpcoming] = useState<any[]>([]);
   const [tournaments, setTournaments] = useState<any[]>([]);
 
@@ -33,10 +35,6 @@ export function SpectatorDashboardPage() {
       setBalance(Number(b) || 0);
     }).catch(() => setBalance(0));
     getMyBets().then(d => setBets(d?.result ?? (Array.isArray(d) ? d : []))).catch(() => setBets([]));
-    getNotifications().then(d => {
-      const list = d?.result ?? (Array.isArray(d) ? d : []);
-      setNotifCount(list.filter((n: any) => !(n.isRead ?? n.read)).length);
-    }).catch(() => setNotifCount(0));
     getRaceSchedule().then(d => setUpcoming(d?.result ?? (Array.isArray(d) ? d : []))).catch(() => setUpcoming([]));
     getTournaments().then(d => setTournaments(d?.result ?? (Array.isArray(d) ? d : []))).catch(() => setTournaments([]));
   }, []);
