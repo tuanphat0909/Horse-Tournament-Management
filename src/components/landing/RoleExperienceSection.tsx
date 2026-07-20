@@ -23,11 +23,12 @@ const OwnerPreview = () => {
         <div className="text-white font-serif text-sm">{t('Welcome,')} <span className="italic text-[#d4b87a]">Andy Nguyen</span></div>
       </div>
 
+      {/* Ba ô khớp đúng card trên Owner Dashboard thật, đơn vị tiền là coins (¢) */}
       <div className="grid grid-cols-3 gap-1.5">
         {[
-          { value: '12', label: t('Horse'), color: 'text-[#c9a84c]' },
-          { value: '₫1.2B', label: t('Prizes'), color: 'text-emerald-400' },
-          { value: '#3', label: t('Season Rank'), color: 'text-blue-400' },
+          { value: '12', label: t('My Horses'), color: 'text-[#c9a84c]' },
+          { value: '48,500 ¢', label: t('Prize Money'), color: 'text-emerald-400' },
+          { value: '3', label: t('Upcoming'), color: 'text-blue-400' },
         ].map((s, i) => (
           <div key={i} className="bg-white/[0.04] border border-white/[0.06] rounded-lg p-2 text-center">
             <div className={`text-base font-bold font-serif ${s.color}`}>{s.value}</div>
@@ -39,9 +40,9 @@ const OwnerPreview = () => {
       <div className="flex-1 space-y-1.5 overflow-hidden">
         <div className="text-[9px] text-white/30 uppercase tracking-widest">{t('My Horses')}</div>
         {[
-          { name: 'Thunderstrike', breed: 'Thoroughbred', status: t('Competing'), sc: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-          { name: 'Desert Wind', breed: 'Arabian', status: t('Competing'), sc: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-          { name: 'Silver Arrow', breed: 'Warmblood', status: t('Resting'), sc: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+          { name: 'Thunderstrike', breed: 'Thoroughbred', status: t('Healthy'), sc: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+          { name: 'Desert Wind', breed: 'Arabian', status: t('Healthy'), sc: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+          { name: 'Silver Arrow', breed: 'Warmblood', status: t('Recovering'), sc: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
         ].map((h, i) => (
           <div key={i} className="flex items-center gap-2 p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.05]">
             <span className="text-sm">🐴</span>
@@ -55,7 +56,7 @@ const OwnerPreview = () => {
       </div>
 
       <div className="h-7 rounded-lg bg-[#c9a84c]/15 border border-[#c9a84c]/20 flex items-center justify-center">
-        <span className="text-[10px] text-[#c9a84c] font-bold">+ {t('Register New Horse')}</span>
+        <span className="text-[10px] text-[#c9a84c] font-bold">+ {t('Add Horse')}</span>
       </div>
     </div>
   );
@@ -75,8 +76,8 @@ const JockeyPreview = () => {
 
       <div className="grid grid-cols-3 gap-1.5">
         {[
-          { value: '45', label: t('Wins'), color: 'text-[#c9a84c]' },
-          { value: '68', label: t('Race'), color: 'text-purple-400' },
+          { value: '45', label: t('Total Wins'), color: 'text-[#c9a84c]' },
+          { value: '68', label: t('Total Races'), color: 'text-purple-400' },
           { value: '66%', label: t('Win Rate'), color: 'text-emerald-400' },
         ].map((s, i) => (
           <div key={i} className="bg-white/[0.04] border border-white/[0.06] rounded-lg p-2 text-center">
@@ -130,7 +131,7 @@ const RefereePreview = () => {
 
       <div className="grid grid-cols-3 gap-1.5">
         {[
-          { value: '2', label: t('Race'), color: 'text-blue-400' },
+          { value: '2', label: t('Races'), color: 'text-blue-400' },
           { value: '5', label: t('Horse Inspection'), color: 'text-yellow-400' },
           { value: '1', label: t('Violations'), color: 'text-red-400' },
         ].map((s, i) => (
@@ -224,11 +225,12 @@ const SpectatorPreview = () => {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        <div className="text-[9px] text-white/30 uppercase tracking-widest mb-1.5">{t('My Predictions')}</div>
+        {/* Trang thật đặt tên là "My Bets", tiền thưởng tính bằng coins */}
+        <div className="text-[9px] text-white/30 uppercase tracking-widest mb-1.5">{t('My Bets')}</div>
         {[
-          { horse: 'Thunderstrike', pred: '1st Place', correct: true, reward: '₫500k' },
-          { horse: 'Desert Wind', pred: '1st Place', correct: true, reward: '₫600k' },
-          { horse: 'Storm Rider', pred: '2nd Place', correct: null, reward: '—' },
+          { horse: 'Thunderstrike', pred: t('Win'), correct: true, reward: '+1,500 ¢' },
+          { horse: 'Desert Wind', pred: t('Win'), correct: true, reward: '+900 ¢' },
+          { horse: 'Storm Rider', pred: t('Pending'), correct: null, reward: '—' },
         ].map((p, i) => (
           <div key={i} className="flex items-center gap-2 py-1 px-1.5 rounded-lg hover:bg-white/[0.02] mb-0.5">
             <span className={`text-[10px] w-3 ${p.correct === true ? 'text-emerald-400' : 'text-white/25'}`}>
@@ -246,7 +248,7 @@ const SpectatorPreview = () => {
           <span className="text-[10px] text-[#c9a84c] font-bold">{t('Watch Live')}</span>
         </div>
         <div className="flex-1 h-7 rounded-lg bg-blue-500/10 border border-blue-500/15 flex items-center justify-center">
-          <span className="text-[10px] text-blue-400 font-bold">+ {t('Add Prediction')}</span>
+          <span className="text-[10px] text-blue-400 font-bold">+ {t('Place Bet')}</span>
         </div>
       </div>
     </div>
