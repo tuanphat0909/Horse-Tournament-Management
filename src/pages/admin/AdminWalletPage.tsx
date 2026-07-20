@@ -370,6 +370,15 @@ export function AdminWalletPage() {
                     +${preset}
                   </button>
                 ))}
+                {modalType === 'withdraw' && balance > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAmountInput(balance.toString())}
+                    className="px-3 py-1.5 rounded-lg bg-gold/20 hover:bg-gold/30 border border-gold/40 text-gold text-xs font-mono font-bold transition-all cursor-pointer"
+                  >
+                    Max (${balance})
+                  </button>
+                )}
               </div>
 
               {/* QR Code and Admin Bank Information Block */}
@@ -436,10 +445,21 @@ export function AdminWalletPage() {
               )}
 
               {modalType === 'withdraw' && (
-                <div className="bg-white/5 rounded-2xl p-4 border border-blue-500/30 text-xs space-y-2">
+                <div className="bg-white/5 rounded-2xl p-4 border border-blue-500/30 text-xs space-y-3">
+                  <div className="flex items-center justify-between py-1 border-b border-glass-border/30">
+                    <span className="text-muted">Available Treasury Balance:</span>
+                    <span className="text-gold font-mono font-bold text-sm">
+                      ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {balance <= 0 && (
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-semibold flex items-center gap-1.5">
+                      ⚠️ Current treasury balance is $0.00. You cannot withdraw more than the available balance.
+                    </div>
+                  )}
                   <div className="flex items-center justify-between py-1 border-b border-glass-border/30">
                     <span className="text-muted">Destination Bank:</span>
-                    <span className="text-white font-bold">VietinBank (Default Admin Settlement)</span>
+                    <span className="text-white font-bold">VietinBank (Admin Settlement)</span>
                   </div>
                   <div className="flex items-center justify-between py-1 border-b border-glass-border/30">
                     <span className="text-muted">Account Number:</span>
