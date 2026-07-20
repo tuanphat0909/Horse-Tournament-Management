@@ -1,7 +1,7 @@
 /**
  * Render text mà các đoạn nằm trong dấu nháy đơn '...' được bỏ nháy và
- * tô đậm + gradient vàng (highlight tên giải/ngựa trong thông báo từ BE).
- * VD: "Tournament 'WC 2026' has been scheduled" → WC 2026 in đậm màu vàng.
+ * highlight (in đậm + nền vàng nhạt) — dùng cho message thông báo từ BE.
+ * VD: "Jockey 'Jockey-1' responded 'Accepted'" → Jockey-1 và Accepted được tô nổi.
  */
 export function HighlightQuoted({ text }: { text?: string | null }) {
   const raw = String(text ?? '');
@@ -13,7 +13,7 @@ export function HighlightQuoted({ text }: { text?: string | null }) {
         i % 2 === 1 ? (
           <span
             key={i}
-            className="font-bold bg-gradient-to-r from-gold via-champagne to-gold bg-clip-text text-transparent"
+            className="font-bold text-champagne bg-gold/10 border border-gold/20 rounded px-1 py-px mx-0.5"
           >
             {p}
           </span>
