@@ -115,9 +115,9 @@ export const HeroSection = () => {
             style={{ y: y1 }}
             className="absolute right-0 top-10 w-80 glass-panel-elevated rounded-2xl p-6 animate-[float_6s_ease-in-out_infinite]"
           >
-            <div className="flex justify-between items-start mb-6">
+            <div onClick={() => navigate('/login')} className="flex justify-between items-start mb-6 cursor-pointer group/header">
               <div className="min-w-0">
-                <h3 className="font-serif text-xl text-white mb-1 truncate">{liveRace ? (liveRace.name ?? `${t('Race')} #${liveRace.raceId ?? liveRace.id}`) : t('Equestria Racecourse')}</h3>
+                <h3 className="font-serif text-xl text-white mb-1 truncate group-hover/header:text-champagne transition-colors">{liveRace ? (liveRace.name ?? `${t('Race')} #${liveRace.raceId ?? liveRace.id}`) : t('Equestria Racecourse')}</h3>
                 <p className="text-xs text-muted truncate">{liveRace?.tournamentName ?? t('Race schedule updated continuously')}</p>
               </div>
               {liveRace ? (
@@ -131,7 +131,7 @@ export const HeroSection = () => {
 
             <div className="space-y-4 mb-6">
               {topHorses.length > 0 ? topHorses.map((h: any, i: number) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-navy/50 border border-glass-border hover:border-gold/30 transition-colors">
+                <div key={i} onClick={() => navigate('/login')} className="flex items-center justify-between p-3 rounded-lg bg-navy/50 border border-glass-border hover:border-gold/30 transition-colors cursor-pointer">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="font-bold text-gold w-6 shrink-0">#{i + 1}</span>
                     <span className="text-sm font-medium text-white truncate">{h.horseName ?? h.name ?? `${t('Horse')} #${h.horseId}`}</span>
@@ -153,27 +153,33 @@ export const HeroSection = () => {
 
           <motion.div
             style={{ y: y2 }}
-            className="absolute -left-4 bottom-32 w-64 glass-panel rounded-2xl p-5 z-20 animate-[float_8s_ease-in-out_infinite_reverse]"
+            className="absolute -left-4 bottom-32 w-64 z-30 animate-[float_8s_ease-in-out_infinite_reverse]"
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gold to-yellow-700 p-px">
-                <div className="w-full h-full bg-navy rounded-full flex items-center justify-center font-serif text-lg font-bold text-white">#1</div>
-              </div>
-              <div>
-                <div className="text-sm font-bold text-white">{t('Leaderboard')}</div>
-                <div className="text-xs text-muted">{t('Updated live')}</div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {topHorses.slice(0, 2).length > 0 ? topHorses.slice(0, 2).map((h: any, i: number) => (
-                <div key={i} className="flex justify-between items-center text-xs px-2 py-1.5 rounded bg-navy/60 border border-glass-border">
-                  <span className="text-white font-medium truncate">{h.horseName ?? h.name ?? `Horse #${h.horseId}`}</span>
-                  <span className="text-gold font-bold tabular shrink-0">{h.winsCount ?? 0} pts</span>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="w-full text-left glass-panel rounded-2xl p-5 cursor-pointer block"
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gold to-yellow-700 p-px">
+                  <div className="w-full h-full bg-navy rounded-full flex items-center justify-center font-serif text-lg font-bold text-white">#1</div>
                 </div>
-              )) : (
-                [0, 1].map(i => <div key={i} className="skeleton h-7 rounded" />)
-              )}
-            </div>
+                <div>
+                  <div className="text-sm font-bold text-white">{t('Leaderboard')}</div>
+                  <div className="text-xs text-muted">{t('Updated live')}</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {topHorses.slice(0, 2).length > 0 ? topHorses.slice(0, 2).map((h: any, i: number) => (
+                  <div key={i} className="flex justify-between items-center text-xs px-2 py-1.5 rounded bg-navy/60 border border-glass-border">
+                    <span className="text-white font-medium truncate">{h.horseName ?? h.name ?? `Horse #${h.horseId}`}</span>
+                    <span className="text-gold font-bold tabular shrink-0">{h.winsCount ?? 0} pts</span>
+                  </div>
+                )) : (
+                  [0, 1].map(i => <div key={i} className="skeleton h-7 rounded" />)
+                )}
+              </div>
+            </button>
           </motion.div>
         </div>
       </div>
