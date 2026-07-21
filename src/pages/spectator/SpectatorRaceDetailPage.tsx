@@ -43,8 +43,14 @@ export function SpectatorRaceDetailPage() {
   const [betError, setBetError] = useState('');
   const [betSuccess, setBetSuccess] = useState('');
 
+  const getOdds = (entry: any) => {
+    if (!entry) return 2.0;
+    const raw = entry.currentOdds ?? entry.CurrentOdds ?? entry.odds ?? entry.Odds;
+    return raw != null && Number(raw) > 0 ? Number(raw) : 2.0;
+  };
+
   const amount = Number(amountStr) || 0;
-  const odds = selectedEntry?.currentOdds ?? 1.0;
+  const odds = getOdds(selectedEntry);
   const potentialProfit = amount * (odds - 1);
   const totalReturn = amount * odds;
 
@@ -83,11 +89,17 @@ export function SpectatorRaceDetailPage() {
           laneNo: pe.laneNo || pe.laneNumber || 1,
           horseName: pe.horseName || pe.horse?.name || 'Horse',
           jockeyName: pe.jockeyName || pe.jockeyProfile?.user?.fullName || pe.jockey?.fullName || 'Jockey',
-          currentOdds: pe.odds || pe.currentOdds || 1.0,
-          averageTime: pe.averageTime,
-          recentAverageTime: pe.recentAverageTime,
-          winRate: pe.winRate,
-          winningProbability: pe.winningProbability
+          currentOdds: pe.currentOdds ?? pe.CurrentOdds ?? pe.odds ?? pe.Odds ?? 2.0,
+          averageTime: pe.averageTime ?? pe.AverageTime,
+          recentAverageTime: pe.recentAverageTime ?? pe.RecentAverageTime,
+          winRate: pe.winRate ?? pe.WinRate,
+          winningProbability: pe.winningProbability ?? pe.WinningProbability
+        }));
+      } else if (fetchedEntries.length > 0) {
+        fetchedEntries = fetchedEntries.map((e: any) => ({
+          ...e,
+          currentOdds: e.currentOdds ?? e.CurrentOdds ?? e.odds ?? e.Odds ?? 2.0,
+          winningProbability: e.winningProbability ?? e.WinningProbability
         }));
       }
 
@@ -263,8 +275,8 @@ export function SpectatorRaceDetailPage() {
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold text-navy bg-gold px-2 py-0.5 rounded-sm">Lane {e.laneNo}</span>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-champagne tabular-nums">x{e.currentOdds?.toFixed(2) || '1.00'}</div>
-                          <div className="text-[10px] text-muted">Odds</div>
+                          <div className="text-lg font-bold text-champagne tabular-nums">x{getOdds(e).toFixed(2)}</div>
+                          <div className="text-[10px] text-muted">Odds Multiplier</div>
                         </div>
                       </div>
 
