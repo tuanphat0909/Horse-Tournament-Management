@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Megaphone, CheckCircle, DollarSign, Zap, X, Search } from 'lucide-react';
+import { Megaphone, CheckCircle, DollarSign, X, Search } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { createPrizes, triggerPayout, publishRaceResult } from '../../api/adminService';
+import { createPrizes, publishRaceResult } from '../../api/adminService';
 import { getRaceSchedule, getTournaments, getRaceEntries } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 
@@ -32,12 +32,6 @@ export function AdminResultsPage() {
   const [prizesLoading, setPrizesLoading] = useState(false);
   const [prizesError, setPrizesError] = useState('');
   const [prizesSuccess, setPrizesSuccess] = useState('');
-
-  // Payout trigger
-  const [payoutRaceId, setPayoutRaceId] = useState('');
-  const [payoutLoading, setPayoutLoading] = useState(false);
-  const [payoutError, setPayoutError] = useState('');
-  const [payoutSuccess, setPayoutSuccess] = useState('');
 
   // Races
   const [races, setRaces] = useState<any[]>([]);
@@ -181,21 +175,6 @@ export function AdminResultsPage() {
     setPrizes(INIT_PRIZES);
   }
 
-  async function handleTriggerPayout() {
-    setPayoutError(''); setPayoutSuccess('');
-    if (!payoutRaceId) { setPayoutError('Please enter Race ID.'); return; }
-    setPayoutLoading(true);
-    try {
-      await triggerPayout(Number(payoutRaceId));
-      setPayoutSuccess(`Payout for Race #${payoutRaceId} has been triggered!`);
-      setPayoutRaceId('');
-    } catch (err: unknown) {
-      setPayoutError(parseApiError(err as Error));
-    } finally {
-      setPayoutLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-screen text-body font-sans flex" style={{ backgroundColor: '#0b101e' }}>
       <Sidebar />
@@ -223,7 +202,7 @@ export function AdminResultsPage() {
           </div>
 
           {/* Management Tools */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {/* Prizes Setup */}
             <div className="glass-panel rounded-xl p-6 border border-glass-border hover:border-gold/30 transition-all relative overflow-hidden">
               <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
@@ -243,47 +222,6 @@ export function AdminResultsPage() {
               >
                 <DollarSign size={14} /> Configure Prizes
               </button>
-            </div>
-
-            {/* Trigger Payout */}
-            <div className="glass-panel rounded-xl p-6 border border-glass-border hover:border-emerald-500/30 transition-all relative overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent pointer-events-none" />
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-emerald-500/10 to-transparent blur-[40px] pointer-events-none" />
-              <div className="relative z-10 flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                  <Zap size={18} className="text-emerald-400" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-white">Trigger Payout</div>
-                  <div className="text-xs text-muted">Select a race with published results to pay out bets</div>
-                </div>
-              </div>
-              <div className="relative z-10 flex gap-2">
-                <select
-                  value={payoutRaceId}
-                  onChange={e => { setPayoutRaceId(e.target.value); setPayoutError(''); setPayoutSuccess(''); }}
-                  className="flex-1 bg-navy/50 border border-glass-border rounded-lg px-3 py-2 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors cursor-pointer"
-                  style={{ colorScheme: 'dark' }}
-                >
-                  <option value="" className="text-muted/60">-- Select Match --</option>
-                  {races
-                    .filter((r: any) => r.status === 'Published' || r.status === 'Finished')
-                    .map((r: any) => (
-                      <option key={r.raceId} value={r.raceId} className="bg-navy text-white">
-                        {cleanDisplayString(r.raceName || r.name)}
-                      </option>
-                    ))}
-                </select>
-                <button
-                  onClick={handleTriggerPayout}
-                  disabled={payoutLoading}
-                  className="px-4 py-2 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/25 text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5"
-                >
-                  <Zap size={14} /> {payoutLoading ? '…' : 'Trigger'}
-                </button>
-              </div>
-              {payoutError && <div className="mt-2 text-xs px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{payoutError}</div>}
-              {payoutSuccess && <div className="mt-2 text-xs px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{payoutSuccess}</div>}
             </div>
           </div>
 
