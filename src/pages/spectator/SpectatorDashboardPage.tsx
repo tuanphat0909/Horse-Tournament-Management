@@ -142,7 +142,7 @@ export function SpectatorDashboardPage() {
                         <div className="text-xs font-medium text-white">{u.name ?? u.round}</div>
                         <div className="text-[10px] text-muted">{(u.tournamentName ?? u.tournament ?? '')}{u.raceDate ? ' • ' + formatDateTime(u.raceDate) : ''}</div>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 shrink-0 animate-pulse">LIVE</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">In Progress</span>
                     </div>
                   ))}
                 </div>
