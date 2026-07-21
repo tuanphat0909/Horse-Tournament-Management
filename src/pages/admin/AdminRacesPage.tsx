@@ -1,17 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Flag, UserCheck, ListOrdered, Trash2, Calendar, ChevronDown, ChevronUp, Trophy, Loader, Eye, X, CheckCircle2, AlertCircle, ArrowUpDown, Search } from 'lucide-react';
+import { Plus, Flag, UserCheck, ListOrdered, Trash2, Calendar, ChevronDown, ChevronUp, Trophy, Loader, Eye, X, CheckCircle2, AlertCircle, ArrowUpDown, Search, Edit } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { RaceTrack3D } from '../../components/ui/RaceTrack3D';
 import { Pager, paginate } from '../../components/ui/Pager';
-import { createRace, deleteRace, createRaceEntry, assignReferee, getRaceReferees, removeReferee, generateTournamentRaces, generateFinalRace, getRegistrations, getReferees, withdrawRaceEntry } from '../../api/adminService';
+import { createRace, deleteRace, createRaceEntry, assignReferee, getRaceReferees, removeReferee, generateTournamentRaces, generateFinalRace, getRegistrations, getReferees, withdrawRaceEntry, updateRace } from '../../api/adminService';
 import { getRaceSchedule, getTournaments, getRaceEntries } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 
@@ -31,7 +32,7 @@ const HINT_TONE: Record<string, string> = {
   info: 'text-muted bg-white/5 border-glass-border',
 };
 
-type Modal = 'none' | 'race' | 'lanes' | 'referee' | 'detail';
+type Modal = 'none' | 'race' | 'lanes' | 'referee' | 'detail' | 'editRace';
 
 const fixMojibake = (str: string): string => {
   if (!str) return '';
@@ -82,9 +83,15 @@ function formatToDatetimeLocal(v: any): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+/** Race đã kết thúc/huỷ thì admin chỉ được xem, không sửa nữa */
+function isRaceLocked(status: unknown) {
+  return ['finished', 'completed', 'published', 'cancelled'].includes(String(status ?? '').toLowerCase());
+}
+
 export function AdminRacesPage() {
   const location = useLocation();
   const { showToast } = useNotifications();
+  const confirm = useConfirm();
   const { t } = useLanguage();
   const [modal, setModal] = useState<Modal>('none');
 
@@ -124,6 +131,92 @@ export function AdminRacesPage() {
   const [raceLoading, setRaceLoading] = useState(false);
   const [raceError, setRaceError] = useState('');
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>('');
+
+  // Edit Race
+  const [editingRace, setEditingRace] = useState<any>(null);
+  const [editRaceForm, setEditRaceForm] = useState({
+    name: '',
+    raceDate: '',
+    distanceMeter: '1200',
+    maxLanes: '12'
+  });
+  const [editRaceLoading, setEditRaceLoading] = useState(false);
+  const [editRaceError, setEditRaceError] = useState('');
+
+  function handleEditRaceClick(race: any) {
+    setEditingRace(race);
+    setEditRaceForm({
+      name: race.name || '',
+      raceDate: formatToDatetimeLocal(race.raceDate),
+      distanceMeter: String(race.distanceMeter || '1200'),
+      maxLanes: String(race.maxLanes || '12')
+    });
+    setEditRaceError('');
+    setModal('editRace');
+  }
+
+  async function handleUpdateRace() {
+    if (!editRaceForm.name.trim() || !editRaceForm.raceDate || !editRaceForm.distanceMeter || !editRaceForm.maxLanes) {
+      setEditRaceError(t('Please fill in all required fields.'));
+      return;
+    }
+
+    if (editRaceForm.name.trim().length > 150) {
+      setEditRaceError('Race name cannot exceed 150 characters.');
+      return;
+    }
+
+    const distance = Number(editRaceForm.distanceMeter);
+    if (isNaN(distance) || distance <= 0) {
+      setEditRaceError('Distance must be greater than zero.');
+      return;
+    }
+
+    const maxLanes = Number(editRaceForm.maxLanes);
+    if (isNaN(maxLanes) || maxLanes <= 0 || maxLanes > 12) {
+      setEditRaceError('Max lanes must be between 1 and 12.');
+      return;
+    }
+
+    const raceDateVal = new Date(editRaceForm.raceDate);
+    const now = new Date();
+    if (raceDateVal < new Date(now.getTime() - 5 * 60 * 1000)) {
+      setEditRaceError(t('Race date cannot be in the past.'));
+      return;
+    }
+
+    // Validate race date is within round limits if round has start/end date
+    const round = tournamentsList
+      .flatMap((t: any) => t.rounds ?? [])
+      .find((r: any) => r.roundId === editingRace.roundId);
+    if (round && round.startDate && round.endDate) {
+      const startVal = new Date(round.startDate);
+      const endVal = new Date(round.endDate);
+      if (raceDateVal < startVal || raceDateVal > endVal) {
+        setEditRaceError(`Race date must be between ${fmtDate(round.startDate)} and ${fmtDate(round.endDate)}.`);
+        return;
+      }
+    }
+
+    setEditRaceLoading(true);
+    try {
+      await updateRace(editingRace.raceId, {
+        name: editRaceForm.name.trim(),
+        raceDate: editRaceForm.raceDate,
+        distanceMeter: distance,
+        maxLanes: maxLanes
+      });
+      showToast(t('Success'), t('Race updated successfully!'));
+      setModal('none');
+      setEditingRace(null);
+      // Reload schedule data
+      await loadAllData();
+    } catch (err: unknown) {
+      setEditRaceError(t(parseApiError(err as Error)));
+    } finally {
+      setEditRaceLoading(false);
+    }
+  }
 
   const selectedTournamentApprovedHorsesCount = useMemo(() => {
     if (!selectedTournamentId) return 0;
@@ -354,6 +447,8 @@ export function AdminRacesPage() {
 
   const laneRace = racesList.find(r => String(r.raceId ?? r.id) === laneRaceId);
   const maxLanes = Number(laneRace?.maxLanes ?? 0);
+  // Race đã đua xong thì BE không cho sửa entry nữa — modal chuyển sang chế độ chỉ xem
+  const laneRaceLocked = isRaceLocked(laneRace?.status);
 
   // Đơn hợp lệ cho race này: đúng giải + Approved + chưa có entry (theo đơn & theo horse)
   const eligibleRegs = useMemo(() => {
@@ -444,6 +539,20 @@ export function AdminRacesPage() {
     setRefForm({ raceId: String(raceId), refereeId: '' });
     setReferees([]);
     setModal('referee');
+    try {
+      const refRes = await getReferees();
+      const fetchedReferees = refRes?.result ?? (Array.isArray(refRes) ? refRes : []);
+      setRefereeOptions(fetchedReferees.map((r: any) => ({
+        ...r,
+        fullName: fixMojibake(r.fullName ?? r.FullName ?? ''),
+        email: r.email ?? r.Email,
+        licenseNumber: r.licenseNumber ?? r.LicenseNumber,
+        status: r.status ?? r.Status ?? 'Active',
+        refereeId: r.refereeId ?? r.RefereeId ?? r.id
+      })));
+    } catch (err: unknown) {
+      console.error('Failed to refetch referees list:', err);
+    }
     await handleViewReferees(String(raceId));
   }
 
@@ -497,7 +606,13 @@ export function AdminRacesPage() {
   }
 
   async function handleWithdrawEntry(raceEntryId: number, horseName: string) {
-    if (!window.confirm(`Remove "${horseName}" from the race? This action cannot be undone.`)) return;
+    const ok = await confirm({
+      title: 'Remove horse',
+      message: `Remove '${horseName}' from the race? This action cannot be undone.`,
+      confirmText: 'Remove',
+      danger: true,
+    });
+    if (!ok) return;
     setWithdrawingEntryId(raceEntryId);
     try {
       await withdrawRaceEntry(raceEntryId, 'Health does not meet criteria to participate');
@@ -513,9 +628,13 @@ export function AdminRacesPage() {
 
   async function handleDeleteRace(raceId: number, raceName?: string) {
     const label = raceName ? `"${raceName}"` : `#${raceId}`;
-    if (!window.confirm(`Delete race ${label}? Lanes, results, referees, violations, bets, and predictions related will also be deleted.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete race',
+      message: `Delete race ${label}? Lanes, results, referees, violations, bets, and predictions related will also be deleted.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
 
     try {
       await deleteRace(raceId);
@@ -778,13 +897,15 @@ export function AdminRacesPage() {
   });
 
   const activeRefereeOptions = refereeOptions.filter((ref: any) =>
-    String(ref.status ?? '').toLowerCase() === 'active'
+    !ref.status || String(ref.status).toLowerCase() === 'active'
   );
   const visibleRefereeOptions = (activeRefereeOptions.length > 0 ? activeRefereeOptions : refereeOptions)
     // Ẩn trọng tài đã được phân công vào races đang chọn
     .filter((ref: any) => !referees.some(a => (a.refereeId ?? a.id) === ref.refereeId));
 
   const refRace = racesList.find(r => String(r.raceId ?? r.id) === refForm.raceId);
+  // Race đã đua xong thì không phân/gỡ trọng tài nữa — modal chỉ để xem
+  const refRaceLocked = isRaceLocked(refRace?.status);
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{ backgroundColor: '#0b101e' }}>
@@ -931,7 +1052,7 @@ export function AdminRacesPage() {
                               <button
                                 onClick={() => { if (!isAutoAssignLanesDisabled) handleGenerateRaces(t.tournamentId); }}
                                 disabled={isAutoAssignLanesDisabled || generatingForTournament === t.tournamentId}
-                                title={isAutoAssignLanesDisabled ? "Làn đua đã được sắp xếp cố định" : undefined}
+                                title={isAutoAssignLanesDisabled ? "Race lanes have already been assigned" : undefined}
                                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 border ${isAutoAssignLanesDisabled
                                   ? 'bg-white/5 border-glass-border text-muted/40 cursor-not-allowed'
                                   : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30'
@@ -950,7 +1071,7 @@ export function AdminRacesPage() {
                               </button>
                               {t.hasAnyRaces && (
                                 <span className="text-[10px] text-emerald-400 font-medium mt-1 flex items-center gap-1">
-                                  <CheckCircle2 size={10} /> Đã xếp 1 lần
+                                  <CheckCircle2 size={10} /> Assigned once
                                 </span>
                               )}
                             </div>
@@ -1122,13 +1243,24 @@ export function AdminRacesPage() {
                                               >
                                                 <UserCheck size={13} />
                                               </button>
-                                              <button
-                                                onClick={() => handleDeleteRace(race.raceId, race.name)}
-                                                title="Delete race"
-                                                className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors"
-                                              >
-                                                <Trash2 size={13} />
-                                              </button>
+                                              {race.status !== 'Finished' && race.status !== 'Completed' && race.status !== 'Live' && race.status !== 'InProgress' && race.status !== 'Cancelled' && (
+                                                <button
+                                                  onClick={() => handleEditRaceClick(race)}
+                                                  title="Edit race"
+                                                  className="p-1.5 rounded-lg text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-colors"
+                                                >
+                                                  <Edit size={13} />
+                                                </button>
+                                              )}
+                                              {!isRaceLocked(race.status) && (
+                                                <button
+                                                  onClick={() => handleDeleteRace(race.raceId, race.name)}
+                                                  title="Delete race"
+                                                  className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors"
+                                                >
+                                                  <Trash2 size={13} />
+                                                </button>
+                                              )}
                                             </div>
                                           </div>
                                         </div>
@@ -1306,6 +1438,87 @@ export function AdminRacesPage() {
         </div>
       )}
 
+      {/* ── Modal: Edit Race ── */}
+      {modal === 'editRace' && editingRace && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel rounded-2xl p-8 w-full max-w-lg border border-gold/20 relative overflow-hidden max-h-[90vh] overflow-y-auto text-left">
+            <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-gold/10 to-transparent blur-[40px] pointer-events-none" />
+            <div className="relative flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
+                <Flag size={15} className="text-gold" />
+              </div>
+              <h2 className="text-xl font-serif text-white">Edit Race</h2>
+              <div className="flex-1 h-px bg-gradient-to-r from-gold/30 via-glass-border to-transparent" />
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={LABEL}>Race Name *</label>
+                <input value={editRaceForm.name} onChange={e => setEditRaceForm(prev => ({ ...prev, name: e.target.value }))} placeholder="E.g.: Race 1 (Prefinal)" className={INPUT} />
+              </div>
+              <div>
+                <label className={LABEL}>Race Date & Time *</label>
+                <div className="relative">
+                  <input
+                    type="datetime-local"
+                    value={editRaceForm.raceDate}
+                    onChange={e => setEditRaceForm(prev => ({ ...prev, raceDate: e.target.value }))}
+                    className={`${INPUT} pr-10`}
+                    style={{ colorScheme: 'dark' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
+                      input?.showPicker?.();
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Calendar size={15} />
+                  </button>
+                </div>
+                {(() => {
+                  const round = tournamentsList
+                    .flatMap((t: any) => t.rounds ?? [])
+                    .find((r: any) => r.roundId === editingRace.roundId);
+                  return round && (round.startDate || round.endDate) ? (
+                    <div className="text-xs text-gold/80 mt-1.5 flex items-center gap-1.5">
+                      <span>⏰</span>
+                      <span>
+                        Valid time range: <strong>{fmtDate(round.startDate)}</strong> to <strong>{fmtDate(round.endDate)}</strong>
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={LABEL}>Distance (m) *</label>
+                  <input value={editRaceForm.distanceMeter} onChange={e => setEditRaceForm(prev => ({ ...prev, distanceMeter: e.target.value }))} type="number" min="100" placeholder="E.g.: 1200" className={INPUT} />
+                </div>
+                <div>
+                  <label className={LABEL}>Number of Lanes *</label>
+                  <input value={editRaceForm.maxLanes} onChange={e => setEditRaceForm(prev => ({ ...prev, maxLanes: e.target.value }))} type="number" min="1" placeholder="E.g.: 12" className={INPUT} />
+                </div>
+              </div>
+              {editRaceError && <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{editRaceError}</div>}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setModal('none')} className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">Cancel</button>
+              <button
+                onClick={handleUpdateRace}
+                disabled={editRaceLoading}
+                className="flex-1 btn-gold py-2.5 rounded-lg text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {editRaceLoading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* ── Modal: Assign horse to lanes — sinh dropdown theo số lanes ── */}
       {modal === 'lanes' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1331,7 +1544,14 @@ export function AdminRacesPage() {
                 </div>
               </div>
 
-              {laneRaceId && (
+              {laneRaceId && laneRaceLocked && (
+                <div className="text-[11px] rounded-lg px-3 py-2.5 leading-relaxed font-semibold"
+                  style={{ background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.35)', color: '#475569' }}>
+                  This race has finished — lane assignments are read-only.
+                </div>
+              )}
+
+              {laneRaceId && !laneRaceLocked && (
                 <div className="text-[11px] text-champagne/80 bg-gold/5 border border-gold/15 rounded-lg px-3 py-2 leading-relaxed">
                   Select a horse for each empty lane and click <b>"Save Selected Lanes"</b>.
                   Only displays horses with <b>approved status (Approved) + Healthy status</b>, not yet assigned — horses selected in other lanes will be hidden.
@@ -1340,7 +1560,7 @@ export function AdminRacesPage() {
               )}
 
               {/* Warning: Approved but not Healthy */}
-              {laneRaceId && (() => {
+              {laneRaceId && !laneRaceLocked && (() => {
                 const unhealthy = registrationsList.filter(r =>
                   Number(r.tournamentId ?? r.TournamentId) === Number(laneRace?.tournamentId)
                   && (r.status ?? '').toLowerCase() === 'approved'
@@ -1361,8 +1581,8 @@ export function AdminRacesPage() {
                 );
               })()}
 
-              {/* Feature 1: Auto-split hint — sơ loại vs chung kết */}
-              {laneRaceId && (() => {
+              {/* Feature 1: Auto-split hint — sơ loại vs chung kết (chỉ khi còn sắp xếp được) */}
+              {laneRaceId && !laneRaceLocked && (() => {
                 const totalApproved = eligibleRegs.length + laneEntries.length;
                 if (totalApproved === 0) return null;
                 if (totalApproved <= 12) {
@@ -1412,7 +1632,7 @@ export function AdminRacesPage() {
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/30 text-red-300 font-bold shrink-0">{existing.healthStatus}</span>
                             )}
                             <span className={`ml-auto text-[10px] uppercase font-bold shrink-0 mr-2 ${isUnhealthy ? 'text-red-400/70' : 'text-emerald-400/70'}`}>{isUnhealthy ? 'Unhealthy' : 'Assigned'}</span>
-                            {isUnhealthy ? (
+                            {laneRaceLocked ? null : isUnhealthy ? (
                               <button
                                 onClick={() => handleWithdrawEntry(existing.raceEntryId, existing.horseName ?? `Horse #${existing.horseId}`)}
                                 disabled={withdrawingEntryId === existing.raceEntryId}
@@ -1464,6 +1684,15 @@ export function AdminRacesPage() {
                     // Empty lane — dropdown chọn horse; ẩn horse đã chọn ở lanes khác
                     const usedElsewhere = new Set(Object.entries(laneSel).filter(([l]) => Number(l) !== laneNo).map(([, v]) => v).filter(Boolean));
                     const opts = eligibleRegs.filter(r => !usedElsewhere.has(String(r.registrationId ?? r.id)));
+                    if (laneRaceLocked) {
+                      // Đua xong: làn trống chỉ hiển thị, không cho chọn ngựa nữa
+                      return (
+                        <div key={laneNo} className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/2 border border-glass-border">
+                          <span className="w-14 shrink-0 text-xs font-bold text-muted">Lane {laneNo}</span>
+                          <span className="text-xs italic" style={{ color: 'rgba(100,116,139,0.8)' }}>Not used in this race</span>
+                        </div>
+                      );
+                    }
                     return (
                       <div key={laneNo} className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/2 border border-glass-border">
                         <span className="w-14 shrink-0 text-xs font-bold text-muted">Lane {laneNo}</span>
@@ -1510,10 +1739,12 @@ export function AdminRacesPage() {
 
             <div className="flex gap-3 mt-6">
               <button onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">Close</button>
-              <button onClick={handleSaveLanes} disabled={laneSaving || !laneRaceId}
-                className="flex-1 py-2.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
-                {laneSaving ? 'Saving...' : 'Save Selected Lanes'}
-              </button>
+              {!laneRaceLocked && (
+                <button onClick={handleSaveLanes} disabled={laneSaving || !laneRaceId}
+                  className="flex-1 py-2.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                  {laneSaving ? 'Saving...' : 'Save Selected Lanes'}
+                </button>
+              )}
             </div>
           </motion.div>
         </div>
@@ -1619,8 +1850,13 @@ export function AdminRacesPage() {
                     <div className="text-xs text-muted/60 italic px-1">No referee assigned — use <UserCheck size={11} className="inline" /> button in list to assign.</div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
+                      {/* Màu cyan đậm cố định: cyan-300 quá nhạt nên chìm trên nền sáng */}
                       {detailRefs.map((r: any, i: number) => (
-                        <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
+                        <span
+                          key={i}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-full"
+                          style={{ background: 'rgba(6,182,212,0.14)', border: '1px solid rgba(6,182,212,0.45)', color: '#0E7490' }}
+                        >
                           {r.refereeName ?? r.fullName ?? r.name ?? `Referee #${r.refereeId ?? r.id}`}
                         </span>
                       ))}
@@ -1631,10 +1867,13 @@ export function AdminRacesPage() {
             )}
 
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { const r = detailRace; closeModal(); openLanes(r.raceId ?? r.id); }}
-                className="flex-1 py-2.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/25 hover:bg-blue-500/25 text-sm font-bold transition-colors">
-                Assign lanes for this race
-              </button>
+              {/* Đua xong rồi thì không còn gì để xếp làn nữa — chỉ hiện nút khi race chưa kết thúc */}
+              {!['finished', 'completed', 'published', 'cancelled'].includes(String(detailRace.status ?? '').toLowerCase()) && (
+                <button onClick={() => { const r = detailRace; closeModal(); openLanes(r.raceId ?? r.id); }}
+                  className="flex-1 py-2.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/25 hover:bg-blue-500/25 text-sm font-bold transition-colors">
+                  Assign lanes for this race
+                </button>
+              )}
               <button onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">Close</button>
             </div>
           </motion.div>
@@ -1665,6 +1904,11 @@ export function AdminRacesPage() {
                 </div>
               </div>
 
+              {refRaceLocked ? (
+                <div className="rounded-lg bg-white/[0.03] border border-glass-border px-4 py-2.5 text-[11px] text-muted">
+                  This race has finished — referee assignments are read-only.
+                </div>
+              ) : (
               <div>
                 <label className={LABEL}>Select Referee *</label>
                 <select
@@ -1681,11 +1925,14 @@ export function AdminRacesPage() {
                   ))}
                 </select>
               </div>
+              )}
               {refError && <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{refError}</div>}
 
-              <button onClick={handleAssignReferee} disabled={refLoading} className="w-full py-2.5 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
-                {refLoading ? 'Assigning...' : 'Assign referees'}
-              </button>
+              {!refRaceLocked && (
+                <button onClick={handleAssignReferee} disabled={refLoading} className="w-full py-2.5 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                  {refLoading ? 'Assigning...' : 'Assign referees'}
+                </button>
+              )}
 
               {/* Referee hiện tại của races — tự tải khi chọn races */}
               {refForm.raceId && (
@@ -1703,11 +1950,13 @@ export function AdminRacesPage() {
                               <div className="text-sm text-white">{r.refereeName ?? r.fullName ?? r.name ?? `Referee #${id}`}</div>
                               {r.email && <div className="text-[11px] text-muted">{r.email}</div>}
                             </div>
-                            <button
-                              onClick={() => handleRemoveReferee(refForm.raceId, id)}
-                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors" title="Remove referee">
-                              <Trash2 size={14} />
-                            </button>
+                            {!refRaceLocked && (
+                              <button
+                                onClick={() => handleRemoveReferee(refForm.raceId, id)}
+                                className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors" title="Remove referee">
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </div>
                         );
                       })}

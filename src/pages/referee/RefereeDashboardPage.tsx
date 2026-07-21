@@ -5,7 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
-import { getCurrentUser } from '../../api/authService';
+import { getCurrentUser, parseApiError } from '../../api/authService';
 import { useNavigate } from 'react-router-dom';
 import { getRefereeDashboard } from '../../api/refereeService';
 import { useLanguage } from '../../context/LanguageContext';
@@ -47,7 +47,14 @@ export function RefereeDashboardPage() {
       })
       .catch(err => {
         console.error(err);
-        setError(t('Failed to load referee dashboard'));
+        const reason = parseApiError(err);
+        // Tài khoản có role Referee nhưng thiếu bản ghi RefereeProfile → mọi API /referee/* đều 404.
+        // Nói rõ để admin biết phải cấp lại hồ sơ, thay vì chỉ báo "không tải được".
+        setError(
+          /referee profile not found/i.test(reason)
+            ? `${t('Failed to load referee dashboard')}: ${reason}. ${t('Please contact the admin to set up your referee profile (license number).')}`
+            : `${t('Failed to load referee dashboard')}: ${reason}`
+        );
         setLoading(false);
       });
   }, []);

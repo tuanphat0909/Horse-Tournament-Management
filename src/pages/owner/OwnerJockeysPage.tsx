@@ -8,9 +8,12 @@ import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getMyProposals, createJockeyContract, getMyHorses, cancelJockeyContract, getMyRegistrations, checkJockeyBusy, checkHorseBusy } from '../../api/ownerService';
 import { getJockeyRankings, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
+import { inviteJockeySchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 import { formatUtcDateTime } from '../../utils/format';
 import { CountdownTimer } from '../../components/ui/CountdownTimer';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 const STATUS_CFG: Record<string, { label: string; color: string; Icon: typeof Clock }> = {
@@ -64,6 +67,7 @@ function contractBucket(status: string): ContractFilter {
 }
 
 export function OwnerJockeysPage() {
+  const confirm = useConfirm();
   const { notifications, showToast } = useNotifications();
   const searchParams = new URLSearchParams(window.location.search);
   const prefillApplied = useRef(false);
@@ -147,8 +151,16 @@ export function OwnerJockeysPage() {
 
   async function handleInvite() {
     setSubmitError(''); setSubmitSuccess('');
-    if (!form.horseId || !form.tournamentId || !form.jockeyId || !form.startDate || !form.endDate || !form.expirationHours) {
-      setSubmitError('Please fill in all information.');
+    // Yup lo phần bắt buộc nhập; các luật phụ thuộc dữ liệu giải (khoảng ngày,
+    // hạn phản hồi so với thời điểm đóng đăng ký) vẫn kiểm tra bên dưới.
+    try {
+      await inviteJockeySchema.validate(
+        { horseId: form.horseId, jockeyId: form.jockeyId, tournamentId: form.tournamentId, expiryHours: form.expirationHours },
+        { abortEarly: false },
+      );
+      if (!form.startDate || !form.endDate) throw new Error('missing-dates');
+    } catch (validationError) {
+      setSubmitError(getFirstYupMessage(validationError, 'Please fill in all information.'));
       return;
     }
     const selectedTournament = tournaments.find((t: any) => String(t.tournamentId) === String(form.tournamentId));
@@ -217,13 +229,20 @@ export function OwnerJockeysPage() {
   }
 
   async function handleCancelInvite(contractId: number) {
-    if (!window.confirm('Cancel this Jockey invitation?')) return;
+    const ok = await confirm({
+      title: 'Cancel invitation',
+      message: 'Cancel this Jockey invitation?',
+      confirmText: 'Cancel invitation',
+      cancelText: 'Keep',
+      danger: true,
+    });
+    if (!ok) return;
 
     try {
       await cancelJockeyContract(contractId);
       await load();
     } catch (err: unknown) {
-      alert(parseApiError(err as Error));
+      showToast('Error', parseApiError(err as Error), 'error');
     }
   }
 

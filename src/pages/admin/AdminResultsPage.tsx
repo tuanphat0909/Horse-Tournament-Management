@@ -15,13 +15,17 @@ const LABEL = 'block text-xs font-bold text-muted uppercase tracking-wider mb-1.
 
 const INIT_PRIZES = { tournamentId: '', firstPlacePrize: '', secondPlacePrize: '', thirdPlacePrize: '' };
 
+import { useNotifications } from '../../context/NotificationContext';
+import { useConfirm } from '../../context/ConfirmContext';
+
 const cleanDisplayString = (str: string) => {
   if (!str) return '';
   return str.replace(/\s*\(?ID:\s*\d+\)?/gi, '').trim();
 };
 
-
 export function AdminResultsPage() {
+  const { showToast } = useNotifications();
+  const confirm = useConfirm();
   // Prizes modal
   const [showPrizesModal, setShowPrizesModal] = useState(false);
   const [prizes, setPrizes] = useState(INIT_PRIZES);
@@ -100,13 +104,18 @@ export function AdminResultsPage() {
   }
 
   async function handlePublish(raceId: number) {
-    if (!confirm(`Are you sure you want to publish results for race #${raceId}?`)) return;
+    const ok = await confirm({
+      title: 'Publish results',
+      message: `Are you sure you want to publish results for race #${raceId}?`,
+      confirmText: 'Publish',
+    });
+    if (!ok) return;
     try {
       await publishRaceResult(raceId);
-      alert('Published successful!');
+      showToast('Success', 'Published successful!');
       fetchRaces();
     } catch (err: unknown) {
-      alert(parseApiError(err as Error));
+      showToast('Error', parseApiError(err as Error), 'error');
     }
   }
 
@@ -156,7 +165,7 @@ export function AdminResultsPage() {
         secondPlacePrize: Number(prizes.secondPlacePrize),
         thirdPlacePrize: Number(prizes.thirdPlacePrize),
       });
-      alert(`Prizes configured successfully for tournament #${prizes.tournamentId}!`);
+      showToast('Success', `Prizes configured successfully for tournament #${prizes.tournamentId}!`);
       closePrizesModal();
       fetchTournaments();
     } catch (err: unknown) {

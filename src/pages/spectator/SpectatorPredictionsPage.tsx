@@ -5,9 +5,11 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { getMyBets, placeBet } from '../../api/spectatorService';
+import { getMyBets, placeBet, getRaceBettingInfo } from '../../api/spectatorService';
 import { getRaceSchedule, getRaceEntries } from '../../api/publicService';
 import { parseApiError, getCurrentUser } from '../../api/authService';
+import { placeBetSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 type BetStatus = 'correct' | 'incorrect' | 'pending';
@@ -52,12 +54,17 @@ export function SpectatorPredictionsPage() {
   useEffect(() => {
     if (form.raceId) {
       setLoadingHorses(true);
-      getRaceEntries(form.raceId)
+      getRaceBettingInfo(form.raceId)
         .then((res: any) => {
-          setHorses(res?.result ?? []);
+          const data = res?.result?.entries ?? res?.result ?? [];
+          setHorses(data);
           setForm(p => ({ ...p, horseId: '' }));
         })
-        .catch(() => setHorses([]))
+        .catch(() => {
+          getRaceEntries(form.raceId)
+            .then((res: any) => setHorses(res?.result ?? []))
+            .catch(() => setHorses([]));
+        })
         .finally(() => setLoadingHorses(false));
     } else {
       setHorses([]);
@@ -86,8 +93,10 @@ export function SpectatorPredictionsPage() {
 
   async function handlePlaceBet() {
     setSubmitError(''); setSubmitSuccess('');
-    if (!form.raceId || !form.horseId || !form.amount) {
-      setSubmitError('Please fill in all information.');
+    try {
+      await placeBetSchema.validate(form, { abortEarly: false });
+    } catch (validationError) {
+      setSubmitError(getFirstYupMessage(validationError, 'Please fill in all information.'));
       return;
     }
     setSubmitLoading(true);
@@ -270,22 +279,36 @@ export function SpectatorPredictionsPage() {
                     <label className="block text-xs text-muted font-medium mb-1.5">Race *</label>
                     <select value={form.raceId} onChange={e => setForm(p => ({...p, raceId: e.target.value}))} className={INPUT}>
                       <option value="">-- Select Race --</option>
-                      {races.map(r => {
+                      {races.filter(r => {
+                        const status = (r.status ?? r.Status ?? '').toLowerCase();
+                        const roundStatus = (r.roundStatus ?? r.RoundStatus ?? '').toLowerCase();
+                        const isFinished = ['finished', 'completed', 'cancelled', 'ended', 'resultpublished', 'closed'].includes(status) ||
+                                           ['finished', 'completed', 'cancelled', 'ended', 'resultpublished', 'closed'].includes(roundStatus) ||
+                                           r.hasResult === true || r.isFinished === true;
+                        return !isFinished;
+                      }).map(r => {
                         const rId = r.raceId ?? r.id;
                         return (
                           <option key={rId} value={rId}>{(r.name ?? `Race #${rId}`)}{r.raceDate ? ` — ${new Date(r.raceDate).toLocaleDateString()}` : ''}</option>
                         );
                       })}
                     </select>
-                    {races.length === 0 && <p className="text-[10px] text-muted/60 mt-1">No races in the schedule.</p>}
+                    {races.filter(r => {
+                      const status = (r.status ?? r.Status ?? '').toLowerCase();
+                      const roundStatus = (r.roundStatus ?? r.RoundStatus ?? '').toLowerCase();
+                      return !['finished', 'completed', 'cancelled', 'ended', 'resultpublished', 'closed'].includes(status) &&
+                             !['finished', 'completed', 'cancelled', 'ended', 'resultpublished', 'closed'].includes(roundStatus) &&
+                             !r.hasResult && !r.isFinished;
+                    }).length === 0 && <p className="text-[10px] text-muted/60 mt-1">No active races available for betting.</p>}
                   </div>
                   <div>
                     <label className="block text-xs text-muted font-medium mb-1.5">Select Horse *</label>
                     <select value={form.horseId} onChange={e => setForm(p => ({...p, horseId: e.target.value}))} disabled={!form.raceId || loadingHorses} className={INPUT}>
                       <option value="">-- Select Horse --</option>
                       {horses.map(h => {
-                        const hId = h.horseId ?? h.id;
-                        const oddsVal = h.currentOdds ? Number(h.currentOdds).toFixed(2) : '2.00';
+                        const hId = h.horseId ?? h.id ?? h.raceEntryId;
+                        const oddsRaw = h.currentOdds ?? h.CurrentOdds ?? h.odds ?? h.Odds;
+                        const oddsVal = oddsRaw ? Number(oddsRaw).toFixed(2) : '2.00';
                         return (
                           <option key={hId} value={hId}>{h.laneNo ? `Lane ${h.laneNo} - ` : ''}{h.horseName ?? h.name ?? `Horse #${hId}`} (Odds x{oddsVal})</option>
                         );
@@ -298,8 +321,9 @@ export function SpectatorPredictionsPage() {
                     <input type="number" min="1" value={form.amount} onChange={e => setForm(p => ({...p, amount: e.target.value}))} placeholder="E.g.: 100" className={INPUT} />
                     
                     {form.horseId && Number(form.amount) > 0 && (() => {
-                      const sel = horses.find(h => String(h.horseId ?? h.id) === form.horseId);
-                      const oddsNum = sel?.currentOdds ? Number(sel.currentOdds) : 2.0;
+                      const sel = horses.find(h => String(h.horseId ?? h.id ?? h.raceEntryId) === form.horseId);
+                      const oddsRaw = sel?.currentOdds ?? sel?.CurrentOdds ?? sel?.odds ?? sel?.Odds;
+                      const oddsNum = oddsRaw ? Number(oddsRaw) : 2.0;
                       const amt = Number(form.amount);
                       const totalReturn = amt * oddsNum;
                       return (

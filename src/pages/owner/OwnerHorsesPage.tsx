@@ -7,8 +7,11 @@ import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getMyHorses, createHorse, getHorse, updateHorse, deleteHorse, getOwnerResults, requestHorseRecovery } from '../../api/ownerService';
 import { parseApiError } from '../../api/authService';
+import { createHorseSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 import { calculateAge, formatDateOnly } from '../../utils/format';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 const INPUT = 'w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
@@ -19,6 +22,7 @@ const INIT_EDIT   = { name: '', breed: '', age: '', gender: 'Male', healthStatus
 
 
 export function OwnerHorsesPage() {
+  const confirm = useConfirm();
   const { showToast } = useNotifications();
   const [horses, setHorses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,8 +64,11 @@ export function OwnerHorsesPage() {
 
   async function handleCreate() {
     setCreateError('');
-    if (!createForm.name || !createForm.breed || !createForm.age) {
-      setCreateError('Please fill in all information.');
+    // Yup kiểm tra thay cho chuỗi if thủ công, giữ nguyên câu thông báo
+    try {
+      await createHorseSchema.validate(createForm, { abortEarly: false });
+    } catch (validationError) {
+      setCreateError(getFirstYupMessage(validationError, 'Please fill in all information.'));
       return;
     }
     setCreateLoading(true);
@@ -138,7 +145,13 @@ export function OwnerHorsesPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!window.confirm('Are you sure you want to delete this horse?')) return;
+    const ok = await confirm({
+      title: 'Delete horse',
+      message: 'Are you sure you want to delete this horse?',
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     setDeletingId(id);
     try {
       await deleteHorse(id);

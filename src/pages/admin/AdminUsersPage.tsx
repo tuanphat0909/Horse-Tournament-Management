@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as Yup from 'yup';
 import { motion } from 'framer-motion';
 import { Search, Plus, Users, Eye, EyeOff, ArrowUpDown } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -6,8 +7,9 @@ import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getRoles, createAccount, getAccounts, updateUserStatus } from '../../api/adminService';
-import { parseApiError } from '../../api/authService';
+import { parseApiError, parseFieldErrors } from '../../api/authService';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { formatUtcDateTime } from '../../utils/format';
 import { Pager, paginate } from '../../components/ui/Pager';
 
@@ -21,9 +23,67 @@ const NEEDS_LICENSE = ['Jockey', 'Referee'];
 const INIT_FORM = { fullName: '', email: '', password: '', role: '', licenseNumber: '', experienceYears: '' };
 
 const INPUT = 'w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
+const INPUT_ERROR = 'w-full bg-navy/50 border border-red-500/60 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-red-400 transition-colors';
 const LABEL = 'block text-xs font-bold text-muted uppercase tracking-wider mb-1.5';
 
+type FormErrors = Partial<Record<'fullName' | 'email' | 'password' | 'role' | 'licenseNumber' | 'experienceYears', string>>;
+
+// Kiểm tra ngay tại FE để chỉ đúng ô nào sai, thay vì đợi BE trả một câu chung chung.
+// Các luật này khớp với AdminService.CreateAccountAsync bên BE.
+/**
+ * Cùng bộ luật như bản kiểm tra thủ công trước đây, viết lại bằng Yup:
+ * bắt buộc nhập, email đúng định dạng, mật khẩu >= 6 ký tự, Referee bắt buộc
+ * có số giấy phép, số năm kinh nghiệm là số nguyên 0..80.
+ */
+const accountSchema = Yup.object({
+  fullName: Yup.string().trim().required('Full name is required.'),
+  email: Yup.string().trim()
+    .required('Email is required.')
+    .matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format.'),
+  password: Yup.string()
+    .required('Password is required.')
+    .min(6, 'Password must be at least 6 characters.'),
+  role: Yup.string().required('Please select a role.'),
+  licenseNumber: Yup.string().when('role', {
+    is: 'Referee',
+    then: schema => schema.trim().required('License number is required for Referee.'),
+    otherwise: schema => schema.notRequired(),
+  }),
+  experienceYears: Yup.string().test(
+    'valid-years',
+    'Years of experience must be a whole number of 0 or more.',
+    value => {
+      if (!value) return true;
+      const years = Number(value);
+      return Number.isInteger(years) && years >= 0;
+    },
+  ).test(
+    'not-too-large',
+    'Years of experience looks too large.',
+    value => !value || Number(value) <= 80,
+  ),
+});
+
+
+// BE báo lỗi bằng một câu văn (vd "Email already exists.") → dò về đúng ô để tô đỏ.
+function mapMessageToField(message: string): keyof FormErrors | null {
+  const m = message.toLowerCase();
+  if (m.includes('email')) return 'email';
+  if (m.includes('password')) return 'password';
+  if (m.includes('license')) return 'licenseNumber';
+  if (m.includes('full name')) return 'fullName';
+  if (m.includes('role')) return 'role';
+  if (m.includes('experience')) return 'experienceYears';
+  return null;
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="mt-1.5 text-xs text-red-400">{message}</p>;
+}
+
 export function AdminUsersPage() {
+  const confirm = useConfirm();
   const { showToast } = useNotifications();
   const [filter, setFilter] = useState<RoleFilter>('all');
   const [search, setSearch] = useState('');
@@ -35,6 +95,7 @@ export function AdminUsersPage() {
   const [form, setForm] = useState(INIT_FORM);
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -43,13 +104,19 @@ export function AdminUsersPage() {
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
   async function handleToggleStatus(id: number, currentStatus: string) {
-    if (!confirm(`Are you sure you want to ${currentStatus === 'Active' ? 'lock' : 'unlock'} this account?`)) return;
+    const ok = await confirm({
+      title: currentStatus === 'Active' ? 'Lock account' : 'Unlock account',
+      message: `Are you sure you want to ${currentStatus === 'Active' ? 'lock' : 'unlock'} this account?`,
+      confirmText: currentStatus === 'Active' ? 'Lock' : 'Unlock',
+      danger: currentStatus === 'Active',
+    });
+    if (!ok) return;
     setTogglingId(id);
     try {
       await updateUserStatus(id);
       fetchAccounts();
     } catch (err: unknown) {
-      alert(parseApiError(err as Error));
+      showToast('Error', parseApiError(err as Error), 'error');
     } finally {
       setTogglingId(null);
     }
@@ -86,14 +153,30 @@ export function AdminUsersPage() {
 
   function set(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
+    // Gõ lại thì xoá lỗi của riêng ô đó để người dùng thấy mình đã sửa được
+    setFieldErrors(prev => (prev[field as keyof FormErrors] ? { ...prev, [field]: undefined } : prev));
   }
 
   async function handleCreate() {
     setError(''); setSuccess('');
-    if (!form.fullName || !form.email || !form.password || !form.role) {
-      setError('Please fill in all required fields.');
+
+    // Yup kiểm tra toàn bộ form, gom lỗi về đúng từng ô như trước
+    try {
+      await accountSchema.validate(form, { abortEarly: false });
+    } catch (validationError) {
+      const invalid: FormErrors = {};
+      if (validationError instanceof Yup.ValidationError) {
+        validationError.inner.forEach(e => {
+          if (e.path && !invalid[e.path as keyof FormErrors]) {
+            invalid[e.path as keyof FormErrors] = e.message;
+          }
+        });
+      }
+      setFieldErrors(invalid);
+      setError('Please fix the highlighted fields below.');
       return;
     }
+    setFieldErrors({});
     setLoading(true);
     try {
       const body: Record<string, unknown> = {
@@ -112,7 +195,16 @@ export function AdminUsersPage() {
       closeModal();
       fetchAccounts();
     } catch (err: unknown) {
-      setError(parseApiError(err as Error));
+      const message = parseApiError(err as Error);
+      // Ưu tiên map lỗi BE về đúng ô; nếu không nhận ra thì chỉ hiện ở khung lỗi chung
+      const fromBody = parseFieldErrors(err as Error) as FormErrors;
+      const matched = mapMessageToField(message);
+      setFieldErrors(
+        Object.keys(fromBody).length > 0 ? fromBody
+        : matched ? { [matched]: message }
+        : {}
+      );
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -121,6 +213,7 @@ export function AdminUsersPage() {
   function closeModal() {
     setShowModal(false);
     setError(''); setSuccess('');
+    setFieldErrors({});
     setForm(INIT_FORM);
   }
 
@@ -328,13 +421,15 @@ export function AdminUsersPage() {
               {/* Full Name */}
               <div>
                 <label className={LABEL}>Full Name *</label>
-                <input value={form.fullName} onChange={e => set('fullName', e.target.value)} placeholder="E.g.: John Smith" className={INPUT} />
+                <input value={form.fullName} onChange={e => set('fullName', e.target.value)} placeholder="E.g.: John Smith" className={fieldErrors.fullName ? INPUT_ERROR : INPUT} />
+                <FieldError message={fieldErrors.fullName} />
               </div>
 
               {/* Email */}
               <div>
                 <label className={LABEL}>Email *</label>
-                <input value={form.email} onChange={e => set('email', e.target.value)} type="email" placeholder="example@email.com" className={INPUT} />
+                <input value={form.email} onChange={e => set('email', e.target.value)} type="email" placeholder="example@email.com" className={fieldErrors.email ? INPUT_ERROR : INPUT} />
+                <FieldError message={fieldErrors.email} />
               </div>
 
               {/* Password */}
@@ -346,12 +441,13 @@ export function AdminUsersPage() {
                     onChange={e => set('password', e.target.value)}
                     type={showPwd ? 'text' : 'password'}
                     placeholder="At least 6 characters"
-                    className={INPUT + ' pr-10'}
+                    className={(fieldErrors.password ? INPUT_ERROR : INPUT) + ' pr-10'}
                   />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute inset-y-0 right-3 flex items-center text-muted hover:text-white">
                     {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+                <FieldError message={fieldErrors.password} />
               </div>
 
               {/* Role */}
@@ -363,7 +459,7 @@ export function AdminUsersPage() {
                   <select
                     value={form.role}
                     onChange={e => set('role', e.target.value)}
-                    className={INPUT}
+                    className={fieldErrors.role ? INPUT_ERROR : INPUT}
                     style={{ colorScheme: 'dark' }}
                   >
                     <option value="">-- Select Role --</option>
@@ -372,25 +468,28 @@ export function AdminUsersPage() {
                     ))}
                   </select>
                 )}
+                <FieldError message={fieldErrors.role} />
               </div>
 
               {/* Conditional: Jockey / Referee only */}
               {NEEDS_LICENSE.includes(form.role) && (
                 <>
                   <div>
-                    <label className={LABEL}>License Number</label>
-                    <input value={form.licenseNumber} onChange={e => set('licenseNumber', e.target.value)} placeholder="E.g.: LIC-2024-001" className={INPUT} />
+                    <label className={LABEL}>License Number{form.role === 'Referee' ? ' *' : ''}</label>
+                    <input value={form.licenseNumber} onChange={e => set('licenseNumber', e.target.value)} placeholder="E.g.: LIC-2024-001" className={fieldErrors.licenseNumber ? INPUT_ERROR : INPUT} />
+                    <FieldError message={fieldErrors.licenseNumber} />
                   </div>
                   <div>
                     <label className={LABEL}>Years of Experience</label>
-                    <input value={form.experienceYears} onChange={e => set('experienceYears', e.target.value)} type="number" min="0" placeholder="E.g.: 5" className={INPUT} />
+                    <input value={form.experienceYears} onChange={e => set('experienceYears', e.target.value)} type="number" min="0" placeholder="E.g.: 5" className={fieldErrors.experienceYears ? INPUT_ERROR : INPUT} />
+                    <FieldError message={fieldErrors.experienceYears} />
                   </div>
                 </>
               )}
 
               {/* Error / Success */}
               {error && (
-                <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{error}</div>
+                <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 whitespace-pre-line">{error}</div>
               )}
               {success && (
                 <div className="text-sm px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{success}</div>

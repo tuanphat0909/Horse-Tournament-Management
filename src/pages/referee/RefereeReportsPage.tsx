@@ -7,6 +7,8 @@ import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getRefereeDashboard, getRaceReports, createReport, getHorseChecks } from '../../api/refereeService';
 import { parseApiError } from '../../api/authService';
+import { refereeReportSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 const INPUT = 'w-full bg-[#0B1628] border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
@@ -116,12 +118,13 @@ export function RefereeReportsPage() {
   async function handleSubmit() {
     setSubmitError('');
     setSubmitSuccess('');
-    if (!selectedRaceId) {
-      setSubmitError('Please select a race.');
-      return;
-    }
-    if (!form.content.trim()) {
-      setSubmitError('Report content cannot be empty.');
+    try {
+      await refereeReportSchema.validate(
+        { raceId: selectedRaceId ? String(selectedRaceId) : '', content: form.content },
+        { abortEarly: false },
+      );
+    } catch (validationError) {
+      setSubmitError(getFirstYupMessage(validationError, 'Please select a race.'));
       return;
     }
 
@@ -315,7 +318,7 @@ export function RefereeReportsPage() {
                   </div>
 
                   <div>
-                    <label className={LABEL}>Select Horse / Jockey (Con ngựa / Kỵ sĩ báo cáo)</label>
+                    <label className={LABEL}>Select Horse / Jockey to Report</label>
                     <select 
                       value={form.reportedHorseId} 
                       onChange={e => setF('reportedHorseId', e.target.value)} 
@@ -323,7 +326,7 @@ export function RefereeReportsPage() {
                       className={INPUT + " disabled:opacity-50"}
                       style={{colorScheme: 'dark'}}
                     >
-                      <option value="">-- General Race Report (Báo cáo chung toàn trận) --</option>
+                      <option value="">-- General Race Report --</option>
                       {horses.map((h: any) => (
                         <option key={h.horseId} value={h.horseId}>
                           Lane {h.laneNo}: {h.horseName} ({h.jockeyName || 'Jockey'})

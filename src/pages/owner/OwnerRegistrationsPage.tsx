@@ -9,7 +9,10 @@ import { PageAmbience } from '../../components/layout/PageAmbience';
 import { createRegistration, getMyRegistrations, getMyHorses, getMyProposals, cancelJockeyContract } from '../../api/ownerService';
 import { getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
+import { registerHorseSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { CountdownTimer } from '../../components/ui/CountdownTimer';
 import { formatUtcDateTime, formatDateOnly } from '../../utils/format';
 
@@ -32,6 +35,7 @@ const STATUS_CONFIG = {
 };
 
 export function OwnerRegistrationsPage() {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const { showToast } = useNotifications();
   const [registrations, setRegistrations] = useState<any[]>([]);
@@ -79,8 +83,10 @@ export function OwnerRegistrationsPage() {
 
   async function handleSubmit() {
     setSubmitError('');
-    if (!form.horseId || !form.tournamentId) {
-      setSubmitError('Please select a horse and a tournament.');
+    try {
+      await registerHorseSchema.validate(form, { abortEarly: false });
+    } catch (validationError) {
+      setSubmitError(getFirstYupMessage(validationError, 'Please select a horse and a tournament.'));
       return;
     }
     const selectedHorse = horses.find(h => String(h.id) === String(form.horseId));
@@ -491,7 +497,14 @@ export function OwnerRegistrationsPage() {
                 <button onClick={() => setPendingModal(null)} className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">Close</button>
                 <button
                   onClick={async () => {
-                    if (!window.confirm('Cancel this jockey invitation?')) return;
+                    const ok = await confirm({
+                      title: 'Cancel invitation',
+                      message: 'Cancel this jockey invitation?',
+                      confirmText: 'Cancel invitation',
+                      cancelText: 'Keep',
+                      danger: true,
+                    });
+                    if (!ok) return;
                     try {
                       await cancelJockeyContract(pendingModal.contract.id);
                       setPendingModal(null);

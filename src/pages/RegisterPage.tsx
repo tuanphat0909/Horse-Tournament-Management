@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { Eye, EyeOff, Mail } from 'lucide-react';
@@ -25,34 +27,48 @@ function CornerOrnament() {
   );
 }
 
+/**
+ * Ràng buộc nhập liệu của form đăng ký.
+ * Giữ đúng các luật đang áp dụng: bắt buộc nhập, email hợp lệ, mật khẩu tối
+ * thiểu 6 ký tự (như placeholder ghi) và hai ô mật khẩu phải khớp nhau.
+ */
+const registerSchema = Yup.object({
+  fullName: Yup.string().trim().required('Please enter your full name.'),
+  email: Yup.string().trim().email('Please enter a valid email address.').required('Please enter your email.'),
+  password: Yup.string().min(6, 'Password must be at least 6 characters.').required('Please enter a password.'),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('password')], 'Passwords do not match.')
+    .required('Please confirm your password.'),
+});
+
 export function RegisterPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // Lỗi trả về từ API (email trùng, server lỗi...) — tách khỏi lỗi validate của Formik
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
 
-  async function handleRegister() {
-    setError('');
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    setLoading(true);
-    try {
-      await register(fullName, email, password, confirmPassword);
-      setIsRegistered(true);
-    } catch (err: unknown) {
-      setError(parseApiError(err as Error));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const formik = useFormik({
+    initialValues: { fullName: '', email: '', password: '', confirmPassword: '' },
+    validationSchema: registerSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      setError('');
+      try {
+        await register(values.fullName, values.email, values.password, values.confirmPassword);
+        setIsRegistered(true);
+      } catch (err: unknown) {
+        setError(parseApiError(err as Error));
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  });
+
+  const loading = formik.isSubmitting;
+  /** Chỉ hiện lỗi của ô đã đụng vào, tránh vừa mở form đã đỏ hết */
+  const fieldError = (name: keyof typeof formik.values) =>
+    formik.touched[name] && formik.errors[name] ? formik.errors[name] : '';
 
 
   return (
@@ -201,11 +217,18 @@ export function RegisterPage() {
                         style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
                         type="text"
                         placeholder="John Doe"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
+                        name="fullName"
+                        value={formik.values.fullName}
+                        onChange={formik.handleChange}
                         onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
-                        onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'rgba(148,163,184,0.2)';
+                          formik.handleBlur(e);
+                        }}
                       />
+                      {fieldError('fullName') && (
+                        <p className="text-xs mt-1.5" style={{ color: '#fca5a5' }}>{fieldError('fullName')}</p>
+                      )}
                     </motion.div>
 
                     {/* Email */}
@@ -218,11 +241,18 @@ export function RegisterPage() {
                         style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
                         type="email"
                         placeholder="champion@equestria.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        name="email"
+                        value={formik.values.email}
+                        onChange={formik.handleChange}
                         onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
-                        onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'rgba(148,163,184,0.2)';
+                          formik.handleBlur(e);
+                        }}
                       />
+                      {fieldError('email') && (
+                        <p className="text-xs mt-1.5" style={{ color: '#fca5a5' }}>{fieldError('email')}</p>
+                      )}
                     </motion.div>
 
                     {/* Password */}
@@ -236,10 +266,14 @@ export function RegisterPage() {
                           style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••  (min. 6 characters)"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          name="password"
+                          value={formik.values.password}
+                          onChange={formik.handleChange}
                           onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
-                          onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = 'rgba(148,163,184,0.2)';
+                            formik.handleBlur(e);
+                          }}
                         />
                         <button
                           className="absolute inset-y-0 right-0 flex items-center pr-3"
@@ -250,6 +284,9 @@ export function RegisterPage() {
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
+                      {fieldError('password') && (
+                        <p className="text-xs mt-1.5" style={{ color: '#fca5a5' }}>{fieldError('password')}</p>
+                      )}
                     </motion.div>
 
                     {/* Confirm Password */}
@@ -263,11 +300,15 @@ export function RegisterPage() {
                           style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
                           type={showConfirm ? 'text' : 'password'}
                           placeholder="••••••••"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
+                          name="confirmPassword"
+                          value={formik.values.confirmPassword}
+                          onChange={formik.handleChange}
+                          onKeyDown={(e) => e.key === 'Enter' && formik.handleSubmit()}
                           onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
-                          onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = 'rgba(148,163,184,0.2)';
+                            formik.handleBlur(e);
+                          }}
                         />
                         <button
                           className="absolute inset-y-0 right-0 flex items-center pr-3"
@@ -278,6 +319,9 @@ export function RegisterPage() {
                           {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
+                      {fieldError('confirmPassword') && (
+                        <p className="text-xs mt-1.5" style={{ color: '#fca5a5' }}>{fieldError('confirmPassword')}</p>
+                      )}
                     </motion.div>
 
                     {/* Error message */}
@@ -297,7 +341,7 @@ export function RegisterPage() {
                         className="w-full font-bold text-sm tracking-wider uppercase py-3.5 rounded-md flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{ background: 'linear-gradient(135deg,#e9c46a 0%,#d4af37 50%,#aa8c2c 100%)', color: '#0b101e' }}
                         type="button"
-                        onClick={handleRegister}
+                        onClick={() => formik.handleSubmit()}
                         disabled={loading}
                       >
                         {loading ? 'Creating account…' : 'Register'}
