@@ -76,7 +76,6 @@ export function OwnerRegistrationsPage() {
     const s = String(h?.healthStatus ?? 'Healthy').toLowerCase();
     return s === 'healthy' || s === 'good';
   };
-  const unhealthyHorses = horses.filter(h => !isHealthy(h));
 
   async function handleSubmit() {
     setSubmitError('');
@@ -102,6 +101,8 @@ export function OwnerRegistrationsPage() {
       setSubmitLoading(false);
     }
   }
+
+
 
   function closeModal() {
     setShowModal(false);
@@ -329,7 +330,17 @@ export function OwnerRegistrationsPage() {
                   }
                 } else {
                   const cfg = STATUS_CONFIG[statusKey];
-                  customStatus = { ...cfg, label: r.status, clickable: false, action: 'none' };
+                  let label = r.status;
+                  if (statusKey === 'rejected') {
+                    if (r.rejectionSource === 'Vet') {
+                      label = 'Rejected (Failed Vet Check)';
+                    } else if (r.rejectionSource === 'Admin') {
+                      label = 'Rejected by Admin';
+                    } else {
+                      label = 'Rejected';
+                    }
+                  }
+                  customStatus = { ...cfg, label, clickable: false, action: 'none' };
                 }
 
                 const handleBadgeClick = () => {
@@ -388,6 +399,7 @@ export function OwnerRegistrationsPage() {
                         <XCircle size={15} />
                       </button>
                     )}
+                    {/* Recheck button removed since recheck is handled in My Horses */}
                   </motion.div>
                 );
               })}
@@ -526,19 +538,12 @@ export function OwnerRegistrationsPage() {
                   className="w-full bg-navy/50 border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-gold/40"
                 >
                   <option value="">-- Select Horse --</option>
-                  {/* Horse unhealthy bị khóa chọn — gate quy trình trước khi ghép lanes */}
                   {horses.map(h => (
                     <option key={h.id} value={h.id} disabled={!isHealthy(h)}>
                       {h.name}{!isHealthy(h) ? ` — unhealthy (${h.healthStatus})` : ''}
                     </option>
                   ))}
                 </select>
-                {unhealthyHorses.length > 0 && (
-                  <div className="text-[11px] text-yellow-400/90 mt-1.5 leading-relaxed">
-                    ⚠ {unhealthyHorses.length} horses locked due to health issues: {unhealthyHorses.map(h => h.name).join(', ')}.
-                    Only <b>Healthy</b> horses can register — update the status on the My Horses page once recovered.
-                  </div>
-                )}
               </div>
               <div>
                 <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Select Tournament *</label>

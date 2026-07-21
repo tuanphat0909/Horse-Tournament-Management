@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { Search, Plus, RefreshCw } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
@@ -7,22 +7,36 @@ import { PageAmbience } from '../../components/layout/PageAmbience';
 import {
   getMedicalChecks,
   createMedicalCheck,
-  updateMedicalCheck,
-  deleteMedicalCheck,
   getPendingRegistrations,
   getAssignedEntries,
   performRecheck,
+  getUnhealthyHorses,
 } from '../../api/vetService';
 import { parseApiError } from '../../api/authService';
+import { calculateAge } from '../../utils/format';
 
-type Tab = 'pending' | 'assigned' | 'history';
+type Tab = 'pending' | 'assigned' | 'history' | 'recovery';
+
+interface UnhealthyHorse {
+  horseId: number;
+  name: string;
+  breed: string;
+  age: string;
+  gender: string;
+  healthStatus: string;
+  ownerId: number;
+  ownerName: string;
+}
 
 interface PendingCheck {
-  registrationId: number;
+  registrationId: number | null;
+  medicalRecordId: number | null;
+  horseId: number;
   horseName: string;
   tournamentName: string;
   ownerName: string;
   registeredAt: string;
+  inspectionType: 'Tournament' | 'General';
 }
 
 interface AssignedEntry {
@@ -66,16 +80,18 @@ export function MedicalCheckPage() {
   const [pendingList, setPendingList] = useState<PendingCheck[]>([]);
   const [assignedList, setAssignedList] = useState<AssignedEntry[]>([]);
   const [historyList, setHistoryList] = useState<MedicalRecord[]>([]);
+  const [unhealthyList, setUnhealthyList] = useState<UnhealthyHorse[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Modal state — shared for create / edit / recheck
+  // Modal state — shared for create / recheck
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<'create' | 'edit' | 'recheck'>('create');
-  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
+  const [modalType, setModalType] = useState<'create' | 'recheck'>('create');
   const [selectedRegId, setSelectedRegId] = useState<number | null>(null);
+  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
+  const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [selectedHorseName, setSelectedHorseName] = useState('');
 
   // Form fields
@@ -115,16 +131,20 @@ export function MedicalCheckPage() {
       getPendingRegistrations(),
       getAssignedEntries(),
       getMedicalChecks(),
-    ]).then(([pendingRes, assignedRes, historyRes]) => {
+      getUnhealthyHorses(),
+    ]).then(([pendingRes, assignedRes, historyRes, unhealthyRes]) => {
       if (pendingRes.status === 'fulfilled') setPendingList(pendingRes.value?.result ?? []);
       if (assignedRes.status === 'fulfilled') setAssignedList(assignedRes.value?.result ?? []);
       if (historyRes.status === 'fulfilled') setHistoryList(historyRes.value?.result ?? []);
-      if (pendingRes.status === 'rejected' && assignedRes.status === 'rejected' && historyRes.status === 'rejected') {
+      if (unhealthyRes.status === 'fulfilled') setUnhealthyList(unhealthyRes.value?.result ?? []);
+      if (pendingRes.status === 'rejected' && assignedRes.status === 'rejected' && historyRes.status === 'rejected' && unhealthyRes.status === 'rejected') {
         setError('Failed to load health inspection data.');
       }
       setLoading(false);
     });
   }
+
+
 
   function resetForm() {
     setWeight(''); setTemperature(''); setHeartRate('');
@@ -135,38 +155,28 @@ export function MedicalCheckPage() {
   function openCreate(pc: PendingCheck) {
     setModalType('create');
     setSelectedRegId(pc.registrationId);
+    setSelectedRecordId(pc.medicalRecordId);
+    setSelectedHorseId(pc.horseId);
     setSelectedHorseName(pc.horseName);
     resetForm();
     setShowModal(true);
   }
 
-  function openEdit(mr: MedicalRecord) {
-    setModalType('edit');
-    setSelectedRecordId(mr.id);
-    setSelectedHorseName(mr.horseName);
-    setWeight(mr.weight.toString());
-    setTemperature(mr.temperature?.toString() ?? '');
-    setHeartRate(mr.heartRate?.toString() ?? '');
-    setDopingResult(mr.dopingResult);
-    setMedicalResult(mr.medicalResult);
-    setFailReason(''); setNotes(mr.notes ?? '');
+  function openCreateForUnhealthy(uh: UnhealthyHorse) {
+    setModalType('create');
+    setSelectedRegId(null);
+    setSelectedRecordId(null);
+    setSelectedHorseId(uh.horseId);
+    setSelectedHorseName(uh.name);
+    resetForm();
     setShowModal(true);
   }
-
   function openRecheck(ae: AssignedEntry) {
     setModalType('recheck');
     setSelectedRegId(ae.registrationId);
     setSelectedHorseName(ae.horseName ?? `Horse #${ae.raceId}`);
     resetForm();
     setShowModal(true);
-  }
-
-  function handleDelete(id: number) {
-    if (!window.confirm('Are you sure you want to delete this medical record?')) return;
-    setLoading(true);
-    deleteMedicalCheck(id)
-      .then(() => { setSuccess('Medical record deleted successfully!'); loadData(); })
-      .catch((err: any) => { setError(err.response?.data?.message ?? 'Error deleting.'); setLoading(false); });
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -187,14 +197,14 @@ export function MedicalCheckPage() {
     };
 
     setLoading(true); setError(''); setSuccess('');
-
     if (modalType === 'create') {
-      createMedicalCheck({ registrationId: selectedRegId, ...base })
+      createMedicalCheck({
+        registrationId: selectedRegId,
+        medicalRecordId: selectedRecordId,
+        horseId: selectedHorseId,
+        ...base
+      })
         .then(() => { setSuccess('Inspection result saved!'); setShowModal(false); loadData(); })
-        .catch((err: any) => { setError(parseApiError(err)); setLoading(false); });
-    } else if (modalType === 'edit') {
-      updateMedicalCheck(selectedRecordId!, base)
-        .then(() => { setSuccess('Medical record updated!'); setShowModal(false); loadData(); })
         .catch((err: any) => { setError(parseApiError(err)); setLoading(false); });
     } else {
       // recheck
@@ -220,6 +230,9 @@ export function MedicalCheckPage() {
   );
   const filteredHistory = historyList.filter(mr =>
     [mr.horseName, mr.tournamentName, mr.checkedByName].some(s => s?.toLowerCase().includes(search.toLowerCase()))
+  );
+  const filteredRecovery = unhealthyList.filter(uh =>
+    [uh.name, uh.breed, uh.ownerName].some(s => s?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const TAB_BTN = (t: Tab, label: string, count: number) => (
@@ -255,6 +268,7 @@ export function MedicalCheckPage() {
               {TAB_BTN('pending', 'Awaiting Inspection', pendingList.length)}
               {TAB_BTN('assigned', 'Race Scheduled', assignedList.length)}
               {TAB_BTN('history', 'Inspection History', historyList.length)}
+              {TAB_BTN('recovery', 'Recovery Checks', unhealthyList.length)}
             </div>
             <div className="flex items-center gap-2 bg-white/[0.04] border border-glass-border rounded-lg px-3 py-2 w-full md:w-64 mb-3">
               <Search size={14} className="text-muted shrink-0" />
@@ -281,19 +295,32 @@ export function MedicalCheckPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-glass-border/40 text-sm text-white">
-                        {filteredPending.map(pc => (
-                          <tr key={pc.registrationId} className="hover:bg-white/[0.01] transition-colors">
-                            <td className="px-6 py-4 font-medium text-gold">{pc.horseName}</td>
-                            <td className="px-6 py-4 text-muted">{pc.tournamentName}</td>
-                            <td className="px-6 py-4 text-muted">{pc.ownerName}</td>
-                            <td className="px-6 py-4 text-muted">{new Date(pc.registeredAt).toLocaleDateString('vi-VN')}</td>
-                            <td className="px-6 py-4 text-right">
-                              <button onClick={() => openCreate(pc)} className="bg-gold/10 hover:bg-gold/20 text-gold px-3 py-1.5 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1 border border-gold/30">
-                                <Plus size={12} /> Medical Check
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {filteredPending.map(pc => {
+                          const itemKey = pc.inspectionType === 'General' ? `general-${pc.medicalRecordId}` : `tournament-${pc.registrationId}`;
+                          return (
+                            <tr key={itemKey} className="hover:bg-white/[0.01] transition-colors">
+                              <td className="px-6 py-4 font-medium text-gold">{pc.horseName}</td>
+                              <td className="px-6 py-4">
+                                {pc.inspectionType === 'General' ? (
+                                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                    🩺 Normal Health Check
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                                    🏆 Tournament: {pc.tournamentName}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-muted">{pc.ownerName}</td>
+                              <td className="px-6 py-4 text-muted">{new Date(pc.registeredAt).toLocaleDateString('vi-VN')}</td>
+                              <td className="px-6 py-4 text-right">
+                                <button onClick={() => openCreate(pc)} className="bg-gold/10 hover:bg-gold/20 text-gold px-3 py-1.5 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1 border border-gold/30">
+                                  <Plus size={12} /> Medical Check
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -395,7 +422,6 @@ export function MedicalCheckPage() {
                           <th className="px-6 py-4">Doping</th>
                           <th className="px-6 py-4">Medical</th>
                           <th className="px-6 py-4">Checked By</th>
-                          <th className="px-6 py-4 text-right">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-glass-border/40 text-sm text-white">
@@ -417,14 +443,6 @@ export function MedicalCheckPage() {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-muted text-xs">{mr.checkedByName}</td>
-                            <td className="px-6 py-4 text-right space-x-2 shrink-0">
-                              <button onClick={() => openEdit(mr)} className="text-gold hover:text-white bg-gold/10 hover:bg-gold/20 p-1.5 rounded transition-all inline-flex items-center" title="Edit">
-                                <Edit2 size={12} />
-                              </button>
-                              <button onClick={() => handleDelete(mr.id)} className="text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/20 p-1.5 rounded transition-all inline-flex items-center" title="Delete">
-                                <Trash2 size={12} />
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -434,6 +452,62 @@ export function MedicalCheckPage() {
               )
           )}
 
+          {activeTab === 'recovery' && (
+            loading ? (
+              <div className="text-center text-muted py-12">Loading unhealthy horses...</div>
+            ) : filteredRecovery.length === 0 ? (
+              <div className="glass-panel rounded-xl p-12 text-center text-muted text-sm relative overflow-hidden">
+                <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+                <div className="relative z-10">
+                  <div className="text-4xl opacity-40 mb-3">🐴</div>
+                  No sick or injured horses currently registered in the system.
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white/[0.02] border border-glass-border rounded-xl overflow-hidden animate-fadeIn">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-glass-border bg-white/[0.01] text-xs font-bold text-muted uppercase tracking-wider">
+                        <th className="px-6 py-4">Horse ID</th>
+                        <th className="px-6 py-4">Horse Name</th>
+                        <th className="px-6 py-4">Age / Gender</th>
+                        <th className="px-6 py-4">Breed</th>
+                        <th className="px-6 py-4">Owner</th>
+                        <th className="px-6 py-4">Health Status</th>
+                        <th className="px-6 py-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-glass-border/40 text-sm text-white">
+                      {filteredRecovery.map(uh => (
+                        <tr key={uh.horseId} className="hover:bg-white/[0.01] transition-colors">
+                          <td className="px-6 py-4 font-mono text-xs text-muted">#{uh.horseId}</td>
+                          <td className="px-6 py-4 font-semibold text-champagne">{uh.name}</td>
+                          <td className="px-6 py-4 text-xs text-muted">{calculateAge(uh.age)} yrs / {uh.gender}</td>
+                          <td className="px-6 py-4 text-muted">{uh.breed}</td>
+                          <td className="px-6 py-4 text-muted">{uh.ownerName}</td>
+                          <td className="px-6 py-4">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400">
+                              {uh.healthStatus}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right shrink-0">
+                            <button
+                              onClick={() => openCreateForUnhealthy(uh)}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors text-xs font-bold flex items-center gap-1.5 ml-auto"
+                            >
+                              <Plus size={12} /> Perform Check
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          )}
+
           {/* Modal: tạo / sửa / tái khám */}
           {showModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -441,7 +515,6 @@ export function MedicalCheckPage() {
                 <div className="px-6 py-4 border-b border-glass-border flex justify-between items-center bg-white/[0.02]">
                   <h3 className="font-serif text-lg font-bold text-champagne">
                     {modalType === 'create' && `Medical Check: ${selectedHorseName}`}
-                    {modalType === 'edit' && `Edit Medical Record: ${selectedHorseName}`}
                     {modalType === 'recheck' && `Recheck: ${selectedHorseName}`}
                   </h3>
                   <button onClick={() => setShowModal(false)} className="text-muted hover:text-white text-xl font-bold">×</button>
@@ -540,9 +613,18 @@ export function MedicalCheckPage() {
                       type="submit"
                       disabled={loading || (medicalResult === 'Pass' && !isEligibleForPass)}
                       title={medicalResult === 'Pass' && !isEligibleForPass ? 'Cannot save: Horse is not eligible for Pass' : ''}
-                      className="bg-gold hover:bg-gold/80 text-black font-bold px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="bg-gold hover:bg-gold/80 text-black font-bold px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
                     >
-                      {loading ? 'Saving...' : modalType === 'recheck' ? 'Save Recheck Result' : 'Save Result'}
+                      {loading ? (
+                        <>
+                          <RefreshCw size={14} className="animate-spin" />
+                          <span>Đang xử lý...</span>
+                        </>
+                      ) : modalType === 'recheck' ? (
+                        'Save Recheck Result'
+                      ) : (
+                        'Save Result'
+                      )}
                     </button>
                   </div>
                 </form>
