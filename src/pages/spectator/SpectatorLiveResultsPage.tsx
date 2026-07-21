@@ -70,45 +70,7 @@ export function SpectatorLiveResultsPage() {
             imagePosition="center 50%"
           />
 
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-2xl border border-red-500/20 overflow-hidden relative">
-            <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-[40px] pointer-events-none" />
-            <div className="p-5 border-b border-glass-border flex items-center justify-between relative z-10">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/25 text-red-400 text-[11px] font-bold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted">
-                <Clock size={12} /> Continuous updates
-              </div>
-            </div>
-            <div className="p-6">
-              {liveLoading ? (
-                <LoadingSkeleton />
-              ) : liveRaces.length === 0 ? (
-                <div className="glass-panel rounded-xl p-12 text-center relative overflow-hidden">
-                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
-                  <div className="text-4xl opacity-40 mb-3">🏁</div>
-                  <div className="text-muted text-sm">No races live now</div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {liveRaces.map((lr, i) => (
-                    <div key={lr.raceId || i} className="glass-panel p-5 rounded-xl border border-red-500/20 bg-red-500/5">
-                      <div className="flex justify-between items-center">
-                        <div className="font-bold text-white text-lg">{lr.raceName}</div>
-                        <div className="text-xs text-red-400 font-bold uppercase tracking-wider px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">
-                          In Progress
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted mt-1">{lr.tournamentName || 'Tournaments'} • Starts at: {new Date(lr.startTime).toLocaleTimeString('vi-VN')}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
+
 
           {/* Tournament schedule — item 9: switched from race list to tournament list */}
           <div>

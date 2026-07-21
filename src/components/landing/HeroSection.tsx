@@ -121,8 +121,8 @@ export const HeroSection = () => {
                 <p className="text-xs text-muted truncate">{liveRace?.tournamentName ?? t('Race schedule updated continuously')}</p>
               </div>
               {liveRace ? (
-                <div className="px-2 py-1 bg-green-500/20 text-green-400 text-[10px] uppercase font-bold rounded flex items-center gap-1 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> {t('Live')}
+                <div className="px-2 py-1 bg-emerald-500/15 text-emerald-400 text-[10px] uppercase font-bold rounded flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> {t('Active')}
                 </div>
               ) : (
                 <div className="px-2 py-1 bg-blue-500/15 text-blue-400 text-[10px] uppercase font-bold rounded shrink-0">{t('Upcoming')}</div>
