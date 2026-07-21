@@ -444,6 +444,20 @@ export function AdminRacesPage() {
     setRefForm({ raceId: String(raceId), refereeId: '' });
     setReferees([]);
     setModal('referee');
+    try {
+      const refRes = await getReferees();
+      const fetchedReferees = refRes?.result ?? (Array.isArray(refRes) ? refRes : []);
+      setRefereeOptions(fetchedReferees.map((r: any) => ({
+        ...r,
+        fullName: fixMojibake(r.fullName ?? r.FullName ?? ''),
+        email: r.email ?? r.Email,
+        licenseNumber: r.licenseNumber ?? r.LicenseNumber,
+        status: r.status ?? r.Status ?? 'Active',
+        refereeId: r.refereeId ?? r.RefereeId ?? r.id
+      })));
+    } catch (err: unknown) {
+      console.error('Failed to refetch referees list:', err);
+    }
     await handleViewReferees(String(raceId));
   }
 
@@ -778,7 +792,7 @@ export function AdminRacesPage() {
   });
 
   const activeRefereeOptions = refereeOptions.filter((ref: any) =>
-    String(ref.status ?? '').toLowerCase() === 'active'
+    !ref.status || String(ref.status).toLowerCase() === 'active'
   );
   const visibleRefereeOptions = (activeRefereeOptions.length > 0 ? activeRefereeOptions : refereeOptions)
     // Ẩn trọng tài đã được phân công vào races đang chọn

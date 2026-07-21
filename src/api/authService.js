@@ -3,6 +3,12 @@ import { api } from '../services/api';
 function parseApiError(err) {
   try {
     const parsed = JSON.parse(err.message);
+    if (parsed.errors && typeof parsed.errors === 'object') {
+      const messages = Object.values(parsed.errors).flat().filter(Boolean);
+      if (messages.length > 0) {
+        return messages.join('; ');
+      }
+    }
     return parsed.message || parsed.title || err.message;
   } catch {
     return err.message;
