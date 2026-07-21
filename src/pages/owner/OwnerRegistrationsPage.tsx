@@ -330,7 +330,17 @@ export function OwnerRegistrationsPage() {
                   }
                 } else {
                   const cfg = STATUS_CONFIG[statusKey];
-                  customStatus = { ...cfg, label: r.status, clickable: false, action: 'none' };
+                  let label = r.status;
+                  if (statusKey === 'rejected') {
+                    if (r.rejectionSource === 'Vet') {
+                      label = 'Rejected (Failed Vet Check)';
+                    } else if (r.rejectionSource === 'Admin') {
+                      label = 'Rejected by Admin';
+                    } else {
+                      label = 'Rejected';
+                    }
+                  }
+                  customStatus = { ...cfg, label, clickable: false, action: 'none' };
                 }
 
                 const handleBadgeClick = () => {
