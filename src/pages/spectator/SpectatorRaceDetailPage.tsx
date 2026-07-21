@@ -274,10 +274,6 @@ export function SpectatorRaceDetailPage() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold text-navy bg-gold px-2 py-0.5 rounded-sm">Lane {e.laneNo}</span>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-champagne tabular-nums">x{getOdds(e).toFixed(2)}</div>
-                          <div className="text-[10px] text-muted">Odds Multiplier</div>
-                        </div>
                       </div>
 
                       <h3 className="text-lg font-bold text-white mb-1">{e.horseName}</h3>
