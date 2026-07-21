@@ -12,6 +12,7 @@ import { createRace, deleteRace, createRaceEntry, assignReferee, getRaceReferees
 import { getRaceSchedule, getTournaments, getRaceEntries } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { useNotifications } from '../../context/NotificationContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 
@@ -82,9 +83,15 @@ function formatToDatetimeLocal(v: any): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+/** Race đã kết thúc/huỷ thì admin chỉ được xem, không sửa nữa */
+function isRaceLocked(status: unknown) {
+  return ['finished', 'completed', 'published', 'cancelled'].includes(String(status ?? '').toLowerCase());
+}
+
 export function AdminRacesPage() {
   const location = useLocation();
   const { showToast } = useNotifications();
+  const confirm = useConfirm();
   const { t } = useLanguage();
   const [modal, setModal] = useState<Modal>('none');
 
@@ -440,6 +447,8 @@ export function AdminRacesPage() {
 
   const laneRace = racesList.find(r => String(r.raceId ?? r.id) === laneRaceId);
   const maxLanes = Number(laneRace?.maxLanes ?? 0);
+  // Race đã đua xong thì BE không cho sửa entry nữa — modal chuyển sang chế độ chỉ xem
+  const laneRaceLocked = isRaceLocked(laneRace?.status);
 
   // Đơn hợp lệ cho race này: đúng giải + Approved + chưa có entry (theo đơn & theo horse)
   const eligibleRegs = useMemo(() => {
@@ -597,7 +606,13 @@ export function AdminRacesPage() {
   }
 
   async function handleWithdrawEntry(raceEntryId: number, horseName: string) {
-    if (!window.confirm(`Remove "${horseName}" from the race? This action cannot be undone.`)) return;
+    const ok = await confirm({
+      title: 'Remove horse',
+      message: `Remove '${horseName}' from the race? This action cannot be undone.`,
+      confirmText: 'Remove',
+      danger: true,
+    });
+    if (!ok) return;
     setWithdrawingEntryId(raceEntryId);
     try {
       await withdrawRaceEntry(raceEntryId, 'Health does not meet criteria to participate');
@@ -613,9 +628,13 @@ export function AdminRacesPage() {
 
   async function handleDeleteRace(raceId: number, raceName?: string) {
     const label = raceName ? `"${raceName}"` : `#${raceId}`;
-    if (!window.confirm(`Delete race ${label}? Lanes, results, referees, violations, bets, and predictions related will also be deleted.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete race',
+      message: `Delete race ${label}? Lanes, results, referees, violations, bets, and predictions related will also be deleted.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
 
     try {
       await deleteRace(raceId);
@@ -885,6 +904,8 @@ export function AdminRacesPage() {
     .filter((ref: any) => !referees.some(a => (a.refereeId ?? a.id) === ref.refereeId));
 
   const refRace = racesList.find(r => String(r.raceId ?? r.id) === refForm.raceId);
+  // Race đã đua xong thì không phân/gỡ trọng tài nữa — modal chỉ để xem
+  const refRaceLocked = isRaceLocked(refRace?.status);
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{ backgroundColor: '#0b101e' }}>
@@ -1231,13 +1252,15 @@ export function AdminRacesPage() {
                                                   <Edit size={13} />
                                                 </button>
                                               )}
-                                              <button
-                                                onClick={() => handleDeleteRace(race.raceId, race.name)}
-                                                title="Delete race"
-                                                className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors"
-                                              >
-                                                <Trash2 size={13} />
-                                              </button>
+                                              {!isRaceLocked(race.status) && (
+                                                <button
+                                                  onClick={() => handleDeleteRace(race.raceId, race.name)}
+                                                  title="Delete race"
+                                                  className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors"
+                                                >
+                                                  <Trash2 size={13} />
+                                                </button>
+                                              )}
                                             </div>
                                           </div>
                                         </div>
@@ -1521,7 +1544,14 @@ export function AdminRacesPage() {
                 </div>
               </div>
 
-              {laneRaceId && (
+              {laneRaceId && laneRaceLocked && (
+                <div className="text-[11px] rounded-lg px-3 py-2.5 leading-relaxed font-semibold"
+                  style={{ background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.35)', color: '#475569' }}>
+                  This race has finished — lane assignments are read-only.
+                </div>
+              )}
+
+              {laneRaceId && !laneRaceLocked && (
                 <div className="text-[11px] text-champagne/80 bg-gold/5 border border-gold/15 rounded-lg px-3 py-2 leading-relaxed">
                   Select a horse for each empty lane and click <b>"Save Selected Lanes"</b>.
                   Only displays horses with <b>approved status (Approved) + Healthy status</b>, not yet assigned — horses selected in other lanes will be hidden.
@@ -1530,7 +1560,7 @@ export function AdminRacesPage() {
               )}
 
               {/* Warning: Approved but not Healthy */}
-              {laneRaceId && (() => {
+              {laneRaceId && !laneRaceLocked && (() => {
                 const unhealthy = registrationsList.filter(r =>
                   Number(r.tournamentId ?? r.TournamentId) === Number(laneRace?.tournamentId)
                   && (r.status ?? '').toLowerCase() === 'approved'
@@ -1551,8 +1581,8 @@ export function AdminRacesPage() {
                 );
               })()}
 
-              {/* Feature 1: Auto-split hint — sơ loại vs chung kết */}
-              {laneRaceId && (() => {
+              {/* Feature 1: Auto-split hint — sơ loại vs chung kết (chỉ khi còn sắp xếp được) */}
+              {laneRaceId && !laneRaceLocked && (() => {
                 const totalApproved = eligibleRegs.length + laneEntries.length;
                 if (totalApproved === 0) return null;
                 if (totalApproved <= 12) {
@@ -1602,7 +1632,7 @@ export function AdminRacesPage() {
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/30 text-red-300 font-bold shrink-0">{existing.healthStatus}</span>
                             )}
                             <span className={`ml-auto text-[10px] uppercase font-bold shrink-0 mr-2 ${isUnhealthy ? 'text-red-400/70' : 'text-emerald-400/70'}`}>{isUnhealthy ? 'Unhealthy' : 'Assigned'}</span>
-                            {isUnhealthy ? (
+                            {laneRaceLocked ? null : isUnhealthy ? (
                               <button
                                 onClick={() => handleWithdrawEntry(existing.raceEntryId, existing.horseName ?? `Horse #${existing.horseId}`)}
                                 disabled={withdrawingEntryId === existing.raceEntryId}
@@ -1654,6 +1684,15 @@ export function AdminRacesPage() {
                     // Empty lane — dropdown chọn horse; ẩn horse đã chọn ở lanes khác
                     const usedElsewhere = new Set(Object.entries(laneSel).filter(([l]) => Number(l) !== laneNo).map(([, v]) => v).filter(Boolean));
                     const opts = eligibleRegs.filter(r => !usedElsewhere.has(String(r.registrationId ?? r.id)));
+                    if (laneRaceLocked) {
+                      // Đua xong: làn trống chỉ hiển thị, không cho chọn ngựa nữa
+                      return (
+                        <div key={laneNo} className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/2 border border-glass-border">
+                          <span className="w-14 shrink-0 text-xs font-bold text-muted">Lane {laneNo}</span>
+                          <span className="text-xs italic" style={{ color: 'rgba(100,116,139,0.8)' }}>Not used in this race</span>
+                        </div>
+                      );
+                    }
                     return (
                       <div key={laneNo} className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/2 border border-glass-border">
                         <span className="w-14 shrink-0 text-xs font-bold text-muted">Lane {laneNo}</span>
@@ -1700,10 +1739,12 @@ export function AdminRacesPage() {
 
             <div className="flex gap-3 mt-6">
               <button onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">Close</button>
-              <button onClick={handleSaveLanes} disabled={laneSaving || !laneRaceId}
-                className="flex-1 py-2.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
-                {laneSaving ? 'Saving...' : 'Save Selected Lanes'}
-              </button>
+              {!laneRaceLocked && (
+                <button onClick={handleSaveLanes} disabled={laneSaving || !laneRaceId}
+                  className="flex-1 py-2.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                  {laneSaving ? 'Saving...' : 'Save Selected Lanes'}
+                </button>
+              )}
             </div>
           </motion.div>
         </div>
@@ -1863,6 +1904,11 @@ export function AdminRacesPage() {
                 </div>
               </div>
 
+              {refRaceLocked ? (
+                <div className="rounded-lg bg-white/[0.03] border border-glass-border px-4 py-2.5 text-[11px] text-muted">
+                  This race has finished — referee assignments are read-only.
+                </div>
+              ) : (
               <div>
                 <label className={LABEL}>Select Referee *</label>
                 <select
@@ -1879,11 +1925,14 @@ export function AdminRacesPage() {
                   ))}
                 </select>
               </div>
+              )}
               {refError && <div className="text-sm px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">{refError}</div>}
 
-              <button onClick={handleAssignReferee} disabled={refLoading} className="w-full py-2.5 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
-                {refLoading ? 'Assigning...' : 'Assign referees'}
-              </button>
+              {!refRaceLocked && (
+                <button onClick={handleAssignReferee} disabled={refLoading} className="w-full py-2.5 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                  {refLoading ? 'Assigning...' : 'Assign referees'}
+                </button>
+              )}
 
               {/* Referee hiện tại của races — tự tải khi chọn races */}
               {refForm.raceId && (
@@ -1901,11 +1950,13 @@ export function AdminRacesPage() {
                               <div className="text-sm text-white">{r.refereeName ?? r.fullName ?? r.name ?? `Referee #${id}`}</div>
                               {r.email && <div className="text-[11px] text-muted">{r.email}</div>}
                             </div>
-                            <button
-                              onClick={() => handleRemoveReferee(refForm.raceId, id)}
-                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors" title="Remove referee">
-                              <Trash2 size={14} />
-                            </button>
+                            {!refRaceLocked && (
+                              <button
+                                onClick={() => handleRemoveReferee(refForm.raceId, id)}
+                                className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors" title="Remove referee">
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </div>
                         );
                       })}
