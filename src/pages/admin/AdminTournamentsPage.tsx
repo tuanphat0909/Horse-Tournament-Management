@@ -666,7 +666,7 @@ export function AdminTournamentsPage() {
                                   .map((p: any) => (
                                     <div key={p.id} className="bg-white/[0.03] border border-glass-border/40 rounded px-1 py-1">
                                       <div className="text-[9px] text-muted font-semibold">Rank {p.rankPosition}</div>
-                                      <div className="text-gold font-bold text-[10px] whitespace-nowrap">{Number(p.amount).toLocaleString('vi-VN')} đ</div>
+                                      <div className="text-gold font-bold text-[10px] whitespace-nowrap">{Number(p.amount).toLocaleString('en-US')} VND</div>
                                     </div>
                                   ))}
                               </div>

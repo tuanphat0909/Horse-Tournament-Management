@@ -931,7 +931,7 @@ export function AdminRacesPage() {
                               <button
                                 onClick={() => { if (!isAutoAssignLanesDisabled) handleGenerateRaces(t.tournamentId); }}
                                 disabled={isAutoAssignLanesDisabled || generatingForTournament === t.tournamentId}
-                                title={isAutoAssignLanesDisabled ? "Làn đua đã được sắp xếp cố định" : undefined}
+                                title={isAutoAssignLanesDisabled ? "Race lanes have already been assigned" : undefined}
                                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 border ${isAutoAssignLanesDisabled
                                   ? 'bg-white/5 border-glass-border text-muted/40 cursor-not-allowed'
                                   : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30'
@@ -950,7 +950,7 @@ export function AdminRacesPage() {
                               </button>
                               {t.hasAnyRaces && (
                                 <span className="text-[10px] text-emerald-400 font-medium mt-1 flex items-center gap-1">
-                                  <CheckCircle2 size={10} /> Đã xếp 1 lần
+                                  <CheckCircle2 size={10} /> Assigned once
                                 </span>
                               )}
                             </div>
