@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { Search, Plus, RefreshCw } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
@@ -7,8 +7,6 @@ import { PageAmbience } from '../../components/layout/PageAmbience';
 import {
   getMedicalChecks,
   createMedicalCheck,
-  updateMedicalCheck,
-  deleteMedicalCheck,
   getPendingRegistrations,
   getAssignedEntries,
   performRecheck,
@@ -88,10 +86,9 @@ export function MedicalCheckPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Modal state — shared for create / edit / recheck
+  // Modal state — shared for create / recheck
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<'create' | 'edit' | 'recheck'>('create');
-  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
+  const [modalType, setModalType] = useState<'create' | 'recheck'>('create');
   const [selectedRegId, setSelectedRegId] = useState<number | null>(null);
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [selectedHorseName, setSelectedHorseName] = useState('');
@@ -173,34 +170,12 @@ export function MedicalCheckPage() {
     resetForm();
     setShowModal(true);
   }
-
-  function openEdit(mr: MedicalRecord) {
-    setModalType('edit');
-    setSelectedRecordId(mr.id);
-    setSelectedHorseName(mr.horseName);
-    setWeight(mr.weight.toString());
-    setTemperature(mr.temperature?.toString() ?? '');
-    setHeartRate(mr.heartRate?.toString() ?? '');
-    setDopingResult(mr.dopingResult);
-    setMedicalResult(mr.medicalResult);
-    setFailReason(''); setNotes(mr.notes ?? '');
-    setShowModal(true);
-  }
-
   function openRecheck(ae: AssignedEntry) {
     setModalType('recheck');
     setSelectedRegId(ae.registrationId);
     setSelectedHorseName(ae.horseName ?? `Horse #${ae.raceId}`);
     resetForm();
     setShowModal(true);
-  }
-
-  function handleDelete(id: number) {
-    if (!window.confirm('Are you sure you want to delete this medical record?')) return;
-    setLoading(true);
-    deleteMedicalCheck(id)
-      .then(() => { setSuccess('Medical record deleted successfully!'); loadData(); })
-      .catch((err: any) => { setError(err.response?.data?.message ?? 'Error deleting.'); setLoading(false); });
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -221,7 +196,6 @@ export function MedicalCheckPage() {
     };
 
     setLoading(true); setError(''); setSuccess('');
-
     if (modalType === 'create') {
       createMedicalCheck({
         registrationId: selectedRegId,
@@ -230,10 +204,6 @@ export function MedicalCheckPage() {
         ...base
       })
         .then(() => { setSuccess('Inspection result saved!'); setShowModal(false); loadData(); })
-        .catch((err: any) => { setError(parseApiError(err)); setLoading(false); });
-    } else if (modalType === 'edit') {
-      updateMedicalCheck(selectedRecordId!, base)
-        .then(() => { setSuccess('Medical record updated!'); setShowModal(false); loadData(); })
         .catch((err: any) => { setError(parseApiError(err)); setLoading(false); });
     } else {
       // recheck
@@ -451,7 +421,6 @@ export function MedicalCheckPage() {
                           <th className="px-6 py-4">Doping</th>
                           <th className="px-6 py-4">Medical</th>
                           <th className="px-6 py-4">Checked By</th>
-                          <th className="px-6 py-4 text-right">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-glass-border/40 text-sm text-white">
@@ -473,14 +442,6 @@ export function MedicalCheckPage() {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-muted text-xs">{mr.checkedByName}</td>
-                            <td className="px-6 py-4 text-right space-x-2 shrink-0">
-                              <button onClick={() => openEdit(mr)} className="text-gold hover:text-white bg-gold/10 hover:bg-gold/20 p-1.5 rounded transition-all inline-flex items-center" title="Edit">
-                                <Edit2 size={12} />
-                              </button>
-                              <button onClick={() => handleDelete(mr.id)} className="text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/20 p-1.5 rounded transition-all inline-flex items-center" title="Delete">
-                                <Trash2 size={12} />
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -553,7 +514,6 @@ export function MedicalCheckPage() {
                 <div className="px-6 py-4 border-b border-glass-border flex justify-between items-center bg-white/[0.02]">
                   <h3 className="font-serif text-lg font-bold text-champagne">
                     {modalType === 'create' && `Medical Check: ${selectedHorseName}`}
-                    {modalType === 'edit' && `Edit Medical Record: ${selectedHorseName}`}
                     {modalType === 'recheck' && `Recheck: ${selectedHorseName}`}
                   </h3>
                   <button onClick={() => setShowModal(false)} className="text-muted hover:text-white text-xl font-bold">×</button>
