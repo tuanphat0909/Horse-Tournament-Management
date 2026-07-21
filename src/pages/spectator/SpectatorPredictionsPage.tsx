@@ -275,14 +275,27 @@ export function SpectatorPredictionsPage() {
                     <label className="block text-xs text-muted font-medium mb-1.5">Race *</label>
                     <select value={form.raceId} onChange={e => setForm(p => ({...p, raceId: e.target.value}))} className={INPUT}>
                       <option value="">-- Select Race --</option>
-                      {races.map(r => {
+                      {races.filter(r => {
+                        const status = (r.status ?? r.Status ?? '').toLowerCase();
+                        const roundStatus = (r.roundStatus ?? r.RoundStatus ?? '').toLowerCase();
+                        const isFinished = ['finished', 'completed', 'cancelled', 'ended', 'resultpublished', 'closed'].includes(status) ||
+                                           ['finished', 'completed', 'cancelled', 'ended', 'resultpublished', 'closed'].includes(roundStatus) ||
+                                           r.hasResult === true || r.isFinished === true;
+                        return !isFinished;
+                      }).map(r => {
                         const rId = r.raceId ?? r.id;
                         return (
                           <option key={rId} value={rId}>{(r.name ?? `Race #${rId}`)}{r.raceDate ? ` — ${new Date(r.raceDate).toLocaleDateString()}` : ''}</option>
                         );
                       })}
                     </select>
-                    {races.length === 0 && <p className="text-[10px] text-muted/60 mt-1">No races in the schedule.</p>}
+                    {races.filter(r => {
+                      const status = (r.status ?? r.Status ?? '').toLowerCase();
+                      const roundStatus = (r.roundStatus ?? r.RoundStatus ?? '').toLowerCase();
+                      return !['finished', 'completed', 'cancelled', 'ended', 'resultpublished', 'closed'].includes(status) &&
+                             !['finished', 'completed', 'cancelled', 'ended', 'resultpublished', 'closed'].includes(roundStatus) &&
+                             !r.hasResult && !r.isFinished;
+                    }).length === 0 && <p className="text-[10px] text-muted/60 mt-1">No active races available for betting.</p>}
                   </div>
                   <div>
                     <label className="block text-xs text-muted font-medium mb-1.5">Select Horse *</label>
