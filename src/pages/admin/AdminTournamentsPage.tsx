@@ -6,7 +6,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { createTournament, generateFinalRace, closeTournamentRegistration, extendTournamentRegistration, cancelTournament } from '../../api/adminService';
+import { createTournament, generateFinalRace, closeTournamentRegistration, extendTournamentRegistration, cancelTournament, getAdminWalletBalance } from '../../api/adminService';
 import { getRaceSchedule, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { formatDateTime } from '../../utils/format';
@@ -92,9 +92,9 @@ const INIT_FORM = {
   registrationEndDate: '',
   startDate: '',
   endDate: '',
-  firstPrize: '10000000',
-  secondPrize: '5000000',
-  thirdPrize: '2500000'
+  firstPrize: '',
+  secondPrize: '',
+  thirdPrize: ''
 };
 
 export function AdminTournamentsPage() {
@@ -112,6 +112,7 @@ export function AdminTournamentsPage() {
   const [form, setForm] = useState(INIT_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [adminWalletBalance, setAdminWalletBalance] = useState<number>(0);
 
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [races, setRaces] = useState<any[]>([]);
@@ -119,7 +120,6 @@ export function AdminTournamentsPage() {
   const [generatingForTournament, setGeneratingForTournament] = useState<number | null>(null);
 
   const [extendingTournament, setExtendingTournament] = useState<any>(null);
-  const [additionalDays, setAdditionalDays] = useState<number>(1);
   const [extendLoading, setExtendLoading] = useState(false);
 
   const [cancelWarningTournament, setCancelWarningTournament] = useState<any>(null);
@@ -128,21 +128,11 @@ export function AdminTournamentsPage() {
   async function handleExtendRegistration() {
     if (!extendingTournament) return;
 
-    const now = new Date();
-    const startDate = new Date(extendingTournament.startDate);
-    const newRegistrationEndDate = new Date(now.getTime() + additionalDays * 24 * 60 * 60 * 1000);
-    const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000); // Cách ngày thi đấu ít nhất 2 ngày
-
-    if (newRegistrationEndDate > limitDate) {
-      return;
-    }
-
     setExtendLoading(true);
     try {
-      await extendTournamentRegistration(extendingTournament.tournamentId, additionalDays);
+      await extendTournamentRegistration(extendingTournament.tournamentId, 1);
       showToast(t('Success'), 'Registration extended successfully!');
       setExtendingTournament(null);
-      setAdditionalDays(1);
       await loadTournaments();
     } catch (err: unknown) {
       showToast(t('Error'), t(parseApiError(err as Error)));
@@ -205,6 +195,10 @@ export function AdminTournamentsPage() {
 
   useEffect(() => {
     loadTournaments();
+    getAdminWalletBalance().then((data: any) => {
+      const balance = data?.result?.balance ?? data?.result ?? 0;
+      setAdminWalletBalance(Number(balance) || 0);
+    }).catch(() => setAdminWalletBalance(0));
   }, []);
 
   function set(field: string, value: string) {
@@ -212,8 +206,35 @@ export function AdminTournamentsPage() {
   }
 
   async function handleCreate() {
-    if (!form.name || !form.registrationStartDate || !form.registrationEndDate || !form.startDate || !form.endDate) {
+    if (!form.name.trim() || !form.registrationStartDate || !form.registrationEndDate || !form.startDate || !form.endDate ||
+        !form.firstPrize || !form.secondPrize || !form.thirdPrize) {
       setError(t('Please fill in all required fields.'));
+      return;
+    }
+
+    if (form.name.trim().length > 150) {
+      setError('Tournament name cannot exceed 150 characters.');
+      return;
+    }
+    if (form.description.trim().length > 2000) {
+      setError('Tournament description cannot exceed 2000 characters.');
+      return;
+    }
+
+    const firstPrize = Number(form.firstPrize);
+    const secondPrize = Number(form.secondPrize);
+    const thirdPrize = Number(form.thirdPrize);
+    if (![firstPrize, secondPrize, thirdPrize].every(Number.isFinite) || firstPrize <= 0 || secondPrize <= 0 || thirdPrize <= 0) {
+      setError('All three prize amounts must be greater than zero.');
+      return;
+    }
+    if (!(firstPrize > secondPrize && secondPrize > thirdPrize)) {
+      setError('Prize amounts must follow: first place > second place > third place.');
+      return;
+    }
+    const totalPrizePool = firstPrize + secondPrize + thirdPrize;
+    if (totalPrizePool > adminWalletBalance) {
+      setError(`Insufficient Admin wallet balance. Available: ${adminWalletBalance.toLocaleString('vi-VN')} VND; required: ${totalPrizePool.toLocaleString('vi-VN')} VND. Please enter lower prizes or deposit more funds.`);
       return;
     }
 
@@ -244,8 +265,9 @@ export function AdminTournamentsPage() {
       setError(t('Registration end date must be after registration start date.'));
       return;
     }
-    if (startVal.getTime() < regEndVal.getTime() + 48 * 60 * 60 * 1000) {
-      setError(t('Tournament start date must be at least 48 hours after registration end date.'));
+    if (startVal.getTime() < regEndVal.getTime() + 120 * 60 * 60 * 1000) {
+      const earliestStartDate = new Date(regEndVal.getTime() + 5 * 24 * 60 * 60 * 1000);
+      setError(`The tournament must start at least 5 days after registration closes. Earliest allowed start: ${formatDateTime(earliestStartDate.toISOString())}.`);
       return;
     }
     if (endVal <= startVal) {
@@ -254,16 +276,16 @@ export function AdminTournamentsPage() {
     }
 
     const prizes = [
-      { rankPosition: 1, amount: Number(form.firstPrize || 10000000), ownerPercentage: 70, jockeyPercentage: 30 },
-      { rankPosition: 2, amount: Number(form.secondPrize || 5000000), ownerPercentage: 70, jockeyPercentage: 30 },
-      { rankPosition: 3, amount: Number(form.thirdPrize || 2500000), ownerPercentage: 70, jockeyPercentage: 30 }
+      { rankPosition: 1, amount: firstPrize, ownerPercentage: 100, jockeyPercentage: 0 },
+      { rankPosition: 2, amount: secondPrize, ownerPercentage: 100, jockeyPercentage: 0 },
+      { rankPosition: 3, amount: thirdPrize, ownerPercentage: 100, jockeyPercentage: 0 }
     ];
 
     setLoading(true);
     try {
       const data: any = await createTournament({
-        name: form.name,
-        description: form.description || '',
+        name: form.name.trim(),
+        description: form.description.trim(),
         registrationStartDate: form.registrationStartDate,
         registrationEndDate: form.registrationEndDate,
         startDate: form.startDate,
@@ -712,7 +734,6 @@ export function AdminTournamentsPage() {
                                     <button
                                       onClick={() => {
                                         setExtendingTournament(tour);
-                                        setAdditionalDays(1);
                                       }}
                                       disabled={!canExtend}
                                       className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-amber-400 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
@@ -959,20 +980,34 @@ export function AdminTournamentsPage() {
                 </div>
               </div>
 
+              {form.registrationEndDate && (() => {
+                const registrationClose = new Date(form.registrationEndDate);
+                const earliestStart = new Date(registrationClose.getTime() + 5 * 24 * 60 * 60 * 1000);
+                return !Number.isNaN(earliestStart.getTime()) ? (
+                  <div className="text-xs px-3 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-700">
+                    The tournament must start at least <b>5 days</b> after registration closes. Earliest allowed start: <b>{formatDateTime(earliestStart.toISOString())}</b>.
+                  </div>
+                ) : null;
+              })()}
+
               <div className="border-t border-glass-border/30 pt-3">
                 <span className="font-bold text-white text-[11px] uppercase tracking-wider mb-2 block">{t("Prize Structure (VND)")}</span>
+                <div className="mb-2 text-[11px] text-muted flex flex-wrap justify-between gap-2">
+                  <span>Admin wallet: <b className="text-emerald-400">{adminWalletBalance.toLocaleString('vi-VN')} VND</b></span>
+                  <span>Total prizes: <b className="text-gold">{([form.firstPrize, form.secondPrize, form.thirdPrize].reduce((sum, value) => sum + (Number(value) || 0), 0)).toLocaleString('vi-VN')} VND</b></span>
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="block text-[10px] text-muted mb-1">Champion *</label>
-                    <input type="number" value={form.firstPrize} onChange={e => set('firstPrize', e.target.value)} className={INPUT} />
+                    <input type="number" min="1" value={form.firstPrize} onChange={e => set('firstPrize', e.target.value)} className={INPUT} />
                   </div>
                   <div>
                     <label className="block text-[10px] text-muted mb-1">2nd Place *</label>
-                    <input type="number" value={form.secondPrize} onChange={e => set('secondPrize', e.target.value)} className={INPUT} />
+                    <input type="number" min="1" value={form.secondPrize} onChange={e => set('secondPrize', e.target.value)} className={INPUT} />
                   </div>
                   <div>
                     <label className="block text-[10px] text-muted mb-1">3rd Place *</label>
-                    <input type="number" value={form.thirdPrize} onChange={e => set('thirdPrize', e.target.value)} className={INPUT} />
+                    <input type="number" min="1" value={form.thirdPrize} onChange={e => set('thirdPrize', e.target.value)} className={INPUT} />
                   </div>
                 </div>
               </div>
@@ -994,12 +1029,8 @@ export function AdminTournamentsPage() {
       {extendingTournament && (() => {
         const now = new Date();
         const startDate = new Date(extendingTournament.startDate);
-        const newRegistrationEndDate = new Date(now.getTime() + additionalDays * 24 * 60 * 60 * 1000);
-        const limitDate = new Date(startDate.getTime() - 2 * 24 * 60 * 60 * 1000); // Phải cách ngày thi đấu ít nhất 2 ngày
-        const isValid = newRegistrationEndDate <= limitDate;
-
-        const diffMs = limitDate.getTime() - now.getTime();
-        const maxDays = Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)));
+        const newRegistrationEndDate = new Date(startDate.getTime() - 48 * 60 * 60 * 1000);
+        const isValid = newRegistrationEndDate > now;
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1035,21 +1066,8 @@ export function AdminTournamentsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className={LABEL}>
-                    {t("Additional days")} {maxDays > 0 && ` (Max ${maxDays} days)`}
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={maxDays > 0 ? maxDays : undefined}
-                    value={additionalDays}
-                    onChange={e => {
-                      const val = parseInt(e.target.value) || 0;
-                      setAdditionalDays(Math.max(1, maxDays > 0 ? Math.min(maxDays, val) : val));
-                    }}
-                    className={INPUT}
-                  />
+                <div className="text-xs px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                  Registration can be extended once. The new deadline is fixed at 48 hours before the tournament starts.
                 </div>
 
                 <div className="bg-white/[0.02] border border-glass-border/30 rounded-xl p-4 text-xs space-y-2">
@@ -1066,7 +1084,7 @@ export function AdminTournamentsPage() {
 
                 {!isValid && (
                   <div className="text-xs px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-bold">
-                    The extended registration end date must be at least 2 days before the tournament start date!
+                    The final 48-hour preparation window has started. The tournament can no longer be extended and must be cancelled.
                   </div>
                 )}
               </div>
@@ -1075,7 +1093,6 @@ export function AdminTournamentsPage() {
                 <button
                   onClick={() => {
                     setExtendingTournament(null);
-                    setAdditionalDays(1);
                   }}
                   className="flex-1 py-2.5 rounded-lg border border-glass-border text-muted hover:text-white hover:bg-white/5 text-sm font-medium transition-colors"
                 >

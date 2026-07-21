@@ -245,6 +245,7 @@ export function AdminRacesPage() {
       await generateTournamentRaces(tournamentId);
       showToast('Success', 'Races generated successfully!');
       await loadAllData();
+      window.dispatchEvent(new Event('tournament-readiness-changed'));
     } catch (err: any) {
       showToast('Error', 'Error generating races: ' + parseApiError(err), 'error');
     } finally {
@@ -258,6 +259,7 @@ export function AdminRacesPage() {
       await generateFinalRace(tournamentId);
       showToast('Success', 'Final bracket (Top 12) assigned successfully!');
       await loadAllData();
+      window.dispatchEvent(new Event('tournament-readiness-changed'));
     } catch (err: any) {
       showToast('Error', 'Error assigning Final bracket: ' + parseApiError(err), 'error');
     } finally {
@@ -316,6 +318,7 @@ export function AdminRacesPage() {
         : `Race created "${raceForm.name}" successful!`);
       closeModal();
       await loadAllData();
+      window.dispatchEvent(new Event('tournament-readiness-changed'));
     } catch (err: unknown) {
       setRaceError(parseApiError(err as Error));
     } finally {
@@ -454,6 +457,7 @@ export function AdminRacesPage() {
       showToast('Success', `Successfully assigned referee ${refName ? `"${refName}" ` : ''}cho races "${raceName ?? ''}"!`);
       setRefForm(p => ({ ...p, refereeId: '' }));
       await handleViewReferees(refForm.raceId);
+      window.dispatchEvent(new Event('tournament-readiness-changed'));
     } catch (err: unknown) {
       setRefError(parseApiError(err as Error));
     } finally {
@@ -552,8 +556,10 @@ export function AdminRacesPage() {
 
     // Chỉ cho xếp Final khi Pre xong mà CHƯA có race Chung kết nào
     // (BE đã tự sinh Final khi race Pre cuối nộp kết quả — nút này là dự phòng)
+    const qualifiedHorseCount = Number(t.qualifiedRegistration ?? 0);
+    const hasValidHorseCount = qualifiedHorseCount >= 12 && qualifiedHorseCount <= 48;
     const canGenerateFinal = prefinalFinished && hasPrefinalRaces && finalRaces.length === 0;
-    const canGeneratePre = !prefinalFinished;
+    const canGeneratePre = !prefinalFinished && hasValidHorseCount;
     const waitingLabel = hasPrefinalRaces && !prefinalFinished
       ? 'Pending completed Pre'
       : '';
@@ -565,11 +571,35 @@ export function AdminRacesPage() {
     const regNotStarted = regStart != null && now < regStart;
     const regOpen = !regNotStarted && (regEnd ? now < regEnd : false);
     const hasAnyRaces = rounds.some((r: any) => r.races.length > 0);
+    const tournamentStartDate = t.startDate ? new Date(t.startDate) : null;
+    const tournamentStartPassed = tournamentStartDate != null && now >= tournamentStartDate;
 
-    const isPreStarted = Boolean(
+    // Use the earliest scheduled race for every tournament, including tournaments
+    // that skip Pre-round and go directly to Final (exactly 12 horses).
+    const scheduledRaces = rounds
+      .flatMap((r: any) => r.races)
+      .filter((r: any) => r.status === 'Scheduled' && r.raceDate)
+      .sort((a: any, b: any) => new Date(a.raceDate).getTime() - new Date(b.raceDate).getTime());
+    const nextScheduledRaceDate = scheduledRaces[0]?.raceDate ?? null;
+    const hasPastScheduledRace = scheduledRaces.some(
+      (r: any) => new Date(r.raceDate).getTime() <= now.getTime()
+    );
+
+    const scheduledPreRaces = (prefinalRound?.races ?? [])
+      .filter((r: any) => r.status === 'Scheduled' && r.raceDate)
+      .sort((a: any, b: any) => new Date(a.raceDate).getTime() - new Date(b.raceDate).getTime());
+    const preRoundStartDate = scheduledPreRaces[0]?.raceDate ?? null;
+    const hasPastScheduledPreRace = scheduledPreRaces.some(
+      (r: any) => new Date(r.raceDate).getTime() <= now.getTime()
+    );
+    const hasPreRaceProgress = Boolean(
       prefinalRound?.races?.some((r: any) =>
         r.status === 'Live' || r.status === 'InProgress' || r.status === 'Finished' || r.status === 'Completed'
-      ) || (t.startDate && now >= new Date(t.startDate))
+      )
+    );
+
+    const isPreStarted = Boolean(
+      hasPreRaceProgress || (t.startDate && now >= new Date(t.startDate))
     );
 
     let genHint: { tone: string; label: string; detail: string };
@@ -585,11 +615,21 @@ export function AdminRacesPage() {
         label: 'Cannot assign lanes — registration still open',
         detail: `Registration closed at ${fmtDate(t.registrationEndDate)}. Must wait for registration to close to Auto Assign Lanes (Pre-round).`,
       };
+    } else if (!hasValidHorseCount && !hasAnyRaces) {
+      genHint = {
+        tone: 'wait',
+        label: qualifiedHorseCount < 12 ? 'Not enough qualified horses' : 'Too many qualified horses',
+        detail: qualifiedHorseCount < 12
+          ? `Only ${qualifiedHorseCount}/12 qualified horses. Race scheduling is blocked. Extend registration or cancel the tournament.`
+          : `${qualifiedHorseCount}/48 qualified horses. Resolve the registration list before scheduling races.`,
+      };
     } else if (!hasAnyRaces) {
       genHint = {
-        tone: 'ready',
-        label: 'Ready to assign Pre-lanes',
-        detail: "Registration closed. Click 'Auto Assign Lanes' to auto-generate Pre-round.",
+        tone: 'wait',
+        label: tournamentStartPassed ? 'Tournament start blocked' : 'Lane assignment required',
+        detail: tournamentStartPassed
+          ? "The tournament start date has arrived, but no lanes are assigned. Click 'Auto Assign Lanes' before the tournament can become Active."
+          : "Registration closed. Assign lanes before the tournament start date. Click 'Auto Assign Lanes' to generate the race schedule.",
       };
     } else if (canGenerateFinal) {
       genHint = {
@@ -598,13 +638,21 @@ export function AdminRacesPage() {
         detail: "Pre-round is completed but Finals bracket not found. The system usually auto-generates it — if not, click 'Auto Assign Final (Top 12)'.",
       };
     } else if (waitingLabel === 'Pending completed Pre') {
-      genHint = {
-        tone: isPreStarted ? 'progress' : 'wait',
-        label: isPreStarted ? 'Competing in Pre-round' : 'Pending Pre-round',
-        detail: isPreStarted
-          ? 'Pending all Pre-round races completion to assign Finals.'
-          : 'Pre-round races scheduled. Pending race start date and completion to assign Finals.',
-      };
+      if (hasPastScheduledPreRace && !hasPreRaceProgress) {
+        genHint = {
+          tone: 'wait',
+          label: 'Race start time has passed',
+          detail: 'The Pre-round is still Scheduled. Start the race or update its status before assigning Finals.',
+        };
+      } else {
+        genHint = {
+          tone: isPreStarted ? 'progress' : 'wait',
+          label: isPreStarted ? 'Competing in Pre-round' : 'Pending Pre-round',
+          detail: isPreStarted
+            ? 'Pending all Pre-round races completion to assign Finals.'
+            : 'Pre-round races scheduled. Pending race start date and completion to assign Finals.',
+        };
+      }
     } else if (finalDone) {
       genHint = {
         tone: 'info',
@@ -617,12 +665,27 @@ export function AdminRacesPage() {
         label: 'Competing in Finals',
         detail: 'Pre-round is completed, Finals bracket (Top 12) is created and pending race.',
       };
+    } else if (finalRaces.length > 0 && scheduledRaces.length > 0) {
+      genHint = {
+        tone: hasPastScheduledRace ? 'wait' : 'info',
+        label: hasPastScheduledRace ? 'Final start time has passed' : 'Pending Final',
+        detail: hasPastScheduledRace
+          ? 'The Final is still Scheduled. Start the race or update its status.'
+          : 'This tournament goes directly to the Final. Waiting for the scheduled race start time.',
+      };
     } else {
       genHint = { tone: 'info', label: 'Race scheduled', detail: '' };
     }
 
     return {
       ...t,
+      // Defensively keep an unscheduled tournament out of the Active UI bucket,
+      // even while an older backend instance is still returning stale data.
+      status: String(t.status ?? '').toLowerCase() === 'active'
+        ? (!hasAnyRaces
+          ? 'PendingScheduling'
+          : (tournamentStartDate != null && now < tournamentStartDate ? 'Upcoming' : t.status))
+        : t.status,
       rounds,
       canGeneratePre,
       canGenerateFinal,
@@ -630,6 +693,13 @@ export function AdminRacesPage() {
       regNotStarted,
       regOpen,
       hasAnyRaces,
+      qualifiedHorseCount,
+      hasValidHorseCount,
+      tournamentStartPassed,
+      preRoundStartDate,
+      hasPastScheduledPreRace,
+      nextScheduledRaceDate,
+      hasPastScheduledRace,
       genHint,
     };
   });
@@ -869,6 +939,16 @@ export function AdminRacesPage() {
                             </div>
                           )}
 
+                          {!t.hasAnyRaces && !t.regOpen && !t.regNotStarted && !t.hasValidHorseCount && (
+                            <button
+                              disabled
+                              title="A tournament requires between 12 and 48 qualified horses before races can be scheduled."
+                              className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 text-xs font-bold rounded-lg cursor-not-allowed flex items-center gap-1.5"
+                            >
+                              <AlertCircle size={12} /> Scheduling blocked ({t.qualifiedHorseCount}/12)
+                            </button>
+                          )}
+
                           {/* Register chưa mở / còn mở → chưa thể xếp lanes */}
                           {(t.regOpen || t.regNotStarted) && !t.hasAnyRaces && (
                             <button
@@ -914,12 +994,24 @@ export function AdminRacesPage() {
                             <div className="min-w-0">
                               <div className="text-sm font-bold">{t.genHint.label}</div>
                               {t.genHint.detail && <div className="text-xs opacity-90 mt-0.5">{t.genHint.detail}</div>}
-                              {t.genHint.tone === 'wait' && (
+                              {(t.genHint.tone === 'wait' || (t.hasAnyRaces && t.nextScheduledRaceDate)) && (
                                 <div className="mt-2">
                                   {t.regNotStarted && t.registrationStartDate ? (
                                     <CountdownTimer target={t.registrationStartDate} utc={false} label="Registration opens in:" />
-                                  ) : t.registrationEndDate ? (
+                                  ) : t.regOpen && t.registrationEndDate ? (
                                     <CountdownTimer target={t.registrationEndDate} utc={false} />
+                                  ) : !t.hasAnyRaces && t.startDate && !t.tournamentStartPassed ? (
+                                    <CountdownTimer target={t.startDate} utc={false} label="Assign lanes before:" />
+                                  ) : !t.hasAnyRaces && t.tournamentStartPassed ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold text-red-400 bg-red-500/10 border-red-500/25">
+                                      <AlertCircle size={12} /> Tournament start is blocked until lanes are assigned
+                                    </span>
+                                  ) : t.nextScheduledRaceDate && !t.hasPastScheduledRace ? (
+                                    <CountdownTimer target={t.nextScheduledRaceDate} utc={false} label="Race starts in:" />
+                                  ) : t.hasPastScheduledRace ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold text-red-400 bg-red-500/10 border-red-500/25">
+                                      <AlertCircle size={12} /> Scheduled start time passed
+                                    </span>
                                   ) : null}
                                 </div>
                               )}
