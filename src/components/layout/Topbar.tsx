@@ -6,6 +6,28 @@ import { useNotifications } from '../../context/NotificationContext';
 import { getCurrentUser } from '../../api/authService';
 import { HighlightQuoted } from '../ui/HighlightQuoted';
 import { toRoleKey } from '../../utils/notificationFilter';
+import { getTournaments } from '../../api/publicService';
+
+interface TournamentReadinessAlert {
+  tournamentId: number;
+  name: string;
+  missingLanes: boolean;
+  missingReferees: boolean;
+  qualifiedHorses: number;
+  hasInvalidHorseCount: boolean;
+  startDate: string;
+}
+
+const READINESS_CACHE_KEY = 'admin-tournament-readiness-alerts';
+
+function readCachedReadinessAlerts(): TournamentReadinessAlert[] {
+  try {
+    const cached = sessionStorage.getItem(READINESS_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+}
 
 // Mỗi role có trang thông báo riêng — chuông và nút "View all" trỏ đúng trang đó.
 const NOTIFICATIONS_PATH: Record<string, string> = {
@@ -22,8 +44,61 @@ export function Topbar() {
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead, fetchRecent } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [readinessAlerts, setReadinessAlerts] = useState<TournamentReadinessAlert[]>(readCachedReadinessAlerts);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const notificationsPath = NOTIFICATIONS_PATH[toRoleKey(getCurrentUser()?.role)] ?? '/notifications';
+  const user = getCurrentUser();
+  const roleKey = toRoleKey(user?.role);
+  const notificationsPath = NOTIFICATIONS_PATH[roleKey] ?? '/notifications';
+
+  useEffect(() => {
+    if (roleKey !== 'admin') {
+      setReadinessAlerts([]);
+      return;
+    }
+
+    let active = true;
+    const loadReadinessAlerts = async () => {
+      try {
+        const response: any = await getTournaments();
+        const tournaments = Array.isArray(response?.result) ? response.result : [];
+        const now = Date.now();
+        const alerts = tournaments
+          .filter((tournament: any) => {
+            const status = String(tournament.status ?? '').toLowerCase();
+            if (status === 'completed' || status === 'finished' || status === 'cancelled') return false;
+            if (!tournament.startDate) return false;
+            const start = new Date(tournament.startDate).getTime();
+            const end = tournament.endDate ? new Date(tournament.endDate).getTime() : start;
+            return Number.isFinite(start) && start - now <= 24 * 60 * 60 * 1000 && end >= now &&
+              (!tournament.hasCompleteLaneAssignments || tournament.hasMissingReferees);
+          })
+          .map((tournament: any) => ({
+            tournamentId: Number(tournament.tournamentId),
+            name: String(tournament.name ?? `Tournament #${tournament.tournamentId}`),
+            missingLanes: !tournament.hasCompleteLaneAssignments,
+            missingReferees: Boolean(tournament.hasMissingReferees),
+            qualifiedHorses: Number(tournament.qualifiedRegistration ?? 0),
+            hasInvalidHorseCount: Number(tournament.qualifiedRegistration ?? 0) < 12 || Number(tournament.qualifiedRegistration ?? 0) > 48,
+            startDate: String(tournament.startDate),
+          }));
+        if (active) {
+          setReadinessAlerts(alerts);
+          sessionStorage.setItem(READINESS_CACHE_KEY, JSON.stringify(alerts));
+        }
+      } catch {
+        // Keep the current page usable if the readiness endpoint is temporarily unavailable.
+      }
+    };
+
+    loadReadinessAlerts();
+    const intervalId = window.setInterval(loadReadinessAlerts, 15_000);
+    window.addEventListener('tournament-readiness-changed', loadReadinessAlerts);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('tournament-readiness-changed', loadReadinessAlerts);
+    };
+  }, [roleKey]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -90,12 +165,40 @@ export function Topbar() {
     }
   };
 
-  const user = getCurrentUser();
   const statusLower = user?.status?.toLowerCase();
   const isLocked = statusLower !== 'active';
 
   return (
-    <div className="sticky top-0 z-30 flex flex-col w-full">
+    <div className="sticky top-0 z-50 flex flex-col w-full">
+      {readinessAlerts.map((alert) => (
+        <div key={alert.tournamentId} className="bg-red-600 text-white border-b border-red-300/40 px-6 py-2.5 flex flex-wrap items-center gap-3 text-xs font-bold shadow-lg">
+          <AlertTriangle size={17} className="shrink-0 animate-pulse" />
+          <span className="flex-grow">
+            {alert.hasInvalidHorseCount
+              ? `URGENT: '${alert.name}' cannot be scheduled: ${alert.qualifiedHorses}/12 qualified horses. Extend registration or cancel the tournament.`
+              : <>URGENT: '{alert.name}' starts within 24 hours but is missing
+                {alert.missingLanes && alert.missingReferees
+                  ? ' lane and referee assignments.'
+                  : alert.missingLanes
+                    ? ' lane assignments.'
+                    : ' referee assignments.'}</>}
+          </span>
+          {alert.hasInvalidHorseCount ? (
+            <button onClick={() => navigate('/admin/tournaments')} className="rounded-md bg-white text-red-700 px-3 py-1.5 hover:bg-red-50 transition-colors">
+              Resolve registration
+            </button>
+          ) : alert.missingLanes && (
+            <button onClick={() => navigate('/admin/races')} className="rounded-md bg-white text-red-700 px-3 py-1.5 hover:bg-red-50 transition-colors">
+              Assign lanes
+            </button>
+          )}
+          {!alert.hasInvalidHorseCount && alert.missingReferees && (
+            <button onClick={() => navigate('/admin/referees')} className="rounded-md bg-white text-red-700 px-3 py-1.5 hover:bg-red-50 transition-colors">
+              Assign referees
+            </button>
+          )}
+        </div>
+      ))}
       {isLocked && (
         <div className="bg-red-500/10 border-b border-red-500/30 px-6 py-3 flex items-center gap-3 text-red-400 text-xs font-bold backdrop-blur-md">
           <AlertTriangle size={16} className="text-red-400 shrink-0 animate-pulse" />
