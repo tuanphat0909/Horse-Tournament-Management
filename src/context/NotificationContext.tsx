@@ -151,12 +151,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
     dispatch({ type: 'FETCH_START' });
     try {
-      // Get first page (latest 10)
-      const res = await getNotifications({ page: 1, pageSize: 10 });
-      const items = res?.result?.items || res?.result || [];
-
       // Chỉ hiện thông báo liên quan tới vai trò đang đăng nhập
       const roleKey = toRoleKey(currentUser.role);
+
+      // Phải lấy rộng rồi mới lọc theo role: nếu chỉ lấy 10 bản ghi mới nhất thì
+      // sau khi lọc có thể chỉ còn 1-2 cái, lệch hẳn với số chưa đọc hiển thị.
+      const res = await getNotifications({ page: 1, pageSize: 100 });
+      const items = res?.result?.items || res?.result || [];
 
       // Also get all unread to get the accurate count
       const allRes = await getNotifications({ page: 1, pageSize: 100, isRead: false });
@@ -164,7 +165,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       dispatch({
         type: 'FETCH_SUCCESS',
-        notifications: filterNotisForRole(Array.isArray(items) ? items : [], roleKey),
+        // Dropdown chỉ cần 10 cái mới nhất — cắt sau khi đã lọc theo role
+        notifications: filterNotisForRole(Array.isArray(items) ? items : [], roleKey).slice(0, 10),
         unreadCount: filterNotisForRole(Array.isArray(unreadItems) ? unreadItems : [], roleKey).length,
       });
     } catch (err) {
