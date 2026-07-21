@@ -90,6 +90,7 @@ export function MedicalCheckPage() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'create' | 'recheck'>('create');
   const [selectedRegId, setSelectedRegId] = useState<number | null>(null);
+  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [selectedHorseName, setSelectedHorseName] = useState('');
 

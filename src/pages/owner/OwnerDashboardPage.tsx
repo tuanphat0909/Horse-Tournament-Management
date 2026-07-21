@@ -11,7 +11,6 @@ import { PageAmbience } from '../../components/layout/PageAmbience';
 import { PageHero } from '../../components/layout/PageHero';
 import { getCurrentUser, parseApiError } from '../../api/authService';
 import { getMyHorses, getOwnerWalletBalance, getOwnerResults } from '../../api/ownerService';
-import { getRaceSchedule } from '../../api/publicService';
 import { calculateAge, formatDateTime } from '../../utils/format';
 import { useLanguage } from '../../context/LanguageContext';
 
