@@ -540,9 +540,18 @@ export function MedicalCheckPage() {
                       type="submit"
                       disabled={loading || (medicalResult === 'Pass' && !isEligibleForPass)}
                       title={medicalResult === 'Pass' && !isEligibleForPass ? 'Cannot save: Horse is not eligible for Pass' : ''}
-                      className="bg-gold hover:bg-gold/80 text-black font-bold px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="bg-gold hover:bg-gold/80 text-black font-bold px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
                     >
-                      {loading ? 'Saving...' : modalType === 'recheck' ? 'Save Recheck Result' : 'Save Result'}
+                      {loading ? (
+                        <>
+                          <RefreshCw size={14} className="animate-spin" />
+                          <span>Đang xử lý...</span>
+                        </>
+                      ) : modalType === 'recheck' ? (
+                        'Save Recheck Result'
+                      ) : (
+                        'Save Result'
+                      )}
                     </button>
                   </div>
                 </form>
