@@ -7,6 +7,8 @@ import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getRefereeDashboard, getRaceReports, createReport, getHorseChecks } from '../../api/refereeService';
 import { parseApiError } from '../../api/authService';
+import { refereeReportSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 const INPUT = 'w-full bg-[#0B1628] border border-glass-border rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted/60 outline-none focus:border-gold/40 transition-colors';
@@ -110,12 +112,13 @@ export function RefereeReportsPage() {
   async function handleSubmit() {
     setSubmitError('');
     setSubmitSuccess('');
-    if (!selectedRaceId) {
-      setSubmitError('Please select a race.');
-      return;
-    }
-    if (!form.content.trim()) {
-      setSubmitError('Report content cannot be empty.');
+    try {
+      await refereeReportSchema.validate(
+        { raceId: selectedRaceId ? String(selectedRaceId) : '', content: form.content },
+        { abortEarly: false },
+      );
+    } catch (validationError) {
+      setSubmitError(getFirstYupMessage(validationError, 'Please select a race.'));
       return;
     }
 

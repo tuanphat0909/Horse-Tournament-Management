@@ -9,6 +9,8 @@ import { PageAmbience } from '../../components/layout/PageAmbience';
 import { createRegistration, getMyRegistrations, getMyHorses, getMyProposals, cancelJockeyContract } from '../../api/ownerService';
 import { getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
+import { registerHorseSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 import { useNotifications } from '../../context/NotificationContext';
 import { CountdownTimer } from '../../components/ui/CountdownTimer';
 import { formatUtcDateTime, formatDateOnly } from '../../utils/format';
@@ -79,8 +81,10 @@ export function OwnerRegistrationsPage() {
 
   async function handleSubmit() {
     setSubmitError('');
-    if (!form.horseId || !form.tournamentId) {
-      setSubmitError('Please select a horse and a tournament.');
+    try {
+      await registerHorseSchema.validate(form, { abortEarly: false });
+    } catch (validationError) {
+      setSubmitError(getFirstYupMessage(validationError, 'Please select a horse and a tournament.'));
       return;
     }
     const selectedHorse = horses.find(h => String(h.id) === String(form.horseId));

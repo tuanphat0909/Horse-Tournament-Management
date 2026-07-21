@@ -8,6 +8,8 @@ import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getMyBets, placeBet, getRaceBettingInfo } from '../../api/spectatorService';
 import { getRaceSchedule, getRaceEntries } from '../../api/publicService';
 import { parseApiError, getCurrentUser } from '../../api/authService';
+import { placeBetSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 type BetStatus = 'correct' | 'incorrect' | 'pending';
@@ -91,8 +93,10 @@ export function SpectatorPredictionsPage() {
 
   async function handlePlaceBet() {
     setSubmitError(''); setSubmitSuccess('');
-    if (!form.raceId || !form.horseId || !form.amount) {
-      setSubmitError('Please fill in all information.');
+    try {
+      await placeBetSchema.validate(form, { abortEarly: false });
+    } catch (validationError) {
+      setSubmitError(getFirstYupMessage(validationError, 'Please fill in all information.'));
       return;
     }
     setSubmitLoading(true);

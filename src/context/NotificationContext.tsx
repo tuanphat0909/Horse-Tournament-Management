@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useReducer, useEffect, useCallback, useRef } from 'react';
 import { HubConnectionBuilder, HubConnection, LogLevel } from '@microsoft/signalr';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HighlightQuoted } from '../components/ui/HighlightQuoted';
@@ -49,21 +49,96 @@ export const useNotifications = () => {
   return context;
 };
 
+/**
+ * State của thông báo gồm danh sách, số chưa đọc, cờ loading và toast — các phần
+ * này luôn thay đổi cùng nhau (đọc một thông báo thì vừa đổi danh sách vừa giảm
+ * số đếm). Gom vào useReducer để mỗi hành động cập nhật trọn vẹn một lần, thay
+ * vì gọi nhiều setState rời rạc dễ lệch nhau.
+ */
+interface ToastState {
+  title: string;
+  content: string;
+  type: 'success' | 'error' | 'info';
+}
+
+interface NotificationState {
+  notifications: NotificationItem[];
+  unreadCount: number;
+  loading: boolean;
+  toast: ToastState | null;
+}
+
+type NotificationAction =
+  | { type: 'FETCH_START' }
+  | { type: 'FETCH_SUCCESS'; notifications: NotificationItem[]; unreadCount: number }
+  | { type: 'FETCH_ERROR' }
+  | { type: 'CLEAR_ALL' }
+  | { type: 'MARK_READ'; id: number }
+  | { type: 'MARK_ALL_READ' }
+  | { type: 'DELETE'; id: number }
+  | { type: 'SHOW_TOAST'; toast: ToastState }
+  | { type: 'HIDE_TOAST' };
+
+const initialState: NotificationState = {
+  notifications: [],
+  unreadCount: 0,
+  loading: false,
+  toast: null,
+};
+
+function notificationReducer(state: NotificationState, action: NotificationAction): NotificationState {
+  switch (action.type) {
+    case 'FETCH_START':
+      return { ...state, loading: true };
+    case 'FETCH_SUCCESS':
+      return { ...state, loading: false, notifications: action.notifications, unreadCount: action.unreadCount };
+    case 'FETCH_ERROR':
+      return { ...state, loading: false };
+    case 'CLEAR_ALL':
+      return { ...state, notifications: [], unreadCount: 0 };
+    case 'MARK_READ':
+      return {
+        ...state,
+        notifications: state.notifications.map(n => (n.id === action.id ? { ...n, isRead: true } : n)),
+        unreadCount: Math.max(0, state.unreadCount - 1),
+      };
+    case 'MARK_ALL_READ':
+      return {
+        ...state,
+        notifications: state.notifications.map(n => ({ ...n, isRead: true })),
+        unreadCount: 0,
+      };
+    case 'DELETE': {
+      // Xoá một thông báo chưa đọc thì phải giảm cả số đếm — một action lo cả hai
+      const wasUnread = state.notifications.some(n => n.id === action.id && !n.isRead);
+      return {
+        ...state,
+        notifications: state.notifications.filter(n => n.id !== action.id),
+        unreadCount: wasUnread ? Math.max(0, state.unreadCount - 1) : state.unreadCount,
+      };
+    }
+    case 'SHOW_TOAST':
+      return { ...state, toast: action.toast };
+    case 'HIDE_TOAST':
+      return { ...state, toast: null };
+    default:
+      return state;
+  }
+}
+
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [state, dispatch] = useReducer(notificationReducer, initialState);
+  const { notifications, unreadCount, loading, toast } = state;
   const [connection, setConnection] = useState<HubConnection | null>(null);
-  const [toast, setToast] = useState<{ title: string; content: string; type: 'success' | 'error' | 'info' } | null>(null);
   const toastTimerRef = useRef<any>(null);
 
   const showToast = useCallback((title: string, content: string, type: 'success' | 'error' | 'info' = 'success') => {
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
     }
-    setToast({ title, content, type });
+    dispatch({ type: 'SHOW_TOAST', toast: { title, content, type } });
     toastTimerRef.current = setTimeout(() => {
-      setToast(null);
+      dispatch({ type: 'HIDE_TOAST' });
       toastTimerRef.current = null;
     }, 5000);
   }, []);
@@ -71,37 +146,37 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const fetchRecent = useCallback(async () => {
     const currentUser = getCurrentUser();
     if (!currentUser) {
-      setNotifications([]);
-      setUnreadCount(0);
+      dispatch({ type: 'CLEAR_ALL' });
       return;
     }
-    setLoading(true);
+    dispatch({ type: 'FETCH_START' });
     try {
       // Get first page (latest 10)
       const res = await getNotifications({ page: 1, pageSize: 10 });
       const items = res?.result?.items || res?.result || [];
-      
+
       // Chỉ hiện thông báo liên quan tới vai trò đang đăng nhập
       const roleKey = toRoleKey(currentUser.role);
-      setNotifications(filterNotisForRole(Array.isArray(items) ? items : [], roleKey));
 
       // Also get all unread to get the accurate count
       const allRes = await getNotifications({ page: 1, pageSize: 100, isRead: false });
       const unreadItems = allRes?.result?.items || allRes?.result || [];
 
-      setUnreadCount(filterNotisForRole(Array.isArray(unreadItems) ? unreadItems : [], roleKey).length);
+      dispatch({
+        type: 'FETCH_SUCCESS',
+        notifications: filterNotisForRole(Array.isArray(items) ? items : [], roleKey),
+        unreadCount: filterNotisForRole(Array.isArray(unreadItems) ? unreadItems : [], roleKey).length,
+      });
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
-    } finally {
-      setLoading(false);
+      dispatch({ type: 'FETCH_ERROR' });
     }
   }, []);
 
   const markAsRead = async (id: number) => {
     try {
       await markNotificationRead(id);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      dispatch({ type: 'MARK_READ', id });
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
@@ -110,8 +185,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const markAllAsRead = async () => {
     try {
       await markAllNotificationsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      dispatch({ type: 'MARK_ALL_READ' });
     } catch (err) {
       console.error('Failed to mark all as read:', err);
     }
@@ -120,11 +194,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const deleteNoti = async (id: number) => {
     try {
       await deleteNotification(id);
-      const isUnread = notifications.find(n => n.id === id && !n.isRead);
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      if (isUnread) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
+      dispatch({ type: 'DELETE', id });
     } catch (err) {
       console.error('Failed to delete notification:', err);
     }
@@ -229,7 +299,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                   <span className={`text-xs font-bold ${styles.text} uppercase tracking-wider`}>{toast.title}</span>
                 </div>
                 <button 
-                  onClick={() => setToast(null)}
+                  onClick={() => dispatch({ type: 'HIDE_TOAST' })}
                   className="text-muted hover:text-white text-[10px] uppercase font-semibold cursor-pointer"
                 >
                   Close

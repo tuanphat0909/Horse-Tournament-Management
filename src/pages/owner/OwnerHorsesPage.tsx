@@ -7,6 +7,8 @@ import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
 import { getMyHorses, createHorse, getHorse, updateHorse, deleteHorse, getOwnerResults, requestHorseRecovery } from '../../api/ownerService';
 import { parseApiError } from '../../api/authService';
+import { createHorseSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 import { calculateAge, formatDateOnly } from '../../utils/format';
 import { useNotifications } from '../../context/NotificationContext';
 
@@ -60,8 +62,11 @@ export function OwnerHorsesPage() {
 
   async function handleCreate() {
     setCreateError('');
-    if (!createForm.name || !createForm.breed || !createForm.age) {
-      setCreateError('Please fill in all information.');
+    // Yup kiểm tra thay cho chuỗi if thủ công, giữ nguyên câu thông báo
+    try {
+      await createHorseSchema.validate(createForm, { abortEarly: false });
+    } catch (validationError) {
+      setCreateError(getFirstYupMessage(validationError, 'Please fill in all information.'));
       return;
     }
     setCreateLoading(true);

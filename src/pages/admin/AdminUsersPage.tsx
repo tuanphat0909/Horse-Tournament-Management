@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as Yup from 'yup';
 import { motion } from 'framer-motion';
 import { Search, Plus, Users, Eye, EyeOff, ArrowUpDown } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
@@ -28,30 +29,40 @@ type FormErrors = Partial<Record<'fullName' | 'email' | 'password' | 'role' | 'l
 
 // Kiểm tra ngay tại FE để chỉ đúng ô nào sai, thay vì đợi BE trả một câu chung chung.
 // Các luật này khớp với AdminService.CreateAccountAsync bên BE.
-function validateForm(form: typeof INIT_FORM): FormErrors {
-  const errors: FormErrors = {};
-  if (!form.fullName.trim()) errors.fullName = 'Full name is required.';
+/**
+ * Cùng bộ luật như bản kiểm tra thủ công trước đây, viết lại bằng Yup:
+ * bắt buộc nhập, email đúng định dạng, mật khẩu >= 6 ký tự, Referee bắt buộc
+ * có số giấy phép, số năm kinh nghiệm là số nguyên 0..80.
+ */
+const accountSchema = Yup.object({
+  fullName: Yup.string().trim().required('Full name is required.'),
+  email: Yup.string().trim()
+    .required('Email is required.')
+    .matches(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format.'),
+  password: Yup.string()
+    .required('Password is required.')
+    .min(6, 'Password must be at least 6 characters.'),
+  role: Yup.string().required('Please select a role.'),
+  licenseNumber: Yup.string().when('role', {
+    is: 'Referee',
+    then: schema => schema.trim().required('License number is required for Referee.'),
+    otherwise: schema => schema.notRequired(),
+  }),
+  experienceYears: Yup.string().test(
+    'valid-years',
+    'Years of experience must be a whole number of 0 or more.',
+    value => {
+      if (!value) return true;
+      const years = Number(value);
+      return Number.isInteger(years) && years >= 0;
+    },
+  ).test(
+    'not-too-large',
+    'Years of experience looks too large.',
+    value => !value || Number(value) <= 80,
+  ),
+});
 
-  if (!form.email.trim()) errors.email = 'Email is required.';
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Invalid email format.';
-
-  if (!form.password) errors.password = 'Password is required.';
-  else if (form.password.length < 6) errors.password = 'Password must be at least 6 characters.';
-
-  if (!form.role) errors.role = 'Please select a role.';
-
-  if (form.role === 'Referee' && !form.licenseNumber.trim()) {
-    errors.licenseNumber = 'License number is required for Referee.';
-  }
-
-  if (form.experienceYears) {
-    const years = Number(form.experienceYears);
-    if (!Number.isInteger(years) || years < 0) errors.experienceYears = 'Years of experience must be a whole number of 0 or more.';
-    else if (years > 80) errors.experienceYears = 'Years of experience looks too large.';
-  }
-
-  return errors;
-}
 
 // BE báo lỗi bằng một câu văn (vd "Email already exists.") → dò về đúng ô để tô đỏ.
 function mapMessageToField(message: string): keyof FormErrors | null {
@@ -141,8 +152,18 @@ export function AdminUsersPage() {
   async function handleCreate() {
     setError(''); setSuccess('');
 
-    const invalid = validateForm(form);
-    if (Object.keys(invalid).length > 0) {
+    // Yup kiểm tra toàn bộ form, gom lỗi về đúng từng ô như trước
+    try {
+      await accountSchema.validate(form, { abortEarly: false });
+    } catch (validationError) {
+      const invalid: FormErrors = {};
+      if (validationError instanceof Yup.ValidationError) {
+        validationError.inner.forEach(e => {
+          if (e.path && !invalid[e.path as keyof FormErrors]) {
+            invalid[e.path as keyof FormErrors] = e.message;
+          }
+        });
+      }
       setFieldErrors(invalid);
       setError('Please fix the highlighted fields below.');
       return;

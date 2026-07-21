@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
@@ -109,36 +111,49 @@ function CornerOrnament() {
   );
 }
 
+/** Form đăng nhập chỉ cần email hợp lệ và mật khẩu không để trống. */
+const loginSchema = Yup.object({
+  email: Yup.string().trim().email('Please enter a valid email address.').required('Please enter your email.'),
+  password: Yup.string().required('Please enter your password.'),
+});
+
 export function LoginPage() {
   const navigate = useNavigate();
   const { user, authReady, setUser } = useAuth();
   const { showToast } = useNotifications();
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Lỗi từ API (sai tài khoản, hết phiên...) — khác với lỗi validate của Formik
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const formik = useFormik({
+    initialValues: { email: '', password: '' },
+    validationSchema: loginSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      setError('');
+      try {
+        const result = await login(values.email, values.password);
+        setUser(result);
+        navigate(getDashboardPath(result.role), { replace: true });
+      } catch (err: unknown) {
+        const errorMsg = parseApiError(err as Error);
+        setError(errorMsg);
+        showToast('Sign-in failed', errorMsg || 'An error occurred while signing in.', 'error');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  });
+
+  const loading = formik.isSubmitting || googleLoading;
+  const setLoading = setGoogleLoading;
+  const fieldError = (name: keyof typeof formik.values) =>
+    formik.touched[name] && formik.errors[name] ? formik.errors[name] : '';
 
   // Already authenticated — go straight to the correct dashboard.
   if (authReady && user) {
     return <Navigate to={getDashboardPath(user.role)} replace />;
-  }
-
-  async function handleSignIn() {
-    setError('');
-    setLoading(true);
-    try {
-      const result = await login(email, password);
-      setUser(result);
-      navigate(getDashboardPath(result.role), { replace: true });
-    } catch (err: unknown) {
-      const errorMsg = parseApiError(err as Error);
-      setError(errorMsg);
-      showToast('Sign-in failed', errorMsg || 'An error occurred while signing in.', 'error');
-    } finally {
-      setLoading(false);
-    }
   }
 
   async function handleGoogleSuccess(credentialResponse: any) {
@@ -318,12 +333,19 @@ export function LoginPage() {
                       style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
                       type="email"
                       placeholder="email@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
+                      name="email"
+                      value={formik.values.email}
+                      onChange={formik.handleChange}
+                      onKeyDown={(e) => e.key === 'Enter' && formik.handleSubmit()}
                       onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
-                      onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'rgba(148,163,184,0.2)';
+                        formik.handleBlur(e);
+                      }}
                     />
+                    {fieldError('email') && (
+                      <p className="text-xs mt-1.5" style={{ color: '#fca5a5' }}>{fieldError('email')}</p>
+                    )}
                   </motion.div>
 
                   {/* Password */}
@@ -337,11 +359,15 @@ export function LoginPage() {
                         style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
                         type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
+                        name="password"
+                        value={formik.values.password}
+                        onChange={formik.handleChange}
+                        onKeyDown={(e) => e.key === 'Enter' && formik.handleSubmit()}
                         onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
-                        onBlur={(e) => (e.target.style.borderColor = 'rgba(148,163,184,0.2)')}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'rgba(148,163,184,0.2)';
+                          formik.handleBlur(e);
+                        }}
                       />
                       <button
                         className="absolute inset-y-0 right-0 flex items-center pr-3"
@@ -352,6 +378,9 @@ export function LoginPage() {
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
+                    {fieldError('password') && (
+                      <p className="text-xs mt-1.5" style={{ color: '#fca5a5' }}>{fieldError('password')}</p>
+                    )}
                   </motion.div>
 
                   {/* Remember / Forgot */}
@@ -380,7 +409,7 @@ export function LoginPage() {
                       className="w-full font-bold text-sm tracking-wider uppercase py-3.5 rounded-md flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{ background: 'linear-gradient(135deg,#e9c46a 0%,#d4af37 50%,#aa8c2c 100%)', color: '#0b101e' }}
                       type="button"
-                      onClick={handleSignIn}
+                      onClick={() => formik.handleSubmit()}
                       disabled={loading}
                     >
                       {loading ? 'Signing in…' : 'Sign In'}

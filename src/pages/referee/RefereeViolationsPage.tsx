@@ -9,6 +9,8 @@ import { getViolations, createViolation, getRefereeDashboard, updateViolation } 
 import { getRaceEntries } from '../../api/publicService';
 import { Pager, paginate } from '../../components/ui/Pager';
 import { parseApiError } from '../../api/authService';
+import { violationSchema } from '../../constants/validationSchemas';
+import { getFirstYupMessage } from '../../utils/formValidation';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 type Tab = 'active' | 'decided';
@@ -88,8 +90,13 @@ export function RefereeViolationsPage() {
 
   async function handleAdd() {
     setSubmitError('');
-    if (!form.raceId || !form.description) {
-      setSubmitError('Please select a race and enter a description.');
+    try {
+      await violationSchema.validate(
+        { raceId: form.raceId, type: form.description },
+        { abortEarly: false },
+      );
+    } catch (validationError) {
+      setSubmitError(getFirstYupMessage(validationError, 'Please select a race and enter a description.'));
       return;
     }
     setSubmitLoading(true);
