@@ -13,7 +13,6 @@ import {
   getAssignedEntries,
   performRecheck,
   getUnhealthyHorses,
-  recoverHorse,
 } from '../../api/vetService';
 import { parseApiError } from '../../api/authService';
 import { calculateAge } from '../../utils/format';
@@ -32,11 +31,14 @@ interface UnhealthyHorse {
 }
 
 interface PendingCheck {
-  registrationId: number;
+  registrationId: number | null;
+  medicalRecordId: number | null;
+  horseId: number;
   horseName: string;
   tournamentName: string;
   ownerName: string;
   registeredAt: string;
+  inspectionType: 'Tournament' | 'General';
 }
 
 interface AssignedEntry {
@@ -91,6 +93,7 @@ export function MedicalCheckPage() {
   const [modalType, setModalType] = useState<'create' | 'edit' | 'recheck'>('create');
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
   const [selectedRegId, setSelectedRegId] = useState<number | null>(null);
+  const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [selectedHorseName, setSelectedHorseName] = useState('');
 
   // Form fields
@@ -143,20 +146,7 @@ export function MedicalCheckPage() {
     });
   }
 
-  async function handleConfirmRecovery(horseId: number) {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await recoverHorse(horseId);
-      setSuccess('Horse health status updated to Healthy successfully!');
-      loadData();
-    } catch (err: unknown) {
-      setError(parseApiError(err as Error));
-    } finally {
-      setLoading(false);
-    }
-  }
+
 
   function resetForm() {
     setWeight(''); setTemperature(''); setHeartRate('');
@@ -167,7 +157,19 @@ export function MedicalCheckPage() {
   function openCreate(pc: PendingCheck) {
     setModalType('create');
     setSelectedRegId(pc.registrationId);
+    setSelectedRecordId(pc.medicalRecordId);
+    setSelectedHorseId(pc.horseId);
     setSelectedHorseName(pc.horseName);
+    resetForm();
+    setShowModal(true);
+  }
+
+  function openCreateForUnhealthy(uh: UnhealthyHorse) {
+    setModalType('create');
+    setSelectedRegId(null);
+    setSelectedRecordId(null);
+    setSelectedHorseId(uh.horseId);
+    setSelectedHorseName(uh.name);
     resetForm();
     setShowModal(true);
   }
@@ -221,7 +223,12 @@ export function MedicalCheckPage() {
     setLoading(true); setError(''); setSuccess('');
 
     if (modalType === 'create') {
-      createMedicalCheck({ registrationId: selectedRegId, ...base })
+      createMedicalCheck({
+        registrationId: selectedRegId,
+        medicalRecordId: selectedRecordId,
+        horseId: selectedHorseId,
+        ...base
+      })
         .then(() => { setSuccess('Inspection result saved!'); setShowModal(false); loadData(); })
         .catch((err: any) => { setError(parseApiError(err)); setLoading(false); });
     } else if (modalType === 'edit') {
@@ -317,19 +324,32 @@ export function MedicalCheckPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-glass-border/40 text-sm text-white">
-                        {filteredPending.map(pc => (
-                          <tr key={pc.registrationId} className="hover:bg-white/[0.01] transition-colors">
-                            <td className="px-6 py-4 font-medium text-gold">{pc.horseName}</td>
-                            <td className="px-6 py-4 text-muted">{pc.tournamentName}</td>
-                            <td className="px-6 py-4 text-muted">{pc.ownerName}</td>
-                            <td className="px-6 py-4 text-muted">{new Date(pc.registeredAt).toLocaleDateString('vi-VN')}</td>
-                            <td className="px-6 py-4 text-right">
-                              <button onClick={() => openCreate(pc)} className="bg-gold/10 hover:bg-gold/20 text-gold px-3 py-1.5 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1 border border-gold/30">
-                                <Plus size={12} /> Medical Check
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {filteredPending.map(pc => {
+                          const itemKey = pc.inspectionType === 'General' ? `general-${pc.medicalRecordId}` : `tournament-${pc.registrationId}`;
+                          return (
+                            <tr key={itemKey} className="hover:bg-white/[0.01] transition-colors">
+                              <td className="px-6 py-4 font-medium text-gold">{pc.horseName}</td>
+                              <td className="px-6 py-4">
+                                {pc.inspectionType === 'General' ? (
+                                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                    🩺 Normal Health Check
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                                    🏆 Tournament: {pc.tournamentName}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-muted">{pc.ownerName}</td>
+                              <td className="px-6 py-4 text-muted">{new Date(pc.registeredAt).toLocaleDateString('vi-VN')}</td>
+                              <td className="px-6 py-4 text-right">
+                                <button onClick={() => openCreate(pc)} className="bg-gold/10 hover:bg-gold/20 text-gold px-3 py-1.5 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1 border border-gold/30">
+                                  <Plus size={12} /> Medical Check
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -511,10 +531,10 @@ export function MedicalCheckPage() {
                           </td>
                           <td className="px-6 py-4 text-right shrink-0">
                             <button
-                              onClick={() => handleConfirmRecovery(uh.horseId)}
+                              onClick={() => openCreateForUnhealthy(uh)}
                               className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors text-xs font-bold flex items-center gap-1.5 ml-auto"
                             >
-                              <RefreshCw size={12} /> Confirm Recovered
+                              <Plus size={12} /> Perform Check
                             </button>
                           </td>
                         </tr>

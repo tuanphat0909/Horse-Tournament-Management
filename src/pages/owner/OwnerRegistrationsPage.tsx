@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, XCircle, Calendar, Trophy, Search, Clock, User, ExternalLink, X, RefreshCw } from 'lucide-react';
+import { Plus, XCircle, Calendar, Trophy, Search, Clock, User, ExternalLink, X } from 'lucide-react';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
@@ -83,6 +83,11 @@ export function OwnerRegistrationsPage() {
       setSubmitError('Please select a horse and a tournament.');
       return;
     }
+    const selectedHorse = horses.find(h => String(h.id) === String(form.horseId));
+    if (selectedHorse && !isHealthy(selectedHorse)) {
+      setSubmitError(`Horse "${selectedHorse.name}" is currently "${selectedHorse.healthStatus}" — only Healthy horses can register to race. Update the status on the My Horses page once the horse has recovered.`);
+      return;
+    }
     setSubmitLoading(true);
     try {
       await createRegistration({ horseId: Number(form.horseId), tournamentId: Number(form.tournamentId) });
@@ -97,19 +102,7 @@ export function OwnerRegistrationsPage() {
     }
   }
 
-  async function handleRecheckRequest(horseId: number, tournamentId: number) {
-    setSubmitLoading(true);
-    setError('');
-    try {
-      await createRegistration({ horseId, tournamentId });
-      showToast('Success', 'Request recheck submitted successfully!');
-      load();
-    } catch (err: unknown) {
-      showToast('Error', parseApiError(err as Error), 'error');
-    } finally {
-      setSubmitLoading(false);
-    }
-  }
+
 
   function closeModal() {
     setShowModal(false);
@@ -396,16 +389,7 @@ export function OwnerRegistrationsPage() {
                         <XCircle size={15} />
                       </button>
                     )}
-                    {statusKey === 'rejected' && (
-                      <button
-                        onClick={() => handleRecheckRequest(r.horseId, r.tournamentId)}
-                        disabled={submitLoading}
-                        className="relative z-10 px-3 py-1.5 rounded-lg bg-gold/10 hover:bg-gold/20 text-gold border border-gold/30 transition-colors shrink-0 text-xs font-bold flex items-center gap-1.5"
-                        title="Request re-check from Veterinarian"
-                      >
-                        <RefreshCw size={12} className={submitLoading ? 'animate-spin' : ''} /> Recheck
-                      </button>
-                    )}
+                    {/* Recheck button removed since recheck is handled in My Horses */}
                   </motion.div>
                 );
               })}
@@ -545,16 +529,11 @@ export function OwnerRegistrationsPage() {
                 >
                   <option value="">-- Select Horse --</option>
                   {horses.map(h => (
-                    <option key={h.id} value={h.id}>
+                    <option key={h.id} value={h.id} disabled={!isHealthy(h)}>
                       {h.name}{!isHealthy(h) ? ` — unhealthy (${h.healthStatus})` : ''}
                     </option>
                   ))}
                 </select>
-                {form.horseId && !isHealthy(horses.find(h => String(h.id) === String(form.horseId))) && (
-                  <div className="text-[11px] text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded-lg p-2.5 mt-2 leading-relaxed">
-                    ⚠ Ngựa này đang có trạng thái <b>{horses.find(h => String(h.id) === String(form.horseId))?.healthStatus}</b>. Bạn vẫn có thể đăng ký, nhưng ngựa bắt buộc phải vượt qua kỳ khám của bác sĩ thú y (Vet Check) trước khi tham gia thi đấu.
-                  </div>
-                )}
               </div>
               <div>
                 <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">Select Tournament *</label>
