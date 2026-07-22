@@ -11,12 +11,13 @@ import { useNotifications } from '../../context/NotificationContext';
 import { Pager, paginate } from '../../components/ui/Pager';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
-type TabType = 'pending' | 'approved' | 'rejected';
+type TabType = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
 const TAB_CONFIG = {
   pending:  { label: 'Awaiting Approval', color: 'text-yellow-400',  bg: 'border-yellow-400/40 bg-yellow-400/5',   statusValue: 'Pending'  },
   approved: { label: 'Approved',  color: 'text-emerald-400', bg: 'border-emerald-400/40 bg-emerald-400/5', statusValue: 'Approved' },
   rejected: { label: 'Decline',   color: 'text-red-400',     bg: 'border-red-400/40 bg-red-400/5',         statusValue: 'Rejected' },
+  cancelled:{ label: 'Cancelled', color: 'text-slate-400',   bg: 'border-slate-400/40 bg-slate-400/5',     statusValue: 'Cancelled' },
 };
 
 interface Registration {
@@ -37,6 +38,7 @@ export function AdminRegistrationsPage() {
   const [tab, setTab] = useState<TabType>('pending');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'horse'>('newest');
+  const [tournamentFilter, setTournamentFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +104,8 @@ export function AdminRegistrationsPage() {
       r.horseName?.toLowerCase().includes(query) ||
       r.ownerName?.toLowerCase().includes(query) ||
       r.tournamentName?.toLowerCase().includes(query);
-    return statusMatch && searchMatch;
+    const tournamentMatch = tournamentFilter === 'all' || String(r.tournamentId) === tournamentFilter;
+    return statusMatch && searchMatch && tournamentMatch;
   });
 
   const sortedRegistrations = [...filteredRegistrations].sort((a, b) => {
@@ -118,8 +121,15 @@ export function AdminRegistrationsPage() {
 
   const getCount = (t: TabType) => {
     const statusVal = TAB_CONFIG[t].statusValue.toLowerCase();
-    return registrations.filter(r => (r.status ?? '').toLowerCase() === statusVal).length;
+    return registrations.filter(r =>
+      (r.status ?? '').toLowerCase() === statusVal &&
+      (tournamentFilter === 'all' || String(r.tournamentId) === tournamentFilter)
+    ).length;
   };
+
+  const tournamentOptions = Array.from(
+    new Map(registrations.map(registration => [registration.tournamentId, registration.tournamentName])).entries()
+  ).sort((a, b) => String(a[1]).localeCompare(String(b[1])));
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{ backgroundColor: '#0b101e' }}>
@@ -138,7 +148,7 @@ export function AdminRegistrationsPage() {
 
           {/* Tabs + Search */}
           <div className="flex items-center gap-2 border-b border-glass-border pb-0">
-            {(['pending', 'approved', 'rejected'] as TabType[]).map(t => {
+            {(['pending', 'approved', 'rejected', 'cancelled'] as TabType[]).map(t => {
               const cfg = TAB_CONFIG[t];
               const isActive = tab === t;
               return (
@@ -157,6 +167,16 @@ export function AdminRegistrationsPage() {
               );
             })}
             <div className="ml-auto mb-1 flex items-center gap-3">
+              <select
+                value={tournamentFilter}
+                onChange={e => { setTournamentFilter(e.target.value); setPage(1); }}
+                className="bg-navy/50 border border-glass-border rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-gold/40 max-w-56"
+                style={{ colorScheme: 'dark' }}
+                aria-label="Filter registrations by tournament"
+              >
+                <option value="all">All tournaments</option>
+                {tournamentOptions.map(([id, name]) => <option key={id} value={String(id)}>{name || `Tournament #${id}`}</option>)}
+              </select>
               <button
                 onClick={loadRegistrations}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted hover:text-white bg-white/[0.04] border border-glass-border hover:border-gold/30 transition-colors"
@@ -190,8 +210,8 @@ export function AdminRegistrationsPage() {
           </div>
 
           {/* Stats summary */}
-          <div className="grid grid-cols-3 gap-4">
-            {(['pending', 'approved', 'rejected'] as TabType[]).map(t => {
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {(['pending', 'approved', 'rejected', 'cancelled'] as TabType[]).map(t => {
               const cfg = TAB_CONFIG[t];
               const count = getCount(t);
               return (
@@ -288,9 +308,10 @@ export function AdminRegistrationsPage() {
                           ) : (
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
                               reg.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                              reg.status === 'Cancelled' ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' :
                               'bg-red-500/10 text-red-400 border border-red-500/20'
                             }`}>
-                              {reg.status === 'Approved' ? 'Approved' : 'Declined'}
+                              {reg.status === 'Approved' ? 'Approved' : reg.status === 'Cancelled' ? 'Cancelled — participant list finalized' : 'Declined'}
                             </span>
                           )}
                         </td>
