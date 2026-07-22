@@ -17,12 +17,13 @@ import { CountdownTimer } from '../../components/ui/CountdownTimer';
 import { formatUtcDateTime, formatDateOnly } from '../../utils/format';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
-type Tab = 'pending_jockey' | 'pending_admin' | 'approved' | 'rejected' | 'pending_vet';
+type Tab = 'pending_jockey' | 'pending_admin' | 'approved' | 'rejected' | 'cancelled' | 'pending_vet';
 
-function normalizeStatus(s: string): 'pending' | 'approved' | 'rejected' | 'pending_vet' {
+function normalizeStatus(s: string): 'pending' | 'approved' | 'rejected' | 'cancelled' | 'pending_vet' {
   const key = (s ?? '').toLowerCase();
   if (key === 'approved') return 'approved';
-  if (key === 'rejected' || key === 'disqualified' || key === 'cancelled') return 'rejected';
+  if (key === 'cancelled') return 'cancelled';
+  if (key === 'rejected' || key === 'disqualified') return 'rejected';
   if (key === 'pendingvet' || key === 'pending_vet') return 'pending_vet';
   return 'pending';
 }
@@ -32,6 +33,7 @@ const STATUS_CONFIG = {
   pending:  { label: 'Pending Admin approval', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
   approved: { label: 'Approved',        color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
   rejected: { label: 'Rejected',      color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+  cancelled: { label: 'Cancelled',    color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
 };
 
 export function OwnerRegistrationsPage() {
@@ -190,6 +192,7 @@ export function OwnerRegistrationsPage() {
     }).length,
     approved: registrations.filter(r => normalizeStatus(r.status) === 'approved').length,
     rejected: registrations.filter(r => normalizeStatus(r.status) === 'rejected').length,
+    cancelled: registrations.filter(r => normalizeStatus(r.status) === 'cancelled').length,
   };
 
   const filteredTournamentsForRegister = (form.horseId
@@ -245,7 +248,7 @@ export function OwnerRegistrationsPage() {
           {error && <div className="glass-panel rounded-xl p-5 text-red-400 text-sm border border-red-500/20">{error}</div>}
 
           <div className="flex items-center gap-1 border-b border-glass-border pb-0">
-            {([['pending_vet', 'Vet Check'], ['pending_jockey', 'Hire Jockey'], ['pending_admin', 'Awaiting Approval'], ['approved', 'Approved'], ['rejected', 'Rejected']] as [Tab, string][]).map(([t, label]) => (
+            {([['pending_vet', 'Vet Check'], ['pending_jockey', 'Hire Jockey'], ['pending_admin', 'Awaiting Approval'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['cancelled', 'Cancelled']] as [Tab, string][]).map(([t, label]) => (
               <button key={t} onClick={() => setTab(t)}
                 className={`px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-all ${tab === t ? 'text-gold border-gold' : 'text-muted border-transparent hover:text-white'}`}>
                 {label}
@@ -345,6 +348,8 @@ export function OwnerRegistrationsPage() {
                     } else {
                       label = 'Rejected';
                     }
+                  } else if (statusKey === 'cancelled') {
+                    label = 'Cancelled — tournament participant list finalized';
                   }
                   customStatus = { ...cfg, label, clickable: false, action: 'none' };
                 }
