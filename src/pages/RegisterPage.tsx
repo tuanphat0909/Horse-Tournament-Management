@@ -4,7 +4,7 @@ import * as Yup from 'yup';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { Eye, EyeOff, Mail } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { register, parseApiError } from '../api/authService';
 import { BrandLogo } from '../components/ui/BrandLogo';
 
@@ -99,13 +99,13 @@ export function RegisterPage() {
 
       {/* Logo — dùng div thay vì <header> để không dính override nền trắng của Topbar ở light theme */}
       <div className="absolute top-0 left-0 w-full px-12 py-8 z-20 bg-transparent">
-        <div
-          className="tracking-widest font-semibold cursor-pointer"
+        <Link
+          to="/"
+          className="tracking-widest font-semibold cursor-pointer inline-block"
           style={{ fontFamily: '"Playfair Display", serif', color: '#d4af37', fontSize: '26px' }}
-          onClick={() => navigate('/')}
         >
           EQUESTRIA
-        </div>
+        </Link>
       </div>
 
       {/* Main */}
@@ -365,14 +365,13 @@ export function RegisterPage() {
                     {/* Login link */}
                     <motion.div variants={fadeUp} className="text-center text-xs" style={{ color: '#94a3b8' }}>
                       Already have an account?{' '}
-                      <a
-                        href="#"
+                      <Link
+                        to="/login"
                         className="font-medium transition-colors"
                         style={{ color: '#d4af37' }}
-                        onClick={(e) => { e.preventDefault(); navigate('/login'); }}
                       >
                         Sign in here
-                      </a>
+                      </Link>
                     </motion.div>
                   </div>
                 </>

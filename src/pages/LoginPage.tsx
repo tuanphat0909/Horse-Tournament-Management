@@ -4,7 +4,7 @@ import * as Yup from 'yup';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { login, googleLogin, parseApiError } from '../api/authService';
 import { getDashboardPath } from '../utils/roleRoutes';
@@ -212,13 +212,13 @@ export function LoginPage() {
 
         {/* Logo — dùng div thay vì <header> để không dính override nền trắng của Topbar ở light theme */}
         <div className="absolute top-0 left-0 w-full px-12 py-8 z-20 bg-transparent">
-          <div
-            className="tracking-widest font-semibold cursor-pointer"
+          <Link
+            to="/"
+            className="tracking-widest font-semibold cursor-pointer inline-block"
             style={{ fontFamily: '"Playfair Display", serif', color: '#d4af37', fontSize: '26px' }}
-            onClick={() => navigate('/')}
           >
             EQUESTRIA
-          </div>
+          </Link>
         </div>
 
         {/* Main */}
@@ -329,19 +329,15 @@ export function LoginPage() {
                       Email
                     </label>
                     <input
-                      className="w-full rounded-md px-4 py-3 text-sm outline-none transition-all duration-300"
-                      style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
+                      className="w-full rounded-md px-4 py-3 text-sm outline-none transition-all duration-300 border border-slate-400/20 focus:border-[#d4af37]"
+                      style={{ background: 'rgba(15,23,42,0.6)', color: '#e2e8f0' }}
                       type="email"
                       placeholder="email@example.com"
                       name="email"
                       value={formik.values.email}
                       onChange={formik.handleChange}
                       onKeyDown={(e) => e.key === 'Enter' && formik.handleSubmit()}
-                      onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = 'rgba(148,163,184,0.2)';
-                        formik.handleBlur(e);
-                      }}
+                      onBlur={formik.handleBlur}
                     />
                     {fieldError('email') && (
                       <p className="text-xs mt-1.5" style={{ color: '#fca5a5' }}>{fieldError('email')}</p>
@@ -355,19 +351,15 @@ export function LoginPage() {
                     </label>
                     <div className="relative">
                       <input
-                        className="w-full rounded-md px-4 py-3 pr-10 text-sm outline-none transition-all duration-300"
-                        style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(148,163,184,0.2)', color: '#e2e8f0' }}
+                        className="w-full rounded-md px-4 py-3 pr-10 text-sm outline-none transition-all duration-300 border border-slate-400/20 focus:border-[#d4af37]"
+                        style={{ background: 'rgba(15,23,42,0.6)', color: '#e2e8f0' }}
                         type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
                         name="password"
                         value={formik.values.password}
                         onChange={formik.handleChange}
                         onKeyDown={(e) => e.key === 'Enter' && formik.handleSubmit()}
-                        onFocus={(e) => (e.target.style.borderColor = '#d4af37')}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = 'rgba(148,163,184,0.2)';
-                          formik.handleBlur(e);
-                        }}
+                        onBlur={formik.handleBlur}
                       />
                       <button
                         className="absolute inset-y-0 right-0 flex items-center pr-3"
@@ -443,14 +435,13 @@ export function LoginPage() {
                   {/* Register link */}
                   <motion.div variants={fadeUp} className="text-center text-xs" style={{ color: '#94a3b8' }}>
                     Don't have an account?{' '}
-                    <a
-                      href="#"
+                    <Link
+                      to="/register"
                       className="font-medium transition-colors"
                       style={{ color: '#d4af37' }}
-                      onClick={(e) => { e.preventDefault(); navigate('/register'); }}
                     >
                       Sign up here
-                    </a>
+                    </Link>
                   </motion.div>
                 </div>
               </motion.div>
