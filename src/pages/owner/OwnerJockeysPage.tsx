@@ -5,7 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { getMyProposals, createJockeyContract, getMyHorses, cancelJockeyContract, getMyRegistrations, checkJockeyBusy, checkHorseBusy } from '../../api/ownerService';
+import { getMyProposals, createJockeyContract, getMyHorses, cancelJockeyContract, getMyRegistrations, checkJockeyBusy, checkHorseBusy, getBusyJockeysForTournament } from '../../api/ownerService';
 import { getJockeyRankings, getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { inviteJockeySchema } from '../../constants/validationSchemas';
@@ -86,6 +86,45 @@ export function OwnerJockeysPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
+  const [busyJockeyIds, setBusyJockeyIds] = useState<number[]>([]);
+  const [loadingBusyJockeys, setLoadingBusyJockeys] = useState(false);
+
+  function handleTournamentSelect(tId: string) {
+    const selected = tournaments.find((t: any) => String(t.tournamentId) === String(tId));
+
+    let defaultExp = '24';
+    if (selected && selected.registrationEndDate) {
+      const regEnd = new Date(selected.registrationEndDate);
+      const remainingMs = regEnd.getTime() - Date.now();
+      const remainingHours = Math.max(0.1, remainingMs / (1000 * 60 * 60));
+      if (remainingHours < 24) {
+        defaultExp = String(remainingHours);
+      }
+    }
+
+    setForm(p => ({
+      ...p,
+      tournamentId: tId,
+      horseId: p.tournamentId === tId ? p.horseId : '',
+      jockeyId: p.tournamentId === tId ? p.jockeyId : '',
+      startDate: selected ? toDateInputValue(selected.startDate) : '',
+      endDate: selected ? toDateInputValue(selected.endDate) : '',
+      expirationHours: defaultExp
+    }));
+
+    if (tId) {
+      setLoadingBusyJockeys(true);
+      getBusyJockeysForTournament(Number(tId))
+        .then((res: any) => {
+          const ids = res?.busyJockeyIds ?? res?.result?.busyJockeyIds ?? [];
+          setBusyJockeyIds(ids.map((id: any) => Number(id)));
+        })
+        .catch(() => setBusyJockeyIds([]))
+        .finally(() => setLoadingBusyJockeys(false));
+    } else {
+      setBusyJockeyIds([]);
+    }
+  }
 
   async function load(silent = false) {
     if (!silent) setLoading(true); 
@@ -136,11 +175,22 @@ export function OwnerJockeysPage() {
         startDate: t ? toDateInputValue(t.startDate) : '',
         endDate: t ? toDateInputValue(t.endDate) : '',
       }));
+      if (tournamentId) {
+        setLoadingBusyJockeys(true);
+        getBusyJockeysForTournament(Number(tournamentId))
+          .then((res: any) => {
+            const ids = res?.busyJockeyIds ?? res?.result?.busyJockeyIds ?? [];
+            setBusyJockeyIds(ids.map((id: any) => Number(id)));
+          })
+          .catch(() => setBusyJockeyIds([]))
+          .finally(() => setLoadingBusyJockeys(false));
+      }
       setShowInvite(true);
       // Clear query params from URL without reload
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [loading, tournaments]);
+
 
   // Auto-refresh list silently in the background when a new notification arrives (e.g. Jockey accepted/cancelled)
   useEffect(() => {
@@ -289,6 +339,7 @@ export function OwnerJockeysPage() {
     setJockeyBusyError('');
     setHorseBusyError('');
     setIsPrefilled(false);
+    setBusyJockeyIds([]);
     setForm(INIT_FORM);
   }
 
@@ -310,16 +361,43 @@ export function OwnerJockeysPage() {
 
   const selectedInviteTournament = tournaments.find((t: any) => String(t.tournamentId) === String(form.tournamentId));
 
-  const filteredTournamentsForSelect = form.horseId
-    ? tournaments.filter((t: any) => 
-        registrations.some((r: any) => 
-          String(r.horseId) === String(form.horseId) && 
-          r.tournamentId === t.tournamentId &&
-          r.status?.toLowerCase() !== 'pendingvet' &&
-          r.status?.toLowerCase() !== 'pending_vet'
-        )
-      )
+  const filteredHorsesForSelect = form.tournamentId
+    ? horses.filter((h: any) => {
+        const reg = registrations.find((r: any) => 
+          String(r.horseId) === String(h.id) && 
+          String(r.tournamentId) === String(form.tournamentId)
+        );
+
+        if (!reg) return false;
+
+        const regStatus = (reg.status ?? '').toLowerCase();
+        // Must be strictly 'pending' (passed vet check, awaiting jockey/admin)
+        if (regStatus !== 'pending') return false;
+
+        // Must not already have a jockey assigned in registration
+        if (reg.jockeyId || reg.jockeyName) return false;
+
+        // Must not have an active, accepted, or pending contract in proposals
+        const hasContract = proposals.some((p: any) => 
+          String(p.horseId) === String(h.id) && 
+          String(p.tournamentId) === String(form.tournamentId) &&
+          ['pending', 'accepted', 'active'].includes((p.status ?? '').toLowerCase())
+        );
+
+        if (hasContract) return false;
+
+        return true;
+      })
     : [];
+
+
+  const filteredJockeysForSelect = form.tournamentId
+    ? jockeys.filter((j: any) => {
+        const jId = Number(j.userId ?? j.jockeyProfileId ?? j.id);
+        return !busyJockeyIds.includes(jId);
+      })
+    : jockeys;
+
 
   return (
     <div className="min-h-screen text-body font-sans flex" style={{backgroundColor: '#0b101e'}}>
@@ -442,81 +520,42 @@ export function OwnerJockeysPage() {
             <h2 className="text-xl font-serif text-white mb-6">Invite Jockey</h2>
             <div className="space-y-4">
               <div>
-                <label className={LABEL}>Select Horse *</label>
-                <select 
-                  value={form.horseId} 
-                  disabled={isPrefilled}
-                  onChange={e => setForm(p => ({...p, horseId: e.target.value, tournamentId: '', startDate: '', endDate: ''}))} 
-                  className={`${INPUT} disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <option value="">-- Select Your Horse --</option>
-                  {horses.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-                </select>
-                {horses.length === 0 && <p className="text-[10px] text-muted/60 mt-1">No horses — create one on the "Manage Horses" page first.</p>}
-              </div>
-              <div>
-                <label className={LABEL}>Select Jockey *</label>
-                <select value={form.jockeyId} onChange={e => setForm(p => ({...p, jockeyId: e.target.value}))} className={INPUT}>
-                  <option value="">-- Select Jockey --</option>
-                  {jockeys.map(j => (
-                    <option key={j.jockeyProfileId ?? j.userId} value={j.userId}>
-                      {j.fullName ?? `Jockey #${j.userId}`}
-                      {j.totalWins != null ? ` (${j.totalWins} wins)` : ''}
-                    </option>
-                  ))}
-                </select>
-                {jockeys.length === 0 && <p className="text-[10px] text-muted/60 mt-1">Jockey list is loading or empty.</p>}
-                {jockeyBusyError && (
-                  <p className="text-[11px] text-red-400 mt-1.5 font-medium">
-                    {jockeyBusyError}
-                  </p>
-                )}
-              </div>
-              <div>
                 <label className={LABEL}>Select Tournament *</label>
                 <select 
                   value={form.tournamentId} 
-                  disabled={isPrefilled || !form.horseId}
-                  onChange={e => {
-                    const tId = e.target.value;
-                    const selected = tournaments.find((t: any) => String(t.tournamentId) === String(tId));
-                    
-                    let defaultExp = '24';
-                    if (selected && selected.registrationEndDate) {
-                      const regEnd = new Date(selected.registrationEndDate);
-                      const remainingMs = regEnd.getTime() - Date.now();
-                      const remainingHours = Math.max(0.1, remainingMs / (1000 * 60 * 60));
-                      if (remainingHours < 24) {
-                        defaultExp = String(remainingHours);
-                      }
-                    }
-
-                    setForm(p => ({
-                      ...p, 
-                      tournamentId: tId, 
-                      startDate: selected ? toDateInputValue(selected.startDate) : '', 
-                      endDate: selected ? toDateInputValue(selected.endDate) : '',
-                      expirationHours: defaultExp
-                    }));
-                  }} 
+                  disabled={isPrefilled}
+                  onChange={e => handleTournamentSelect(e.target.value)} 
                   className={`${INPUT} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  <option value="">
-                    {!form.horseId ? '-- Select Previous Horse --' : '-- Select Tournament --'}
-                  </option>
-                  {filteredTournamentsForSelect.map(t => (
+                  <option value="">-- Select Tournament --</option>
+                  {tournaments.map(t => (
                     <option key={t.tournamentId} value={t.tournamentId}>
                       {t.name}
                     </option>
                   ))}
                 </select>
-                {form.horseId && filteredTournamentsForSelect.length === 0 && (
-                  <p className="text-[10px] text-yellow-400 mt-1">This horse has not registered for any tournament yet.</p>
-                )}
                 {selectedInviteTournament?.startDate && selectedInviteTournament?.endDate && (
                   <p className="text-[10px] text-muted/70 mt-1">
                     Tournament time: {formatDate(selectedInviteTournament.startDate)} - {formatDate(selectedInviteTournament.endDate)}
                   </p>
+                )}
+              </div>
+
+              <div>
+                <label className={LABEL}>Select Horse (Vet Check Passed) *</label>
+                <select 
+                  value={form.horseId} 
+                  disabled={isPrefilled || !form.tournamentId}
+                  onChange={e => setForm(p => ({...p, horseId: e.target.value}))} 
+                  className={`${INPUT} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <option value="">
+                    {!form.tournamentId ? '-- Select Tournament First --' : '-- Select Horse --'}
+                  </option>
+                  {filteredHorsesForSelect.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
+                {form.tournamentId && filteredHorsesForSelect.length === 0 && (
+                  <p className="text-[10px] text-yellow-400 mt-1">No horses have passed vet inspection for this tournament.</p>
                 )}
                 {horseBusyError && (
                   <p className="text-[11px] text-red-400 mt-1.5 font-medium">
@@ -524,6 +563,35 @@ export function OwnerJockeysPage() {
                   </p>
                 )}
               </div>
+
+              <div>
+                <label className={LABEL}>Select Jockey *</label>
+                <select 
+                  value={form.jockeyId} 
+                  disabled={!form.tournamentId || loadingBusyJockeys}
+                  onChange={e => setForm(p => ({...p, jockeyId: e.target.value}))} 
+                  className={`${INPUT} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <option value="">
+                    {!form.tournamentId ? '-- Select Tournament First --' : (loadingBusyJockeys ? '-- Loading available jockeys... --' : '-- Select Jockey --')}
+                  </option>
+                  {filteredJockeysForSelect.map(j => (
+                    <option key={j.jockeyProfileId ?? j.userId} value={j.userId}>
+                      {j.fullName ?? `Jockey #${j.userId}`}
+                      {j.totalWins != null ? ` (${j.totalWins} wins)` : ''}
+                    </option>
+                  ))}
+                </select>
+                {form.tournamentId && !loadingBusyJockeys && filteredJockeysForSelect.length === 0 && (
+                  <p className="text-[10px] text-yellow-400 mt-1">All jockeys are already contracted or registered for this tournament.</p>
+                )}
+                {jockeyBusyError && (
+                  <p className="text-[11px] text-red-400 mt-1.5 font-medium">
+                    {jockeyBusyError}
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={LABEL}>Start Date</label>

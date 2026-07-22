@@ -6,7 +6,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { Topbar } from '../../components/layout/Topbar';
 import { PageHero } from '../../components/layout/PageHero';
 import { PageAmbience } from '../../components/layout/PageAmbience';
-import { createRegistration, getMyRegistrations, getMyHorses, getMyProposals, cancelJockeyContract } from '../../api/ownerService';
+import { createRegistration, getMyRegistrations, getMyHorses, getMyProposals, cancelJockeyContract, cancelRegistration } from '../../api/ownerService';
 import { getTournaments } from '../../api/publicService';
 import { parseApiError } from '../../api/authService';
 import { registerHorseSchema } from '../../constants/validationSchemas';
@@ -17,12 +17,13 @@ import { CountdownTimer } from '../../components/ui/CountdownTimer';
 import { formatUtcDateTime, formatDateOnly } from '../../utils/format';
 
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
-type Tab = 'pending_jockey' | 'pending_admin' | 'approved' | 'rejected' | 'pending_vet';
+type Tab = 'pending_jockey' | 'pending_admin' | 'approved' | 'rejected' | 'cancelled' | 'pending_vet';
 
-function normalizeStatus(s: string): 'pending' | 'approved' | 'rejected' | 'pending_vet' {
+function normalizeStatus(s: string): 'pending' | 'approved' | 'rejected' | 'cancelled' | 'pending_vet' {
   const key = (s ?? '').toLowerCase();
   if (key === 'approved') return 'approved';
-  if (key === 'rejected' || key === 'disqualified' || key === 'cancelled') return 'rejected';
+  if (key === 'cancelled') return 'cancelled';
+  if (key === 'rejected' || key === 'disqualified') return 'rejected';
   if (key === 'pendingvet' || key === 'pending_vet') return 'pending_vet';
   return 'pending';
 }
@@ -32,6 +33,7 @@ const STATUS_CONFIG = {
   pending:  { label: 'Pending Admin approval', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
   approved: { label: 'Approved',        color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
   rejected: { label: 'Rejected',      color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+  cancelled: { label: 'Cancelled',    color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
 };
 
 export function OwnerRegistrationsPage() {
@@ -116,6 +118,26 @@ export function OwnerRegistrationsPage() {
     setForm({ horseId: '', tournamentId: '' });
   }
 
+  async function handleCancelRegistration(id: number, horseName?: string, tournamentName?: string) {
+    const isConfirmed = await confirm({
+      title: 'Cancel Registration',
+      message: `Are you sure you want to cancel registration for horse "${horseName ?? 'Horse'}" in tournament "${tournamentName ?? 'Tournament'}"?`,
+      confirmText: 'Cancel Registration',
+      cancelText: 'Keep Registration',
+      danger: true,
+    });
+    if (!isConfirmed) return;
+
+    try {
+      await cancelRegistration(id);
+      showToast('Success', 'Registration cancelled successfully', 'success');
+      await load();
+    } catch (err: unknown) {
+      showToast('Failed', parseApiError(err as Error), 'error');
+    }
+  }
+
+
   const filtered = registrations.filter(r => {
     const statusKey = normalizeStatus(r.status);
 
@@ -190,6 +212,7 @@ export function OwnerRegistrationsPage() {
     }).length,
     approved: registrations.filter(r => normalizeStatus(r.status) === 'approved').length,
     rejected: registrations.filter(r => normalizeStatus(r.status) === 'rejected').length,
+    cancelled: registrations.filter(r => normalizeStatus(r.status) === 'cancelled').length,
   };
 
   const filteredTournamentsForRegister = (form.horseId
@@ -245,7 +268,7 @@ export function OwnerRegistrationsPage() {
           {error && <div className="glass-panel rounded-xl p-5 text-red-400 text-sm border border-red-500/20">{error}</div>}
 
           <div className="flex items-center gap-1 border-b border-glass-border pb-0">
-            {([['pending_vet', 'Vet Check'], ['pending_jockey', 'Hire Jockey'], ['pending_admin', 'Awaiting Approval'], ['approved', 'Approved'], ['rejected', 'Rejected']] as [Tab, string][]).map(([t, label]) => (
+            {([['pending_vet', 'Vet Check'], ['pending_jockey', 'Hire Jockey'], ['pending_admin', 'Awaiting Approval'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['cancelled', 'Cancelled']] as [Tab, string][]).map(([t, label]) => (
               <button key={t} onClick={() => setTab(t)}
                 className={`px-5 py-3 text-sm font-medium border-b-2 -mb-px transition-all ${tab === t ? 'text-gold border-gold' : 'text-muted border-transparent hover:text-white'}`}>
                 {label}
@@ -345,6 +368,8 @@ export function OwnerRegistrationsPage() {
                     } else {
                       label = 'Rejected';
                     }
+                  } else if (statusKey === 'cancelled') {
+                    label = 'Cancelled — tournament participant list finalized';
                   }
                   customStatus = { ...cfg, label, clickable: false, action: 'none' };
                 }
@@ -401,10 +426,15 @@ export function OwnerRegistrationsPage() {
                       {customStatus.label}
                     </span>
                     {statusKey === 'pending' && (
-                      <button className="relative z-10 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors shrink-0" title="Cancel registration">
+                      <button 
+                        onClick={() => handleCancelRegistration(r.registrationId, r.horseName, r.tournamentName)}
+                        className="relative z-10 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors shrink-0" 
+                        title="Cancel registration"
+                      >
                         <XCircle size={15} />
                       </button>
                     )}
+
                     {/* Recheck button removed since recheck is handled in My Horses */}
                   </motion.div>
                 );

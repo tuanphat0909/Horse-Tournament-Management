@@ -59,11 +59,7 @@ function Track3D({ maxLanes, entries, live }: { maxLanes: number; entries: Entry
       style={{ perspective: `${PERSP}px` }}>
       {/* bầu trời + vạch đích xa */}
       <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-sky-900/40 to-transparent pointer-events-none" />
-      {live && (
-        <span className="absolute top-2.5 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE
-        </span>
-      )}
+
 
       {/* Mặt đường đua nghiêng 3D — marginTop âm (đo runtime) cắt bỏ khoảng empty do phép nghiêng tạo ra */}
       <div ref={trackRef} className="relative mx-auto" style={{ transform: `rotateX(${TILT}deg)`, transformStyle: 'preserve-3d', transformOrigin: 'center bottom' }}>
